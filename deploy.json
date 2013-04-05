@@ -1,0 +1,14 @@
+{
+    "default": {
+        "bucket":       "s3bucketname",
+        "local_path":   ".",
+        "bucket_path":  "/"
+    },
+    "staging": {
+        "bucket":       "s3bucketname",
+        "local_path":   ".",
+        "bucket_path":  "/",
+        "aws_key":      "AWS_ACCESS_KEY_ID",
+        "aws_secret":   "AWS_ACCESS_KEY_SECRET"
+    }
+}
