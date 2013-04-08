@@ -10,6 +10,8 @@ except ImportError:
     
 from optparse import OptionParser
 
+valid_acls      =   ["private", "public-read", "public-read-write", "authenticated-read"]
+
 parser          =   OptionParser()
 parser.add_option('-a', '--access-key', help = "AWS Access Key ID", dest = "AWS_KEY", type = "string")
 parser.add_option('-s', '--access-secret', help = "AWS Access Key Secret", dest = "AWS_SECRET", type = "string")
@@ -17,6 +19,7 @@ parser.add_option('-e', '--environment', help = "Which environment to deploy to"
 parser.add_option('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", dest = "force", action = "store_true", default = False)
 parser.add_option('--all', help = "Upload to all environments", dest = "all", action = "store_true", default = False)
 parser.add_option('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", dest = "dry_run", action = "store_true", default = False)
+parser.add_option('--acl', help = "The ACL to apply to uploaded files. Must be one of: %s" % ' '.join(valid_acls), dest = "acl", type = "string", default = "public-read",)
 
 (options, args) =   parser.parse_args()
 
@@ -116,7 +119,7 @@ def upload_files(env, config):
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
             s3key.set_contents_from_filename(filename)
-            s3key.set_acl('public-read')
+            s3key.set_acl(options.acl)
         
     for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
         if not key.name in keynames:
