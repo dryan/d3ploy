@@ -1,5 +1,10 @@
 # d3ploy
 
+## Installation & Usage
+
+To install, run `pip install d3ploy`.
+To use, run `d3ploy`. Additional arguments may be specified. Run `d3ploy --help` for more information.
+
 ## Authentication
 
 Your AWS credentials can be set in a number of ways:
