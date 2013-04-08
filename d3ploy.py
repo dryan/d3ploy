@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, json, re, hashlib
+import os, sys, json, re, hashlib, argparse
 
 try:
     import boto
@@ -8,27 +8,21 @@ except ImportError:
     print "Please install boto. `pip install boto`"
     sys.exit(os.EX_UNAVAILABLE)
     
-from optparse import OptionParser
-
 valid_acls      =   ["private", "public-read", "public-read-write", "authenticated-read"]
 
-parser          =   OptionParser()
-parser.add_option('-a', '--access-key', help = "AWS Access Key ID", dest = "AWS_KEY", type = "string")
-parser.add_option('-s', '--access-secret', help = "AWS Access Key Secret", dest = "AWS_SECRET", type = "string")
-parser.add_option('-e', '--environment', help = "Which environment to deploy to", dest = "environment", type = "string", default = "default",)
-parser.add_option('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", dest = "force", action = "store_true", default = False)
-parser.add_option('--all', help = "Upload to all environments", dest = "all", action = "store_true", default = False)
-parser.add_option('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", dest = "dry_run", action = "store_true", default = False)
-parser.add_option('--acl', help = "The ACL to apply to uploaded files. Must be one of: %s" % ' '.join(valid_acls), dest = "acl", type = "string", default = "public-read",)
+parser          =   argparse.ArgumentParser()
+parser.add_argument('environment', help = "Which environment to deploy to", nargs = "?", type = str, default = "default",)
+parser.add_argument('-a', '--access-key', help = "AWS Access Key ID", type = str)
+parser.add_argument('-s', '--access-secret', help = "AWS Access Key Secret", type = str)
+parser.add_argument('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", action = "store_true", default = False)
+parser.add_argument('--all', help = "Upload to all environments", action = "store_true", default = False)
+parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
+parser.add_argument('--acl', help = "The ACL to apply to uploaded files. Must be one of: %s" % ' '.join(valid_acls), type = str, default = "public-read",)
 
-(options, args) =   parser.parse_args()
+args            =   parser.parse_args()
 
-# allow positional argument for environment
-if len(args) and options.environment == "default":
-    options.environment =   args.pop(0)
-
-AWS_KEY         =   options.AWS_KEY
-AWS_SECRET      =   options.AWS_SECRET
+AWS_KEY         =   args.access_key
+AWS_SECRET      =   args.access_secret
 
 # lookup global AWS keys if needed
 if AWS_KEY is None:
@@ -48,7 +42,7 @@ def upload_files(env, config):
     
     bucket              =   config.get('bucket')
     if not bucket:
-        print 'A bucket to upload to was not specified for "%s" environment' % options.environment
+        print 'A bucket to upload to was not specified for "%s" environment' % args.environment
         sys.exit(os.EX_NOINPUT)
 
     KEY         =   config.get('aws_key', AWS_KEY)
@@ -111,25 +105,25 @@ def upload_files(env, config):
             if not data:
                 break
             md5.update(data)
-        if s3key is None or options.force or not s3key.etag.strip('"') == md5.hexdigest():
+        if s3key is None or args.force or not s3key.etag.strip('"') == md5.hexdigest():
             print 'Copying %s to %s%s' % (filename, bucket, keyname)
             updated     +=  1
-            if options.dry_run:
+            if args.dry_run:
                 continue
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
             s3key.set_contents_from_filename(filename)
-            s3key.set_acl(options.acl)
+            s3key.set_acl(args.acl)
         
     for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
         if not key.name in keynames:
             print 'Deleting %s/%s' % (bucket, key.name.lstrip('/'))
             deleted     +=  1
-            if options.dry_run:
+            if args.dry_run:
                 continue
             key.delete()
         
-    verb    =   "would be" if options.dry_run else "were"
+    verb    =   "would be" if args.dry_run else "were"
     print "%d files %s updated and %d files %s removed" % (updated, verb, deleted, verb)
     print ""
 
@@ -142,13 +136,13 @@ except IOError:
 
 config              =   json.load(config)
 
-if not options.environment in config:
-    print 'The "%s" environment was not found in deploy.json' % options.environment
+if not args.environment in config:
+    print 'The "%s" environment was not found in deploy.json' % args.environment
     sys.exit(os.EX_NOINPUT)
 
-if options.all:
+if args.all:
     for environ in config:
         print "Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys()))
         upload_files(environ, config[environ])
 else:
-    upload_files(options.environment, config[options.environment])
+    upload_files(args.environment, config[args.environment])
