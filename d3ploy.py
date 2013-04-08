@@ -16,6 +16,7 @@ parser.add_option('-s', '--access-secret', help = "AWS Access Key Secret", dest 
 parser.add_option('-e', '--environment', help = "Which environment to deploy to", dest = "environment", type = "string", default = "default",)
 parser.add_option('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", dest = "force", action = "store_true", default = False)
 parser.add_option('--all', help = "Upload to all environments", dest = "all", action = "store_true", default = False)
+parser.add_option('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", dest = "dry_run", action = "store_true", default = False)
 
 (options, args) =   parser.parse_args()
 
@@ -109,19 +110,24 @@ def upload_files(env, config):
             md5.update(data)
         if s3key is None or options.force or not s3key.etag.strip('"') == md5.hexdigest():
             print 'Copying %s to %s%s' % (filename, bucket, keyname)
+            updated     +=  1
+            if options.dry_run:
+                continue
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
             s3key.set_contents_from_filename(filename)
             s3key.set_acl('public-read')
-            updated     +=  1
         
     for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
         if not key.name in keynames:
             print 'Deleting %s/%s' % (bucket, key.name.lstrip('/'))
-            key.delete()
             deleted     +=  1
+            if options.dry_run:
+                continue
+            key.delete()
         
-    print "%d files were updated and %d files were removed" % (updated, deleted)
+    verb    =   "would be" if options.dry_run else "were"
+    print "%d files %s updated and %d files %s removed" % (updated, verb, deleted, verb)
     print ""
 
 # load the config file for this folder
