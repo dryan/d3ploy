@@ -140,9 +140,13 @@ if not args.environment in config:
     print 'The "%s" environment was not found in deploy.json' % args.environment
     sys.exit(os.EX_NOINPUT)
 
-if args.all:
-    for environ in config:
-        print "Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys()))
-        upload_files(environ, config[environ])
-else:
-    upload_files(args.environment, config[args.environment])
+def main():
+    if args.all:
+        for environ in config:
+            print "Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys()))
+            upload_files(environ, config[environ])
+    else:
+        upload_files(args.environment, config[args.environment])
+
+if __name__ == "__main__":
+    main()
