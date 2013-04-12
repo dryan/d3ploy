@@ -59,7 +59,8 @@ def notify(env, text):
         notification.setSubtitle_(env)
         notification.setInformativeText_(text)
         notification.setUserInfo_({})
-        notification.setSoundName_("NSUserNotificationDefaultSoundName")
+        if os.environ.get('D3PLOY_NC_SOUND'):
+            notification.setSoundName_("NSUserNotificationDefaultSoundName")
         notification.setDeliveryDate_(Foundation.NSDate.dateWithTimeInterval_sinceDate_(0, Foundation.NSDate.date()))
         NSUserNotificationCenter.defaultUserNotificationCenter().scheduleNotification_(notification)
         
