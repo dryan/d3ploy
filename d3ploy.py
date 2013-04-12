@@ -2,7 +2,34 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-import os, sys, json, re, hashlib, argparse
+import os, sys, json, re, hashlib, argparse, urllib, time
+
+# check for updates
+GIST_URL        =   'https://api.github.com/gists/5317321'
+CHECK_FILE      =   os.path.expanduser('~/.d3ploy-update-check')
+if not os.path.exists(CHECK_FILE):
+    try:
+        open(CHECK_FILE, 'w')
+    except IOError:
+        pass
+try:
+    last_checked    =   int(open(CHECK_FILE, 'r').read().strip())
+except ValueError:
+    last_checked    =   0
+now =   int(time.time())
+if now - last_checked > 86400:
+    # it has been a day since the last update check
+    try:
+        gist_hash       =   hashlib.md5(json.load(urllib.urlopen(GIST_URL)).get('files').get('d3ploy.py').get('content')).hexdigest()
+        script_hash     =   hashlib.md5(open(__file__, 'r').read()).hexdigest()
+        check_file      =   open(CHECK_FILE, 'w')
+        check_file.write('%d' % now)
+        check_file.flush()
+        check_file.close()
+        if not gist_hash == script_hash:
+            print 'There has been an update for d3ploy.\nPlease see https://gist.github.com/dryan/5317321 or run `pip install --upgrade d3ploy`.\n'
+    except:
+        pass
 
 try:
     import boto
