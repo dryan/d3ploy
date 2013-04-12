@@ -35,17 +35,29 @@ def notify(env, text):
         notification.setSoundName_("NSUserNotificationDefaultSoundName")
         notification.setDeliveryDate_(Foundation.NSDate.dateWithTimeInterval_sinceDate_(0, Foundation.NSDate.date()))
         NSUserNotificationCenter.defaultUserNotificationCenter().scheduleNotification_(notification)
+        
+# load the config file for this folder
+try:
+    config      =   open('deploy.json', 'r')
+except IOError:
+    if __name__ == "__main__":
+        print "deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information."
+    sys.exit(os.EX_NOINPUT)
+
+config          =   json.load(config)
+
+environments    =   config.keys()
     
 valid_acls      =   ["private", "public-read", "public-read-write", "authenticated-read"]
 
 parser          =   argparse.ArgumentParser()
-parser.add_argument('environment', help = "Which environment to deploy to", nargs = "?", type = str, default = "default",)
+parser.add_argument('environment', help = "Which environment to deploy to", nargs = "?", type = str, default = "default", choices = environments)
 parser.add_argument('-a', '--access-key', help = "AWS Access Key ID", type = str)
 parser.add_argument('-s', '--access-secret', help = "AWS Access Key Secret", type = str)
 parser.add_argument('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", action = "store_true", default = False)
 parser.add_argument('--all', help = "Upload to all environments", action = "store_true", default = False)
 parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
-parser.add_argument('--acl', help = "The ACL to apply to uploaded files. Must be one of: %s" % ' '.join(valid_acls), type = str, default = "public-read",)
+parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type = str, default = "public-read", choices = valid_acls)
 
 args            =   parser.parse_args()
 
@@ -161,16 +173,6 @@ def upload_files(env, config):
     notify(args.environment, "%d files %s updated and %d files %s removed" % (updated, verb, deleted, verb))
     if __name__ == "__main__":
         print ""
-
-# load the config file for this folder
-try:
-    config          =   open('deploy.json', 'r')
-except IOError:
-    if __name__ == "__main__":
-        print "deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information."
-    sys.exit(os.EX_NOINPUT)
-
-config              =   json.load(config)
 
 if not args.environment in config:
     if __name__ == "__main__":
