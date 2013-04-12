@@ -46,7 +46,7 @@ except IOError:
 
 config          =   json.load(config)
 
-environments    =   config.keys()
+environments    =   [str(item) for item in config.keys()]
     
 valid_acls      =   ["private", "public-read", "public-read-write", "authenticated-read"]
 
