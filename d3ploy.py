@@ -27,14 +27,16 @@ if now - last_checked > 86400:
         check_file.flush()
         check_file.close()
         if not gist_hash == script_hash:
-            print 'There has been an update for d3ploy.\nPlease see https://gist.github.com/dryan/5317321 or run `pip install --upgrade d3ploy`.\n'
+            sys.stdout.write('There has been an update for d3ploy.\nPlease see https://gist.github.com/dryan/5317321 or run `pip install --upgrade d3ploy`.\n')
+            sys.stdout.flush()
     except:
         pass
 
 try:
     import boto
 except ImportError:
-    print "Please install boto. `pip install boto`"
+    sys.stdout.write("Please install boto. `pip install boto`\n")
+    sys.stdout.flush()
     sys.exit(os.EX_UNAVAILABLE)
     
 try:
@@ -51,8 +53,8 @@ if notifications:
         notifications   =   False
         
 def notify(env, text):
-    if __name__ == "__main__":
-        print text
+    sys.stdout.write(text + '\n')
+    sys.stdout.flush()
     if notifications:
         notification    =   NSUserNotification.alloc().init()
         notification.setTitle_('d3ploy')
@@ -68,8 +70,8 @@ def notify(env, text):
 try:
     config      =   open('deploy.json', 'r')
 except IOError:
-    if __name__ == "__main__":
-        print "deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information."
+    sys.stdout.write("deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information.\n")
+    sys.stdout.flush()
     sys.exit(os.EX_NOINPUT)
 
 config          =   json.load(config)
@@ -106,13 +108,13 @@ if AWS_SECRET is None:
     AWS_SECRET  =   os.environ.get('AWS_SECRET_ACCESS_KEY')
     
 def upload_files(env, config):
-    if __name__ == "__main__":
-        print 'Using settings for "%s" environment' % env
+    sys.stdout.write('Using settings for "%s" environment\n' % env)
+    sys.stdout.flush()
     
     bucket              =   config.get('bucket')
     if not bucket:
-        if __name__ == "__main__":
-            print 'A bucket to upload to was not specified for "%s" environment' % args.environment
+        sys.stdout.write('A bucket to upload to was not specified for "%s" environment\n' % args.environment)
+        sys.stdout.flush()
         sys.exit(os.EX_NOINPUT)
 
     KEY         =   config.get('aws_key', AWS_KEY)
@@ -120,8 +122,8 @@ def upload_files(env, config):
     SECRET      =   config.get('aws_secret', AWS_SECRET)
     
     if KEY is None or SECRET is None:
-        if __name__ == "__main__":
-            print "AWS credentials were not found. See https://gist.github.com/dryan/5317321 for more information."
+        sys.stdout.write("AWS credentials were not found. See https://gist.github.com/dryan/5317321 for more information.\n")
+        sys.stdout.flush()
         sys.exit(os.EX_NOINPUT)
     
     s3connection        =   boto.connect_s3(KEY, SECRET)
@@ -130,8 +132,8 @@ def upload_files(env, config):
     try:
         s3bucket        =   s3connection.get_bucket(bucket)
     except boto.exception.S3ResponseError:
-        if __name__ == "__main__":
-            print 'Bucket "%s" could not be retrieved with the specified credentials' % bucket
+        sys.stdout.write('Bucket "%s" could not be retrieved with the specified credentials\n' % bucket)
+        sys.stdout.flush()
         sys.exit(os.EX_NOINPUT)
 
     # get the rest of the options
@@ -178,8 +180,8 @@ def upload_files(env, config):
                 break
             md5.update(data)
         if s3key is None or args.force or not s3key.etag.strip('"') == md5.hexdigest():
-            if __name__ == "__main__":
-                print 'Copying %s to %s%s' % (filename, bucket, keyname)
+            sys.stdout.write('Copying %s to %s%s\n' % (filename, bucket, keyname))
+            sys.stdout.flush()
             updated     +=  1
             if args.dry_run:
                 continue
@@ -190,28 +192,28 @@ def upload_files(env, config):
         
     for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
         if not key.name in keynames:
-            if __name__ == "__main__":
-                print 'Deleting %s/%s' % (bucket, key.name.lstrip('/'))
+            sys.stdout.write('Deleting %s/%s\n' % (bucket, key.name.lstrip('/')))
+            sys.stdout.flush()
             deleted     +=  1
             if args.dry_run:
                 continue
             key.delete()
         
     verb    =   "would be" if args.dry_run else "were"
-    notify(args.environment, "%d files %s updated and %d files %s removed" % (updated, verb, deleted, verb))
-    if __name__ == "__main__":
-        print ""
+    notify(args.environment, "%d files %s updated and %d files %s removed\n" % (updated, verb, deleted, verb))
+    sys.stdout.write("")
+    sys.stdout.flush()
 
 if not args.environment in config:
-    if __name__ == "__main__":
-        print 'The "%s" environment was not found in deploy.json' % args.environment
+    sys.stdout.write('The "%s" environment was not found in deploy.json\n' % args.environment)
+    sys.stdout.flush()
     sys.exit(os.EX_NOINPUT)
 
 def main():
     if args.all:
         for environ in config:
-            if __name__ == "__main__":
-                print "Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys()))
+            sys.stdout.write("Uploading environment %d of %d\n" % (config.keys().index(environ) + 1, len(config.keys())))
+            sys.stdout.flush()
             upload_files(environ, config[environ])
     else:
         upload_files(args.environment, config[args.environment])
