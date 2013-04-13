@@ -85,6 +85,7 @@ parser.add_argument('environment', help = "Which environment to deploy to", narg
 parser.add_argument('-a', '--access-key', help = "AWS Access Key ID", type = str)
 parser.add_argument('-s', '--access-secret', help = "AWS Access Key Secret", type = str)
 parser.add_argument('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", action = "store_true", default = False)
+parser.add_argument('--no-delete', help = "Don't remove orphaned files from S3", action = "store_true", default = False)
 parser.add_argument('--all', help = "Upload to all environments", action = "store_true", default = False)
 parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
 parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type = str, default = "public-read", choices = valid_acls)
@@ -189,15 +190,16 @@ def upload_files(env, config):
                 s3key   =   s3bucket.new_key(keyname)
             s3key.set_contents_from_filename(filename)
             s3key.set_acl(args.acl)
-        
-    for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
-        if not key.name in keynames:
-            sys.stdout.write('Deleting %s/%s\n' % (bucket, key.name.lstrip('/')))
-            sys.stdout.flush()
-            deleted     +=  1
-            if args.dry_run:
-                continue
-            key.delete()
+    
+    if not args.no_delete:
+        for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
+            if not key.name in keynames:
+                sys.stdout.write('Deleting %s/%s\n' % (bucket, key.name.lstrip('/')))
+                sys.stdout.flush()
+                deleted     +=  1
+                if args.dry_run:
+                    continue
+                key.delete()
         
     verb    =   "would be" if args.dry_run else "were"
     notify(args.environment, "%d files %s updated and %d files %s removed\n" % (updated, verb, deleted, verb))
