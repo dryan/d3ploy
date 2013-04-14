@@ -15,7 +15,7 @@ ERROR_COLOR     =   '\033[01;31m'
 ALERT_COLOR     =   '\033[01;33m'
 
 def alert(text, error_code = None, color = None):
-    if error_code:
+    if error_code is not None:
         sys.stderr.write('%s%s%s\n' % (color or ERROR_COLOR, text, DEFAULT_COLOR))
         sys.stderr.flush()
         sys.exit(error_code)
