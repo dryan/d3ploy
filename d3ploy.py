@@ -4,6 +4,17 @@
 
 import os, sys, json, re, hashlib, argparse, urllib, time
 
+def alert(text, error_code = None):
+    defaultColor    =   '\033[0;0m'
+    errorColor      =   '\033[01;31m'
+    if error_code:
+        sys.stderr.write('%s%s%s\n' % (errorColor, text, defaultColor))
+        sys.stderr.flush()
+        sys.exit(error_code)
+    else:
+        sys.stdout.write('%s%s\n' % (defaultColor, text))
+        sys.stdout.flush()
+
 # check for updates
 GIST_URL        =   'https://api.github.com/gists/5317321'
 CHECK_FILE      =   os.path.expanduser('~/.d3ploy-update-check')
@@ -27,17 +38,14 @@ if now - last_checked > 86400:
         check_file.flush()
         check_file.close()
         if not gist_hash == script_hash:
-            sys.stdout.write('There has been an update for d3ploy.\nPlease see https://gist.github.com/dryan/5317321 or run `pip install --upgrade d3ploy`.\n')
-            sys.stdout.flush()
+            alert('There has been an update for d3ploy.\nPlease see https://gist.github.com/dryan/5317321 or run `pip install --upgrade d3ploy`.')
     except:
         pass
 
 try:
     import boto
 except ImportError:
-    sys.stdout.write("Please install boto. `pip install boto`\n")
-    sys.stdout.flush()
-    sys.exit(os.EX_UNAVAILABLE)
+    alert("Please install boto. `pip install boto`", os.EX_UNAVAILABLE)
     
 try:
     import Foundation, objc
@@ -53,8 +61,7 @@ if notifications:
         notifications   =   False
         
 def notify(env, text):
-    sys.stdout.write(text + '\n')
-    sys.stdout.flush()
+    alert(text)
     if notifications:
         notification    =   NSUserNotification.alloc().init()
         notification.setTitle_('d3ploy')
@@ -70,9 +77,7 @@ def notify(env, text):
 try:
     config      =   open('deploy.json', 'r')
 except IOError:
-    sys.stdout.write("deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information.\n")
-    sys.stdout.flush()
-    sys.exit(os.EX_NOINPUT)
+    alert("deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information.", os.EX_NOINPUT)
 
 config          =   json.load(config)
 
@@ -94,8 +99,7 @@ parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type 
 args            =   parser.parse_args()
 
 if args.no_delete:
-    sys.stdout.write('--no-delete has been deprecated. Orphaned files will only be deleted if --delete is specified.')
-    sys.stdout.flush()
+    alert('--no-delete has been deprecated. Orphaned files will only be deleted if --delete is specified.')
 
 AWS_KEY         =   args.access_key
 AWS_SECRET      =   args.access_secret
@@ -114,23 +118,18 @@ if AWS_SECRET is None:
     AWS_SECRET  =   os.environ.get('AWS_SECRET_ACCESS_KEY')
     
 def upload_files(env, config):
-    sys.stdout.write('Using settings for "%s" environment\n' % env)
-    sys.stdout.flush()
+    alert('Using settings for "%s" environment' % env)
     
     bucket              =   config.get('bucket')
     if not bucket:
-        sys.stdout.write('A bucket to upload to was not specified for "%s" environment\n' % args.environment)
-        sys.stdout.flush()
-        sys.exit(os.EX_NOINPUT)
+        alert('A bucket to upload to was not specified for "%s" environment' % args.environment, os.EX_NOINPUT)
 
     KEY         =   config.get('aws_key', AWS_KEY)
 
     SECRET      =   config.get('aws_secret', AWS_SECRET)
     
     if KEY is None or SECRET is None:
-        sys.stdout.write("AWS credentials were not found. See https://gist.github.com/dryan/5317321 for more information.\n")
-        sys.stdout.flush()
-        sys.exit(os.EX_NOINPUT)
+        alert("AWS credentials were not found. See https://gist.github.com/dryan/5317321 for more information.", os.EX_NOINPUT)
     
     s3connection        =   boto.connect_s3(KEY, SECRET)
 
@@ -138,9 +137,7 @@ def upload_files(env, config):
     try:
         s3bucket        =   s3connection.get_bucket(bucket)
     except boto.exception.S3ResponseError:
-        sys.stdout.write('Bucket "%s" could not be retrieved with the specified credentials\n' % bucket)
-        sys.stdout.flush()
-        sys.exit(os.EX_NOINPUT)
+        alert('Bucket "%s" could not be retrieved with the specified credentials' % bucket, os.EX_NOINPUT)
 
     # get the rest of the options
     local_path          =   config.get('local_path', '.')
@@ -186,8 +183,7 @@ def upload_files(env, config):
                 break
             md5.update(data)
         if s3key is None or args.force or not s3key.etag.strip('"') == md5.hexdigest():
-            sys.stdout.write('Copying %s to %s%s\n' % (filename, bucket, keyname))
-            sys.stdout.flush()
+            alert('Copying %s to %s%s' % (filename, bucket, keyname))
             updated     +=  1
             if args.dry_run:
                 continue
@@ -199,30 +195,25 @@ def upload_files(env, config):
     if args.delete:
         for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
             if not key.name in keynames:
-                sys.stdout.write('Deleting %s/%s\n' % (bucket, key.name.lstrip('/')))
-                sys.stdout.flush()
+                alert('Deleting %s/%s' % (bucket, key.name.lstrip('/')))
                 deleted     +=  1
                 if args.dry_run:
                     continue
                 key.delete()
         
     verb    =   "would be" if args.dry_run else "were"
-    notify(args.environment, "%d files %s updated\n" % (updated, verb))
+    notify(args.environment, "%d files %s updated" % (updated, verb))
     if args.delete:
-        notify(args.environment, "%d files %s removed\n" % (deleted, verb))
-    sys.stdout.write("")
-    sys.stdout.flush()
+        notify(args.environment, "%d files %s removed" % (deleted, verb))
+    alert("")
 
 if not args.environment in config:
-    sys.stdout.write('The "%s" environment was not found in deploy.json\n' % args.environment)
-    sys.stdout.flush()
-    sys.exit(os.EX_NOINPUT)
+    alert('The "%s" environment was not found in deploy.json' % args.environment, os.EX_NOINPUT)
 
 def main():
     if args.all:
         for environ in config:
-            sys.stdout.write("Uploading environment %d of %d\n" % (config.keys().index(environ) + 1, len(config.keys())))
-            sys.stdout.flush()
+            alert("Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys())))
             upload_files(environ, config[environ])
     else:
         upload_files(args.environment, config[args.environment])
