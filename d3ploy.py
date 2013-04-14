@@ -18,7 +18,7 @@ def alert(text, error_code = None, color = None):
         sys.stdout.flush()
 
 # check for updates
-GIST_URL        =   'https://api.github.com/gists/5317321'
+GIST_URL        =   'https://api.github.com/repos/dryan/d3ploy/contents/d3ploy.py'
 CHECK_FILE      =   os.path.expanduser('~/.d3ploy-update-check')
 if not os.path.exists(CHECK_FILE):
     try:
@@ -33,14 +33,14 @@ now =   int(time.time())
 if now - last_checked > 86400:
     # it has been a day since the last update check
     try:
-        gist_hash       =   hashlib.md5(json.load(urllib.urlopen(GIST_URL)).get('files').get('d3ploy.py').get('content')).hexdigest()
+        gist_hash       =   hashlib.md5(json.load(urllib.urlopen(GIST_URL)).get('content')).hexdigest()
         script_hash     =   hashlib.md5(open(__file__, 'r').read()).hexdigest()
         check_file      =   open(CHECK_FILE, 'w')
         check_file.write('%d' % now)
         check_file.flush()
         check_file.close()
         if not gist_hash == script_hash:
-            alert('There has been an update for d3ploy.\nPlease see https://gist.github.com/dryan/5317321 or run `pip install --upgrade d3ploy`.')
+            alert('There has been an update for d3ploy.\nPlease see https://github.com/dryan/d3ploy or run `pip install --upgrade d3ploy`.', color = ALERT_COLOR)
     except:
         pass
 
