@@ -80,7 +80,12 @@ def notify(env, text):
             notification.setSoundName_("NSUserNotificationDefaultSoundName")
         notification.setDeliveryDate_(Foundation.NSDate.dateWithTimeInterval_sinceDate_(0, Foundation.NSDate.date()))
         NSUserNotificationCenter.defaultUserNotificationCenter().scheduleNotification_(notification)
-        
+
+if '-v' in sys.argv or '--version' in sys.argv:
+    # do this here before any of the config checks are run
+    alert('d3ploy %s' % VERSION, os.EX_OK, DEFAULT_COLOR)
+    
+
 # load the config file for this folder
 try:
     config      =   open('deploy.json', 'r')
@@ -106,9 +111,6 @@ parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type 
 parser.add_argument('-v', '--version', help = "Print the script version and exit", action = "store_true", default = False)
 
 args            =   parser.parse_args()
-
-if args.version:
-    alert('d3ploy %s' % VERSION, os.EX_OK, DEFAULT_COLOR)
 
 if args.no_delete:
     alert('--no-delete has been deprecated. Orphaned files will only be deleted if --delete is specified.')
