@@ -4,15 +4,17 @@
 
 import os, sys, json, re, hashlib, argparse, urllib, time
 
-def alert(text, error_code = None):
-    defaultColor    =   '\033[0;0m'
-    errorColor      =   '\033[01;31m'
+DEFAULT_COLOR   =   '\033[0;0m'
+ERROR_COLOR     =   '\033[01;31m'
+ALERT_COLOR     =   '\033[01;33m'
+
+def alert(text, error_code = None, color = None):
     if error_code:
-        sys.stderr.write('%s%s%s\n' % (errorColor, text, defaultColor))
+        sys.stderr.write('%s%s%s\n' % (color or ERROR_COLOR, text, DEFAULT_COLOR))
         sys.stderr.flush()
         sys.exit(error_code)
     else:
-        sys.stdout.write('%s%s\n' % (defaultColor, text))
+        sys.stdout.write('%s%s%s\n' % (color or DEFAULT_COLOR, text, DEFAULT_COLOR))
         sys.stdout.flush()
 
 # check for updates
