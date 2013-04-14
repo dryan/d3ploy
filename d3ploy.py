@@ -2,6 +2,8 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
+VERSION =   '1.1.0'
+
 import os, sys, json, re, hashlib, argparse, urllib, time
 
 # disable import warnings
@@ -101,8 +103,12 @@ parser.add_argument('--delete', help = "Remove orphaned files from S3", action =
 parser.add_argument('--all', help = "Upload to all environments", action = "store_true", default = False)
 parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
 parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type = str, default = "public-read", choices = valid_acls)
+parser.add_argument('-v', '--version', help = "Print the script version and exit", action = "store_true", default = False)
 
 args            =   parser.parse_args()
+
+if args.version:
+    alert('d3ploy %s' % VERSION, os.EX_OK, DEFAULT_COLOR)
 
 if args.no_delete:
     alert('--no-delete has been deprecated. Orphaned files will only be deleted if --delete is specified.')
