@@ -86,11 +86,16 @@ parser.add_argument('-a', '--access-key', help = "AWS Access Key ID", type = str
 parser.add_argument('-s', '--access-secret', help = "AWS Access Key Secret", type = str)
 parser.add_argument('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", action = "store_true", default = False)
 parser.add_argument('--no-delete', help = "Don't remove orphaned files from S3", action = "store_true", default = False)
+parser.add_argument('--delete', help = "Remove orphaned files from S3", action = "store_true", default = False)
 parser.add_argument('--all', help = "Upload to all environments", action = "store_true", default = False)
 parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
 parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type = str, default = "public-read", choices = valid_acls)
 
 args            =   parser.parse_args()
+
+if args.no_delete:
+    sys.stdout.write('--no-delete has been deprecated. Orphaned files will only be deleted if --delete is specified.')
+    sys.stdout.flush()
 
 AWS_KEY         =   args.access_key
 AWS_SECRET      =   args.access_secret
@@ -191,7 +196,7 @@ def upload_files(env, config):
             s3key.set_contents_from_filename(filename)
             s3key.set_acl(args.acl)
     
-    if not args.no_delete:
+    if args.delete:
         for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
             if not key.name in keynames:
                 sys.stdout.write('Deleting %s/%s\n' % (bucket, key.name.lstrip('/')))
@@ -202,7 +207,9 @@ def upload_files(env, config):
                 key.delete()
         
     verb    =   "would be" if args.dry_run else "were"
-    notify(args.environment, "%d files %s updated and %d files %s removed\n" % (updated, verb, deleted, verb))
+    notify(args.environment, "%d files %s updated\n" % (updated, verb))
+    if args.delete:
+        notify(args.environment, "%d files %s removed\n" % (deleted, verb))
     sys.stdout.write("")
     sys.stdout.flush()
 
