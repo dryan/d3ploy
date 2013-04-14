@@ -4,6 +4,10 @@
 
 import os, sys, json, re, hashlib, argparse, urllib, time
 
+# disable import warnings
+import warnings
+warnings.filterwarnings('ignore')
+
 DEFAULT_COLOR   =   '\033[0;0m'
 ERROR_COLOR     =   '\033[01;31m'
 ALERT_COLOR     =   '\033[01;33m'
