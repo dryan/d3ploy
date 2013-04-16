@@ -2,9 +2,9 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.1.1'
+VERSION =   '1.1.2'
 
-import os, sys, json, re, hashlib, argparse, urllib, time
+import os, sys, json, re, hashlib, argparse, urllib, time, base64
 
 # disable import warnings
 import warnings
@@ -39,14 +39,18 @@ now =   int(time.time())
 if now - last_checked > 86400:
     # it has been a day since the last update check
     try:
-        gist_hash       =   hashlib.md5(json.load(urllib.urlopen(GIST_URL)).get('content')).hexdigest()
-        script_hash     =   hashlib.md5(open(__file__, 'r').read()).hexdigest()
-        check_file      =   open(CHECK_FILE, 'w')
-        check_file.write('%d' % now)
-        check_file.flush()
-        check_file.close()
-        if not gist_hash == script_hash:
-            alert('There has been an update for d3ploy.\nPlease see https://github.com/dryan/d3ploy or run `pip install --upgrade d3ploy`.', color = ALERT_COLOR)
+        gh_data         =   json.load(urllib.urlopen(GIST_URL))
+        gh_contents     =   gh_data.get('content')
+        if gh_data.get('encoding') == 'base64':
+            gh_contents =   base64.b64decode(gh_contents)
+        version_finder  =   re.compile(r"VERSION\s+=\s+'(\d+\.\d+\.\d+)'")
+        gh_version      =   version_finder.findall(gh_contents)
+        if len(gh_version):
+            gh_version  =   gh_version.pop()
+        else:
+            gh_version  =   '0.0.0'
+        if not gh_version == VERSION:
+            alert('There has been an update for d3ploy. Version %s is now available.\nPlease see https://github.com/dryan/d3ploy or run `pip install --upgrade d3ploy`.' % gh_version, color = ALERT_COLOR)
     except:
         pass
 
