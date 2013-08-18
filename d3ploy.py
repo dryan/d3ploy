@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.1.2'
+VERSION =   '1.1.3'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64
 
