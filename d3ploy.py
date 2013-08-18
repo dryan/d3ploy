@@ -167,17 +167,18 @@ def upload_files(env, config):
         excludes        =   [excludes]
     
     exclude_regexes     =   [re.compile(r'%s' % s) for s in excludes]
-    
+
     files               =   []
 
     for dirname, dirnames, filenames in os.walk(local_path):
         for filename in filenames:
             filename    =   os.path.join(dirname, filename)
+            excluded    =   False
             for regex in exclude_regexes:
-                if regex.match(filename):
-                    continue
-                    continue
-            files.append(filename)
+                if regex.search(filename):
+                    excluded    =   True
+            if not excluded:
+                files.append(filename)
         
         for svc_directory in svc_directories:
             if svc_directory in dirnames:
