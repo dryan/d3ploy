@@ -94,7 +94,7 @@ if '-v' in sys.argv or '--version' in sys.argv:
 try:
     config      =   open('deploy.json', 'r')
 except IOError:
-    alert("deploy.json file is missing. See https://gist.github.com/dryan/5317321 for more information.", os.EX_NOINPUT)
+    alert("deploy.json file is missing. See http://dryan.github.io/d3ploy for more information.", os.EX_NOINPUT)
 
 config          =   json.load(config)
 
