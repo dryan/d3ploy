@@ -10,9 +10,10 @@ To use, run `d3ploy`. Additional arguments may be specified. Run `d3ploy --help`
 Your AWS credentials can be set in a number of ways:
 
 1. In a ".boto" file in your home folder. See [Boto's documentation](http://docs.pythonboto.org/en/latest/boto_config_tut.html) for how to create this file.
-2. In the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY".
-3. Passed in as arguments. `-a` or `--access-key` for the Access Key ID and `-s` or `--access-secret` for the Secret Access Key.
-4. In the per-enviroment configuration outlined below.
+2. In a ".aws" file in the folder you're running `d3ploy` in. Follows the same format as ".boto".
+3. In the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY".
+4. Passed in as arguments. `-a` or `--access-key` for the Access Key ID and `-s` or `--access-secret` for the Secret Access Key.
+5. In the per-enviroment configuration outlined below.
 
 ## Configuration options
 

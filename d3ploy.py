@@ -2,9 +2,9 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.1.3'
+VERSION =   '1.1.4'
 
-import os, sys, json, re, hashlib, argparse, urllib, time, base64
+import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser
 
 # disable import warnings
 import warnings
@@ -121,6 +121,16 @@ if args.no_delete:
 
 AWS_KEY         =   args.access_key
 AWS_SECRET      =   args.access_secret
+
+# look for credentials file in this directory
+if os.path.exists('.aws'):
+    local_config    =   ConfigParser.ConfigParser()
+    local_config.read('.aws')
+    if local_config.has_section('Credentials'):
+        if AWS_KEY is None:
+            AWS_KEY     =   local_config.get('Credentials', 'aws_access_key_id')
+        if AWS_SECRET is None:
+            AWS_SECRET  =   local_config.get('Credentials', 'aws_secret_access_key')
 
 # lookup global AWS keys if needed
 if AWS_KEY is None:
