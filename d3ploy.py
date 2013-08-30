@@ -4,7 +4,7 @@
 
 VERSION =   '1.1.4'
 
-import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser
+import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes
 
 # disable import warnings
 import warnings
@@ -113,6 +113,7 @@ parser.add_argument('--all', help = "Upload to all environments", action = "stor
 parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
 parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type = str, default = "public-read", choices = valid_acls)
 parser.add_argument('-v', '--version', help = "Print the script version and exit", action = "store_true", default = False)
+parser.add_argument('-z', '--gzip', help = "gzip files before uploading", action = "store_true", default = False)
 
 args            =   parser.parse_args()
 
@@ -206,10 +207,13 @@ def upload_files(env, config):
         s3key           =   s3bucket.get_key(keyname)
         local_file      =   open(filename, 'r')
         md5             =   hashlib.md5()
+        is_gzipped      =   False
         while True:
             data        =   local_file.read(8192)
             if not data:
                 break
+            if data.find('\x1f\x8b') == 0:
+                is_gzipped  =   True
             md5.update(data)
         if s3key is None or args.force or not s3key.etag.strip('"') == md5.hexdigest():
             alert('Copying %s to %s%s' % (filename, bucket, keyname))
@@ -218,9 +222,22 @@ def upload_files(env, config):
                 continue
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
-            s3key.set_contents_from_filename(filename)
+            headers     =   {}
+            if is_gzipped or args.gzip or config.get('gzip', False):
+                headers['Content-Encoding'] =   'gzip'
+            if args.gzip and not mimetypes.guess_type(filename)[1] == 'gzip':
+                f_in    =   open(filename, 'rb')
+                f_out   =   gzip.open(filename + '.gz', 'wb')
+                f_out.writelines(f_in)
+                f_out.close()
+                f_in.close()
+                filename    =   f_out.name
+            s3key.set_contents_from_filename(filename, headers = headers)
             s3key.set_acl(args.acl)
-    
+            if not filename in files:
+                # this filename was modified by gzipping
+                os.remove(filename)
+
     if args.delete:
         for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
             if not key.name in keynames:

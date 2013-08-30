@@ -28,7 +28,13 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "aws_key" to specify the AWS Access Key ID to use for uploading
 * "aws_secret" to specify the AWS Secret Access Key to use for uploading
 * "exclude" to specify patterns to not upload
+* "gzip" to automatically gzip files before uploading to S3
 
 ## OS X Notification Center
 
 d3ploy will attempt to alert you via Notification Center when it is completed. To enable this feature, you need pyobjc; run `pip install pyobjc` to install.
+
+## Caution About Using the gzip Option
+
+Almost all modern browsers will support files that are served with gzip compression. The notable exception is non-smartphone mobile browsers. If you have significant traffic over those browsers, it is advisable to avoid the gzip option.
+
