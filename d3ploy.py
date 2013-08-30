@@ -224,20 +224,15 @@ def upload_files(env, config):
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
             headers     =   {}
-            if is_gzipped or args.gzip or config.get('gzip', False):
+            if is_gzipped or mimetypes.guess_type(filename)[1] == 'gzip':
                 headers['Content-Encoding'] =   'gzip'
-            if args.gzip and not mimetypes.guess_type(filename)[1] == 'gzip':
-                f_in    =   open(filename, 'rb')
-                f_out   =   gzip.open(filename + '.gz', 'wb')
-                f_out.writelines(f_in)
-                f_out.close()
-                f_in.close()
-                filename    =   f_out.name
-            s3key.set_contents_from_filename(filename, headers = headers)
+            s3key.set_metadata('d3ploy-hash', md5)
+            s3key.set_contents_from_file(local_file, headers = headers)
             s3key.set_acl(args.acl)
-            if not filename in files:
-                # this filename was modified by gzipping
-                os.remove(filename)
+        if not filename in files:
+            # this filename was modified by gzipping
+            os.remove(filename)
+        local_file.close()
 
     if args.delete or config.get('delete', False):
         for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
