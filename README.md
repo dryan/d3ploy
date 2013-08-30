@@ -19,7 +19,7 @@ Your AWS credentials can be set in a number of ways:
 
 When you run `d3ploy`, it will look in the current directory for a "deploy.json" file that defines the different deploy enviroments and their options. At a minimum, a "default" environment is required and is the environment used if you pass no arguments to `d3ploy`.
 
-You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`.
+You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`. Environments besides "default" will inherit any settings not explicitly set from the default configuration.
 
 The only required option for any environment is "bucket" for the S3 bucket to upload to. Additionally, you may define:
 
