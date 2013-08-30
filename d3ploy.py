@@ -260,8 +260,14 @@ def main():
     if args.all:
         for environ in config:
             alert("Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys())))
-            upload_files(environ, config[environ])
+            environ_config  =   config[environ]
+            if not environ == "default":
+                environ_config  =   dict(config['default'].items() + config[environ].items())
+            upload_files(environ, environ_config)
     else:
+        environ_config  =   config[args.environment]
+        if not args.environment == "default":
+            environ_config  =   dict(config['default'].items() + config[args.environment].items())
         upload_files(args.environment, config[args.environment])
 
 if __name__ == "__main__":
