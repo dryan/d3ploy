@@ -268,7 +268,7 @@ def main():
         environ_config  =   config[args.environment]
         if not args.environment == "default":
             environ_config  =   dict(config['default'].items() + config[args.environment].items())
-        upload_files(args.environment, config[args.environment])
+        upload_files(args.environment, environ_config)
 
 if __name__ == "__main__":
     main()
