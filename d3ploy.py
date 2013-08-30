@@ -107,7 +107,6 @@ parser.add_argument('environment', help = "Which environment to deploy to", narg
 parser.add_argument('-a', '--access-key', help = "AWS Access Key ID", type = str)
 parser.add_argument('-s', '--access-secret', help = "AWS Access Key Secret", type = str)
 parser.add_argument('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", action = "store_true", default = False)
-parser.add_argument('--no-delete', help = "Don't remove orphaned files from S3", action = "store_true", default = False)
 parser.add_argument('--delete', help = "Remove orphaned files from S3", action = "store_true", default = False)
 parser.add_argument('--all', help = "Upload to all environments", action = "store_true", default = False)
 parser.add_argument('-n', '--dry-run', help = "Show which files would be updated without uploading to S3", action = "store_true", default = False)
@@ -116,9 +115,6 @@ parser.add_argument('-v', '--version', help = "Print the script version and exit
 parser.add_argument('-z', '--gzip', help = "gzip files before uploading", action = "store_true", default = False)
 
 args            =   parser.parse_args()
-
-if args.no_delete:
-    alert('--no-delete has been deprecated. Orphaned files will only be deleted if --delete is specified.')
 
 AWS_KEY         =   args.access_key
 AWS_SECRET      =   args.access_secret
