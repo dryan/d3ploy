@@ -113,6 +113,7 @@ parser.add_argument('-n', '--dry-run', help = "Show which files would be updated
 parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type = str, default = "public-read", choices = valid_acls)
 parser.add_argument('-v', '--version', help = "Print the script version and exit", action = "store_true", default = False)
 parser.add_argument('-z', '--gzip', help = "gzip files before uploading", action = "store_true", default = False)
+parser.add_argument('--confirm', help = "Confirm each file before deleting. Only works when --delete is set.", action = "store_true", default = False)
 
 args            =   parser.parse_args()
 
@@ -202,16 +203,20 @@ def upload_files(env, config):
         keynames.append(keyname.lstrip('/'))
         s3key           =   s3bucket.get_key(keyname)
         local_file      =   open(filename, 'r')
-        md5             =   hashlib.md5()
-        is_gzipped      =   False
-        while True:
-            data        =   local_file.read(8192)
-            if not data:
-                break
-            if data.find('\x1f\x8b') == 0:
-                is_gzipped  =   True
-            md5.update(data)
-        if s3key is None or args.force or not s3key.etag.strip('"') == md5.hexdigest():
+        md5             =   boto.utils.compute_md5(local_file)[0] # this needs to be computed before gzipping
+        local_file.close()
+        if args.gzip or config.get('gzip', False):
+            if not mimetypes.guess_type(filename)[1] == 'gzip':
+                f_in    =   open(filename, 'rb')
+                f_out   =   gzip.open(filename + '.gz', 'wb')
+                f_out.writelines(f_in)
+                f_out.close()
+                f_in.close()
+                filename    =   f_out.name
+        local_file      =   open(filename, 'r')
+        is_gzipped      =   local_file.read().find('\x1f\x8b') == 0
+        local_file.seek(0)
+        if s3key is None or args.force or not s3key.get_metadata('d3ploy-hash') == md5:
             alert('Copying %s to %s%s' % (filename, bucket, keyname))
             updated     +=  1
             if args.dry_run:
@@ -234,18 +239,25 @@ def upload_files(env, config):
                 # this filename was modified by gzipping
                 os.remove(filename)
 
-    if args.delete:
+    if args.delete or config.get('delete', False):
         for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
             if not key.name in keynames:
-                alert('Deleting %s/%s' % (bucket, key.name.lstrip('/')))
-                deleted     +=  1
-                if args.dry_run:
-                    continue
-                key.delete()
+                if args.confirm or config.get('confirm', False):
+                    confirmed   =   raw_input('Remove %s/%s [yN]: ' % (bucket, key.name.lstrip('/'))) in ["Y", "y"]
+                else:
+                    confirmed   =   True
+                if confirmed:
+                    alert('Deleting %s/%s' % (bucket, key.name.lstrip('/')))
+                    deleted     +=  1
+                    if args.dry_run:
+                        continue
+                    key.delete()
+                else:
+                    alert('Skipping removal of %s/%s' % (bucket, key.name.lstrip('/')))
         
     verb    =   "would be" if args.dry_run else "were"
     notify(args.environment, "%d files %s updated" % (updated, verb))
-    if args.delete:
+    if args.delete or config.get('delete', False):
         notify(args.environment, "%d files %s removed" % (deleted, verb))
     alert("")
 
