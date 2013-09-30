@@ -29,6 +29,7 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "aws_secret" to specify the AWS Secret Access Key to use for uploading
 * "exclude" to specify patterns to not upload
 * "gzip" to automatically gzip files before uploading to S3
+* "delete" to remove files on S3 that are not present in the local directory
 
 ## OS X Notification Center
 
