@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.2.3'
+VERSION =   '1.2.4'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes
 
@@ -231,7 +231,7 @@ def upload_files(env, config):
             headers     =   {}
             if is_gzipped or mimetypes.guess_type(filename)[1] == 'gzip':
                 headers['Content-Encoding'] =   'gzip'
-            if args.charset or config.get('charset', False) and mimetypes.guess_type(filename)[0].split('/')[0] == 'text':
+            if args.charset or config.get('charset', False) and mimetypes.guess_type(filename)[0] and mimetypes.guess_type(filename)[0].split('/')[0] == 'text':
             	headers['Content-Type']		=	str('%s;charset=%s' % (mimetypes.guess_type(filename)[0], args.charset or config.get('charset')))
             s3key.set_metadata('d3ploy-hash', md5)
             s3key.set_contents_from_file(local_file, headers = headers)
