@@ -30,6 +30,7 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "exclude" to specify patterns to not upload
 * "gzip" to automatically gzip files before uploading to S3
 * "delete" to remove files on S3 that are not present in the local directory
+* "charset" to set the charset flag on 'Content-Type' headers of text files
 
 ## OS X Notification Center
 

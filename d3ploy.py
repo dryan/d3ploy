@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.2.2'
+VERSION =   '1.2.3'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes
 
@@ -114,6 +114,7 @@ parser.add_argument('--acl', help = "The ACL to apply to uploaded files.", type 
 parser.add_argument('-v', '--version', help = "Print the script version and exit", action = "store_true", default = False)
 parser.add_argument('-z', '--gzip', help = "gzip files before uploading", action = "store_true", default = False)
 parser.add_argument('--confirm', help = "Confirm each file before deleting. Only works when --delete is set.", action = "store_true", default = False)
+parser.add_argument('--charset', help = "The charset header to add to text files", default = False)
 
 args            =   parser.parse_args()
 
@@ -205,6 +206,7 @@ def upload_files(env, config):
         local_file      =   open(filename, 'r')
         md5             =   boto.utils.compute_md5(local_file)[0] # this needs to be computed before gzipping
         local_file.close()
+
         if args.gzip or config.get('gzip', False):
             if not mimetypes.guess_type(filename)[1] == 'gzip':
                 f_in    =   open(filename, 'rb')
@@ -220,12 +222,17 @@ def upload_files(env, config):
             alert('Copying %s to %s%s' % (filename, bucket, keyname))
             updated     +=  1
             if args.dry_run:
+            	if not filename in files:
+            	    # this filename was modified by gzipping
+            	    os.remove(filename)
                 continue
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
             headers     =   {}
             if is_gzipped or mimetypes.guess_type(filename)[1] == 'gzip':
                 headers['Content-Encoding'] =   'gzip'
+            if args.charset or config.get('charset', False) and mimetypes.guess_type(filename)[0].split('/')[0] == 'text':
+            	headers['Content-Type']		=	str('%s;charset=%s' % (mimetypes.guess_type(filename)[0], args.charset or config.get('charset')))
             s3key.set_metadata('d3ploy-hash', md5)
             s3key.set_contents_from_file(local_file, headers = headers)
             s3key.set_acl(args.acl)
