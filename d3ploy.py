@@ -5,6 +5,7 @@
 VERSION =   '1.2.4'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes
+from xml.dom import minidom
 
 # disable import warnings
 import warnings
@@ -24,7 +25,7 @@ def alert(text, error_code = None, color = None):
         sys.stdout.flush()
 
 # check for updates
-GIST_URL        =   'https://api.github.com/repos/dryan/d3ploy/contents/d3ploy.py'
+PYPI_URL        =   'https://pypi.python.org/pypi?:action=doap&name=d3ploy'
 CHECK_FILE      =   os.path.expanduser('~/.d3ploy-update-check')
 if not os.path.exists(CHECK_FILE):
     try:
@@ -39,20 +40,16 @@ now =   int(time.time())
 if now - last_checked > 86400:
     # it has been a day since the last update check
     try:
-        gh_data         =   json.load(urllib.urlopen(GIST_URL))
-        gh_contents     =   gh_data.get('content')
-        if gh_data.get('encoding') == 'base64':
-            gh_contents =   base64.b64decode(gh_contents)
-        version_finder  =   re.compile(r"VERSION\s+=\s+'(\d+\.\d+\.\d+)'")
-        gh_version      =   version_finder.findall(gh_contents)
-        if len(gh_version):
-            gh_version  =   gh_version.pop()
-        else:
-            gh_version  =   '0.0.0'
-        if not gh_version == VERSION:
-            alert('There has been an update for d3ploy. Version %s is now available.\nPlease see https://github.com/dryan/d3ploy or run `pip install --upgrade d3ploy`.' % gh_version, color = ALERT_COLOR)
+        pypi_data       =    minidom.parse(urllib.urlopen(PYPI_URL))
+        pypi_version    =    pypi_data.getElementsByTagName('revision')[0].firstChild.data
+        if pypi_version > VERSION:
+            alert('There has been an update for d3ploy. Version %s is now available.\nPlease see https://github.com/dryan/d3ploy or run `pip install --upgrade d3ploy`.' % pypi_version, color = ALERT_COLOR)
     except:
         pass
+    check_file  =   open(CHECK_FILE, 'w')
+    check_file.write(str(now))
+    check_file.flush()
+    check_file.close()
 
 try:
     import boto
