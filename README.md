@@ -31,6 +31,24 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "gzip" to automatically gzip files before uploading to S3
 * "delete" to remove files on S3 that are not present in the local directory
 * "charset" to set the charset flag on 'Content-Type' headers of text files
+* "cache" to set the Cache-Control header for various mimetypes. See below for more.
+
+## Cache-Control Headers
+
+If you want to set Cache-Control headers on various files, add a `cache` object to your config file like:
+
+```
+"cache": {
+  "text/css": 2592000,
+  "application/javascript": 2592000,
+  "image/png": 22896000,
+  "image/jpeg": 22896000,
+  "image/webp": 22896000,
+  "image/gif": 22896000
+} 
+```
+
+Each key is the mimetype of the kind of file you want to have cached, with a value that is the seconds the `max-age` flag set to. In the above example, CSS and JavaScript files will be cached for 30 days while images will be cached for 1 year. For more about Cache-Control, read [Leverage Browser Caching](https://developers.google.com/speed/docs/insights/LeverageBrowserCaching).
 
 ## OS X Notification Center
 

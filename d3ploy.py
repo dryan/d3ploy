@@ -2,9 +2,9 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.2.4'
+VERSION =   '1.3.0'
 
-import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes
+import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile
 from xml.dom import minidom
 
 # disable import warnings
@@ -195,7 +195,8 @@ def upload_files(env, config):
     keynames            =   []
     updated             =   0
     deleted             =   0
-            
+    caches              =   config.get('cache', {})
+
     for filename in files:
         keyname         =   '/'.join([bucket_path.rstrip('/'), prefix_regex.sub('', filename).lstrip('/')])
         keynames.append(keyname.lstrip('/'))
@@ -219,17 +220,20 @@ def upload_files(env, config):
             alert('Copying %s to %s%s' % (filename, bucket, keyname))
             updated     +=  1
             if args.dry_run:
-            	if not filename in files:
-            	    # this filename was modified by gzipping
-            	    os.remove(filename)
+                if not filename in files:
+                    # this filename was modified by gzipping
+                    os.remove(filename)
                 continue
             if s3key is None:
                 s3key   =   s3bucket.new_key(keyname)
             headers     =   {}
-            if is_gzipped or mimetypes.guess_type(filename)[1] == 'gzip':
+            mimetype    =   mimetypes.guess_type(filename)
+            if is_gzipped or mimetype[1] == 'gzip':
                 headers['Content-Encoding'] =   'gzip'
-            if args.charset or config.get('charset', False) and mimetypes.guess_type(filename)[0] and mimetypes.guess_type(filename)[0].split('/')[0] == 'text':
-            	headers['Content-Type']		=	str('%s;charset=%s' % (mimetypes.guess_type(filename)[0], args.charset or config.get('charset')))
+            if args.charset or config.get('charset', False) and mimetype[0] and mimetype[0].split('/')[0] == 'text':
+                headers['Content-Type']     =   str('%s;charset=%s' % (mimetype[0], args.charset or config.get('charset')))
+            if mimetype[0] in caches.keys():
+                s3key.set_metadata('Cache-Control', str('max-age=%s, public' % str(caches.get(mimetype[0]))))
             s3key.set_metadata('d3ploy-hash', md5)
             s3key.set_contents_from_file(local_file, headers = headers)
             s3key.set_acl(args.acl)
