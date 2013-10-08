@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.3.0'
+VERSION =   '1.3.1'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile
 from xml.dom import minidom
