@@ -87,20 +87,10 @@ if '-v' in sys.argv or '--version' in sys.argv:
     alert('d3ploy %s' % VERSION, os.EX_OK, DEFAULT_COLOR)
     
 
-# load the config file for this folder
-try:
-    config      =   open('deploy.json', 'r')
-except IOError:
-    alert("deploy.json file is missing. See http://dryan.github.io/d3ploy for more information.", os.EX_NOINPUT)
-
-config          =   json.load(config)
-
-environments    =   [str(item) for item in config.keys()]
-    
 valid_acls      =   ["private", "public-read", "public-read-write", "authenticated-read"]
 
 parser          =   argparse.ArgumentParser()
-parser.add_argument('environment', help = "Which environment to deploy to", nargs = "?", type = str, default = "default", choices = environments)
+parser.add_argument('environment', help = "Which environment to deploy to", nargs = "?", type = str, default = "default")
 parser.add_argument('-a', '--access-key', help = "AWS Access Key ID", type = str)
 parser.add_argument('-s', '--access-secret', help = "AWS Access Key Secret", type = str)
 parser.add_argument('-f', '--force', help = "Upload all files whether they are currently up to date on S3 or not", action = "store_true", default = False)
@@ -112,8 +102,28 @@ parser.add_argument('-v', '--version', help = "Print the script version and exit
 parser.add_argument('-z', '--gzip', help = "gzip files before uploading", action = "store_true", default = False)
 parser.add_argument('--confirm', help = "Confirm each file before deleting. Only works when --delete is set.", action = "store_true", default = False)
 parser.add_argument('--charset', help = "The charset header to add to text files", default = False)
-
+parser.add_argument('-c', '--config', help = "path to config file. Defaults to deploy.json in current directory", type = str, default = "deploy.json")
 args            =   parser.parse_args()
+
+# load the config file
+try:
+    config      =   open(args.config, 'r')
+except IOError:
+    alert("config file is missing. Default is deploy.json in your current directory. See http://dryan.github.io/d3ploy for more information.", os.EX_NOINPUT)
+
+config          =   json.load(config)
+
+environments    =   [str(item) for item in config.keys()]
+
+#Check if no environments are configured in the file
+if not environments:
+    alert("No environments found in config file: %s", os.EX_NOINPUT)
+
+#check if environment actually exists in the config file
+if args.environment not in environments:
+    valid_envs = '(%s)' % ', '.join(map(str, environments))
+    alert("environment %s not found in config. Choose from '%s'" %(args.environment, valid_envs), os.EX_NOINPUT)
+    
 
 AWS_KEY         =   args.access_key
 AWS_SECRET      =   args.access_secret
