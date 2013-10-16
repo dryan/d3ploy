@@ -1,0 +1,167 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>d3ploy 1.3.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.3.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="None" href="index.html#document-index" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li><a href="index.html#document-index">d3ploy 1.3.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation-usage">
+<h1>Installation &amp; Usage<a class="headerlink" href="#installation-usage" title="Permalink to this headline">¶</a></h1>
+<p>To install, run <tt class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">d3ploy</span></tt>. To use, run <tt class="docutils literal"><span class="pre">d3ploy</span></tt>.
+Additional arguments may be specified. Run <tt class="docutils literal"><span class="pre">d3ploy</span> <span class="pre">--help</span></tt> for more
+information.</p>
+</div>
+<div class="section" id="authentication">
+<h1>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h1>
+<p>Your AWS credentials can be set in a number of ways:</p>
+<ol class="arabic simple">
+<li>In a &#8221;.boto&#8221; file in your home folder. See <a class="reference external" href="http://docs.pythonboto.org/en/latest/boto_config_tut.html">Boto&#8217;s
+documentation</a>
+for how to create this file.</li>
+<li>In a &#8221;.aws&#8221; file in the folder you&#8217;re running <tt class="docutils literal"><span class="pre">d3ploy</span></tt> in. Follows
+the same format as &#8221;.boto&#8221;.</li>
+<li>In the environment variables &#8220;AWS_ACCESS_KEY_ID&#8221; and
+&#8220;AWS_SECRET_ACCESS_KEY&#8221;.</li>
+<li>Passed in as arguments. <tt class="docutils literal"><span class="pre">-a</span></tt> or <tt class="docutils literal"><span class="pre">--access-key</span></tt> for the Access Key
+ID and <tt class="docutils literal"><span class="pre">-s</span></tt> or <tt class="docutils literal"><span class="pre">--access-secret</span></tt> for the Secret Access Key.</li>
+<li>In the per-enviroment configuration outlined below.</li>
+</ol>
+</div>
+<div class="section" id="configuration-options">
+<h1>Configuration options<a class="headerlink" href="#configuration-options" title="Permalink to this headline">¶</a></h1>
+<p>When you run <tt class="docutils literal"><span class="pre">d3ploy</span></tt>, it will look in the current directory for a
+&#8220;deploy.json&#8221; file that defines the different deploy enviroments and
+their options. At a minimum, a &#8220;default&#8221; environment is required and is
+the environment used if you pass no arguments to <tt class="docutils literal"><span class="pre">d3ploy</span></tt>.
+Additionally, you may pass in a different path for you config file with
+the <tt class="docutils literal"><span class="pre">-c</span></tt> or <tt class="docutils literal"><span class="pre">--config</span></tt> options.</p>
+<p>You can add as many environments as needed. Deploy to an environment by
+passing in its key like <tt class="docutils literal"><span class="pre">d3ploy</span> <span class="pre">staging</span></tt>. Environments besides
+&#8220;default&#8221; will inherit any settings not explicitly set from the default
+configuration.</p>
+<p>The only required option for any environment is &#8220;bucket&#8221; for the S3
+bucket to upload to. Additionally, you may define:</p>
+<ul class="simple">
+<li>&#8220;local_path&#8221; to upload only the contents of a directory under the
+current one; defaults to &#8221;.&#8221; (current directory)</li>
+<li>&#8220;bucket_path&#8221; to upload to a subfolder in the bucket; defaults to
+&#8220;/&#8221; (root)</li>
+<li>&#8220;aws_key&#8221; to specify the AWS Access Key ID to use for uploading</li>
+<li>&#8220;aws_secret&#8221; to specify the AWS Secret Access Key to use for
+uploading</li>
+<li>&#8220;exclude&#8221; to specify patterns to not upload</li>
+<li>&#8220;gzip&#8221; to automatically gzip files before uploading to S3</li>
+<li>&#8220;delete&#8221; to remove files on S3 that are not present in the local
+directory</li>
+<li>&#8220;charset&#8221; to set the charset flag on &#8216;Content-Type&#8217; headers of text
+files</li>
+<li>&#8220;cache&#8221; to set the Cache-Control header for various mimetypes. See
+below for more.</li>
+<li>&#8220;gitignore&#8221; to add all entries in a .gitignore file to the exclude
+patterns</li>
+</ul>
+</div>
+<div class="section" id="cache-control-headers">
+<h1>Cache-Control Headers<a class="headerlink" href="#cache-control-headers" title="Permalink to this headline">¶</a></h1>
+<p>If you want to set Cache-Control headers on various files, add a
+<tt class="docutils literal"><span class="pre">cache</span></tt> object to your config file like:</p>
+<div class="highlight-python"><pre>"cache": {
+  "text/css": 2592000,
+  "application/javascript": 2592000,
+  "image/png": 22896000,
+  "image/jpeg": 22896000,
+  "image/webp": 22896000,
+  "image/gif": 22896000
+}</pre>
+</div>
+<p>Each key is the mimetype of the kind of file you want to have cached,
+with a value that is the seconds the <tt class="docutils literal"><span class="pre">max-age</span></tt> flag set to. In the
+above example, CSS and JavaScript files will be cached for 30 days while
+images will be cached for 1 year. For more about Cache-Control, read
+<a class="reference external" href="https://developers.google.com/speed/docs/insights/LeverageBrowserCaching">Leverage Browser
+Caching</a>.</p>
+</div>
+<div class="section" id="os-x-notification-center">
+<h1>OS X Notification Center<a class="headerlink" href="#os-x-notification-center" title="Permalink to this headline">¶</a></h1>
+<p>d3ploy will attempt to alert you via Notification Center when it is
+completed. To enable this feature, you need pyobjc; run
+<tt class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pyobjc</span></tt> to install.</p>
+</div>
+<div class="section" id="caution-about-using-the-gzip-option">
+<h1>Caution About Using the gzip Option<a class="headerlink" href="#caution-about-using-the-gzip-option" title="Permalink to this headline">¶</a></h1>
+<p>Almost all modern browsers will support files that are served with gzip
+compression. The notable exception is non-smartphone mobile browsers. If
+you have significant traffic over those browsers, it is advisable to
+avoid the gzip option.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li><a href="index.html#document-index">d3ploy 1.3.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, dryan.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
