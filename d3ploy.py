@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.3.1'
+VERSION =   '1.3.2'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile
 from xml.dom import minidom
@@ -103,6 +103,7 @@ parser.add_argument('-v', '--version', help = "Print the script version and exit
 parser.add_argument('-z', '--gzip', help = "gzip files before uploading", action = "store_true", default = False)
 parser.add_argument('--confirm', help = "Confirm each file before deleting. Only works when --delete is set.", action = "store_true", default = False)
 parser.add_argument('--charset', help = "The charset header to add to text files", default = False)
+parser.add_argument('--gitignore', help = "Add .gitignore rules to the exclude list", action = "store_true", default = False)
 parser.add_argument('-c', '--config', help = "path to config file. Defaults to deploy.json in current directory", type = str, default = "deploy.json")
 args            =   parser.parse_args()
 
@@ -179,6 +180,13 @@ def upload_files(env, config):
     bucket_path         =   config.get('bucket_path', '/')
     excludes            =   config.get('exclude', [])
     svc_directories     =   ['.git', '.svn']
+    if args.gitignore or config.get('gitignore', False):
+        if os.path.exists('.gitignore'):
+            gitignore   =   open('.gitignore', 'r')
+            for line in gitignore.readlines():
+                excludes.append(line.strip())
+        else:
+            alert("--gitignore option set, but .gitignore file was not found", color = ALERT_COLOR)
 
     if type(excludes) == str or type(excludes) == unicode:
         excludes        =   [excludes]
