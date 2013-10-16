@@ -14,6 +14,7 @@ warnings.filterwarnings('ignore')
 DEFAULT_COLOR   =   '\033[0;0m'
 ERROR_COLOR     =   '\033[01;31m'
 ALERT_COLOR     =   '\033[01;33m'
+OK_COLOR        =   '\033[92m'
 
 def alert(text, error_code = None, color = None):
     if error_code is not None:
@@ -69,8 +70,8 @@ if notifications:
     except objc.nosuchclass_error:
         notifications   =   False
         
-def notify(env, text):
-    alert(text)
+def notify(env, text, error_code = None, color = None):
+    alert(text, error_code, color)
     if notifications:
         notification    =   NSUserNotification.alloc().init()
         notification.setTitle_('d3ploy')
@@ -269,7 +270,7 @@ def upload_files(env, config):
                     alert('Skipping removal of %s/%s' % (bucket, key.name.lstrip('/')))
         
     verb    =   "would be" if args.dry_run else "were"
-    notify(args.environment, "%d files %s updated" % (updated, verb))
+    notify(args.environment, "%d files %s updated" % (updated, verb), color = OK_COLOR)
     if args.delete or config.get('delete', False):
         notify(args.environment, "%d files %s removed" % (deleted, verb))
     alert("")
