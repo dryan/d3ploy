@@ -6,6 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
+GH_PAGES_SOURCES = docs README.md
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -38,11 +39,27 @@ help:
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
+gh-pages:
+	git checkout gh-pages
+	rm -rf ./*
+	touch .nojekyll
+	git checkout master $(GH_PAGES_SOURCES)
+	git reset HEAD
+	cp docs/conf.py .
+	pandoc -o index.rst -f markdown -t rst README.md
+	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)
+	mv $(BUILDDIR)/* ./
+	rm -rf $(GH_PAGES_SOURCES) $(BUILDDIR)
+	git add -A
+	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`"
+	git push origin gh-pages
+	git checkout master
+
 clean:
 	-rm -rf $(BUILDDIR)/*
 
 html singlehtml:
-	pandoc -o index.rst -f markdown -t rst ../README.md
+	pandoc -o index.rst -f markdown -t rst README.md
 	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)
 	@echo
 	@echo "Build finished. The HTML page is in $(BUILDDIR)."
