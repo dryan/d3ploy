@@ -1,5 +1,3 @@
-# d3ploy
-
 ## Installation & Usage
 
 To install, run `pip install d3ploy`.
@@ -32,6 +30,7 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "delete" to remove files on S3 that are not present in the local directory
 * "charset" to set the charset flag on 'Content-Type' headers of text files
 * "cache" to set the Cache-Control header for various mimetypes. See below for more.
+* "gitignore" to add all entries in a .gitignore file to the exclude patterns
 
 ## Cache-Control Headers
 
