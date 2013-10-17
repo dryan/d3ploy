@@ -1,3 +1,7 @@
+# d3ploy
+
+Easily deploy to S3 with multiple environment support
+
 ## Installation & Usage
 
 To install, run `pip install d3ploy`.
