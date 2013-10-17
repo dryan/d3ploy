@@ -12,12 +12,10 @@
 # serve to show the default.
 
 import sys, os
-print os.getcwd()
 if os.getcwd() == 'docs':
     sys.path.append(os.path.abspath('_themes'))
 else:
     sys.path.append(os.path.abspath('docs/_themes'))
-print sys.path   
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
