@@ -100,7 +100,6 @@ html_theme = 'flask'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "github_fork": "dryan/d3ploy",
     "index_logo": None,
     "index_logo_height": 0
 }
