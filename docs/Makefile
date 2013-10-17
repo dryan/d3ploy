@@ -45,7 +45,6 @@ gh-pages:
 	touch .nojekyll
 	git checkout master $(GH_PAGES_SOURCES)
 	git reset HEAD
-	cd docs
 	pandoc -o index.rst -f markdown -t rst README.md
 	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)
 	mv $(BUILDDIR)/* ./
