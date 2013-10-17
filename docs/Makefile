@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
-GH_PAGES_SOURCES = docs README.md
+GH_PAGES_SOURCES = docs README.md .gitmodules
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -44,6 +44,8 @@ gh-pages:
 	rm -rf ./*
 	touch .nojekyll
 	git checkout master $(GH_PAGES_SOURCES)
+	git submodule init
+	git submodule update
 	git reset HEAD
 	cp docs/conf.py .
 	pandoc -o index.rst -f markdown -t rst README.md
