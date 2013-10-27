@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.3.2'
+VERSION =   '1.3.3'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile
 from xml.dom import minidom
@@ -16,14 +16,18 @@ ERROR_COLOR     =   '\033[01;31m'
 ALERT_COLOR     =   '\033[01;33m'
 OK_COLOR        =   '\033[92m'
 
+QUIET           =   False
+
 def alert(text, error_code = None, color = None):
     if error_code is not None:
-        sys.stderr.write('%s%s%s\n' % (color or ERROR_COLOR, text, DEFAULT_COLOR))
-        sys.stderr.flush()
+        if not QUIET:
+            sys.stderr.write('%s%s%s\n' % (color or ERROR_COLOR, text, DEFAULT_COLOR))
+            sys.stderr.flush()
         sys.exit(error_code)
     else:
-        sys.stdout.write('%s%s%s\n' % (color or DEFAULT_COLOR, text, DEFAULT_COLOR))
-        sys.stdout.flush()
+        if not QUIET:
+            sys.stdout.write('%s%s%s\n' % (color or DEFAULT_COLOR, text, DEFAULT_COLOR))
+            sys.stdout.flush()
 
 # check for updates
 PYPI_URL        =   'https://pypi.python.org/pypi?:action=doap&name=d3ploy'
@@ -71,6 +75,8 @@ if notifications:
         notifications   =   False
         
 def notify(env, text, error_code = None, color = None):
+    if QUIET:
+        return
     alert(text, error_code, color)
     if notifications:
         notification    =   NSUserNotification.alloc().init()
@@ -105,7 +111,11 @@ parser.add_argument('--confirm', help = "Confirm each file before deleting. Only
 parser.add_argument('--charset', help = "The charset header to add to text files", default = False)
 parser.add_argument('--gitignore', help = "Add .gitignore rules to the exclude list", action = "store_true", default = False)
 parser.add_argument('-c', '--config', help = "path to config file. Defaults to deploy.json in current directory", type = str, default = "deploy.json")
+parser.add_argument('-q', '--quiet', help = "Suppress all output. Useful for automated usage.", action = "store_true", default = False)
 args            =   parser.parse_args()
+
+if args.quiet:
+    QUIET       =   True
 
 # load the config file
 try:
