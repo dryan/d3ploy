@@ -1,6 +1,6 @@
 # d3ploy
 
-Easily deploy to S3 with multiple environment support
+Easily deploy to S3 with multiple environment support. Version 2 now supports multiprocessing for faster uploads.
 
 ## Installation & Usage
 
@@ -22,6 +22,8 @@ Your AWS credentials can be set in a number of ways:
 When you run `d3ploy`, it will look in the current directory for a "deploy.json" file that defines the different deploy enviroments and their options. At a minimum, a "default" environment is required and is the environment used if you pass no arguments to `d3ploy`. Additionally, you may pass in a different path for you config file with the `-c` or `--config` options.
 
 To supress all output, pass `-q` or `--quiet` to the command. Note that there is not a way to set the quiet option in the config file(s).
+
+To set the number of separate processes to use, pass `-p 10` or `--processess 10` where '10' is the number to use. If you do not want to use multiple processes, set this to '0'. 
 
 You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`. Environments besides "default" will inherit any settings not explicitly set from the default configuration.
 
