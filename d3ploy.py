@@ -272,21 +272,22 @@ def upload_files(env, config):
         local_file.close()
 
     if args.delete or config.get('delete', False):
-        for key in s3bucket.list(prefix = bucket_path.lstrip('/')):
-            if not key.name in keynames:
-                if args.confirm or config.get('confirm', False):
-                    confirmed   =   raw_input('Remove %s/%s [yN]: ' % (bucket, key.name.lstrip('/'))) in ["Y", "y"]
-                else:
-                    confirmed   =   True
-                if confirmed:
-                    alert('Deleting %s/%s' % (bucket, key.name.lstrip('/')))
-                    deleted     +=  1
-                    if args.dry_run:
-                        continue
-                    key.delete()
-                else:
-                    alert('Skipping removal of %s/%s' % (bucket, key.name.lstrip('/')))
-        
+        to_remove       =   [key.name for key in s3bucket.list(prefix = bucket_path.lstrip('/')) if key.name not in keynames]
+        for keyname in to_remove:
+            key         =   s3bucket.get_key(keyname)
+            if args.confirm or config.get('confirm', False):
+                confirmed   =   raw_input('Remove %s/%s [yN]: ' % (bucket, key.name.lstrip('/'))) in ["Y", "y"]
+            else:
+                confirmed   =   True
+            if confirmed:
+                alert('Deleting %s/%s' % (bucket, key.name.lstrip('/')))
+                deleted     +=  1
+                if args.dry_run:
+                    continue
+                key.delete()
+            else:
+                alert('Skipping removal of %s/%s' % (bucket, key.name.lstrip('/')))
+
     verb    =   "would be" if args.dry_run else "were"
     notify(args.environment, "%d files %s updated" % (updated, verb), color = OK_COLOR)
     if args.delete or config.get('delete', False):
