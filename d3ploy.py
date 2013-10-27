@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '2.0.0'
+VERSION =   '2.0.1'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
 from xml.dom import minidom
@@ -239,7 +239,7 @@ def upload_file(filename):
             if not filename in files:
                 # this filename was modified by gzipping
                 os.remove(filename)
-            return keyname.lstrip('/')
+            return (keyname.lstrip('/'), updated)
         if s3key is None:
             s3key   =   s3bucket.new_key(keyname)
         headers     =   {}
