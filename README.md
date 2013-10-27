@@ -61,6 +61,10 @@ Each key is the mimetype of the kind of file you want to have cached, with a val
 
 d3ploy will attempt to alert you via Notification Center when it is completed. To enable this feature, you need pyobjc; run `pip install pyobjc` to install.
 
+## Progress Bar
+
+d3ploy will use the `progressbar` module if it's available to display output. This includes a percentage completed and an ETA. To enable, run `pip install progressbar`.
+
 ## Caution About Using the gzip Option
 
 Almost all modern browsers will support files that are served with gzip compression. The notable exception is non-smartphone mobile browsers. If you have significant traffic over those browsers, it is advisable to avoid the gzip option.
