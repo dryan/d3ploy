@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.3.3'
+VERSION =   '1.3.4'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile
 from xml.dom import minidom
@@ -18,6 +18,13 @@ OK_COLOR        =   '\033[92m'
 
 QUIET           =   False
 
+progressbar     =   None
+
+try:
+    import progressbar
+except ImportError:
+    pass
+
 def alert(text, error_code = None, color = None):
     if error_code is not None:
         if not QUIET:
@@ -28,6 +35,16 @@ def alert(text, error_code = None, color = None):
         if not QUIET:
             sys.stdout.write('%s%s%s\n' % (color or DEFAULT_COLOR, text, DEFAULT_COLOR))
             sys.stdout.flush()
+
+def progress_setup(num_files = 0):
+    if progressbar and not QUIET:
+        return progressbar.ProgressBar(widgets = ['Uploading: ', progressbar.Percentage(), progressbar.Bar(), ' ', progressbar.ETA()], maxval = num_files).start()
+    else:
+        return None
+
+def progress_update(bar, count):
+    if bar and not QUIET:
+        bar.update(count)
 
 # check for updates
 PYPI_URL        =   'https://pypi.python.org/pypi?:action=doap&name=d3ploy'
@@ -224,7 +241,9 @@ def upload_files(env, config):
     keynames            =   []
     updated             =   0
     deleted             =   0
+    count               =   0
     caches              =   config.get('cache', {})
+    bar                 =   progress_setup(len(files))
 
     for filename in files:
         keyname         =   '/'.join([bucket_path.rstrip('/'), prefix_regex.sub('', filename).lstrip('/')])
@@ -246,8 +265,12 @@ def upload_files(env, config):
         is_gzipped      =   local_file.read().find('\x1f\x8b') == 0
         local_file.seek(0)
         if s3key is None or args.force or not s3key.get_metadata('d3ploy-hash') == md5:
-            alert('Copying %s to %s%s' % (filename, bucket, keyname))
             updated     +=  1
+            count       +=  1
+            if progressbar:
+                progress_update(bar, count)
+            else:
+                alert('Copying %s to %s/%s' % (filename, bucket, keyname.lstrip('/')))
             if args.dry_run:
                 if not filename in files:
                     # this filename was modified by gzipping
@@ -266,10 +289,16 @@ def upload_files(env, config):
             s3key.set_metadata('d3ploy-hash', md5)
             s3key.set_contents_from_file(local_file, headers = headers)
             s3key.set_acl(args.acl)
+        else:
+            count       +=  1
+            progress_update(bar, count)
         if not filename in files:
             # this filename was modified by gzipping
             os.remove(filename)
         local_file.close()
+
+    if bar:
+        bar.finish()
 
     if args.delete or config.get('delete', False):
         to_remove       =   [key.name for key in s3bucket.list(prefix = bucket_path.lstrip('/')) if key.name not in keynames]
