@@ -2,23 +2,25 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '1.3.4'
+VERSION =   '2.0.0'
 
-import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile
+import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
 from xml.dom import minidom
 
 # disable import warnings
 import warnings
 warnings.filterwarnings('ignore')
 
-DEFAULT_COLOR   =   '\033[0;0m'
-ERROR_COLOR     =   '\033[01;31m'
-ALERT_COLOR     =   '\033[01;33m'
-OK_COLOR        =   '\033[92m'
+DEFAULT_COLOR       =   '\033[0;0m'
+ERROR_COLOR         =   '\033[31m'
+ALERT_COLOR         =   '\033[33m'
+OK_COLOR            =   '\033[92m'
 
-QUIET           =   False
+QUIET               =   False
 
-progressbar     =   None
+progressbar         =   None
+
+killswitch          =   threading.Event()
 
 try:
     import progressbar
@@ -36,15 +38,33 @@ def alert(text, error_code = None, color = None):
             sys.stdout.write('%s%s%s\n' % (color or DEFAULT_COLOR, text, DEFAULT_COLOR))
             sys.stdout.flush()
 
-def progress_setup(num_files = 0):
+def progress_setup(label = 'Uploading: ', num_files = 0, marker_color = DEFAULT_COLOR):
+    global bar
     if progressbar and not QUIET:
-        return progressbar.ProgressBar(widgets = ['Uploading: ', progressbar.Percentage(), progressbar.Bar(), ' ', progressbar.ETA()], maxval = num_files).start()
-    else:
-        return None
+        bar =   progressbar.ProgressBar(widgets = [marker_color, label, progressbar.Percentage(), ' ', progressbar.Bar(), ' ', progressbar.ETA(), DEFAULT_COLOR], maxval = num_files).start()
 
 def progress_update(bar, count):
     if bar and not QUIET:
         bar.update(count)
+
+def bail(*args, **kwargs):
+    killswitch.set()
+    try:
+        bar.widgets[0]  =   ERROR_COLOR
+        bar.finished    =   True
+        progress_update(bar, bar.currval)
+        alert("")
+    except NameError:
+        pass
+    try:
+        pool.close()
+        pool.terminate()
+        pool.join()
+    except:
+        pass
+    alert('\nExiting...', os.EX_OK, ALERT_COLOR)
+
+signal.signal(signal.SIGINT, bail)
 
 # check for updates
 PYPI_URL        =   'https://pypi.python.org/pypi?:action=doap&name=d3ploy'
@@ -77,7 +97,7 @@ try:
     import boto
 except ImportError:
     alert("Please install boto. `pip install boto`", os.EX_UNAVAILABLE)
-    
+
 try:
     import Foundation, objc
     notifications   =   True
@@ -129,10 +149,17 @@ parser.add_argument('--charset', help = "The charset header to add to text files
 parser.add_argument('--gitignore', help = "Add .gitignore rules to the exclude list", action = "store_true", default = False)
 parser.add_argument('-c', '--config', help = "path to config file. Defaults to deploy.json in current directory", type = str, default = "deploy.json")
 parser.add_argument('-q', '--quiet', help = "Suppress all output. Useful for automated usage.", action = "store_true", default = False)
+parser.add_argument('-p', '--processes', help = "The number of concurrent processes to use for uploading/deleting.", type = int, default = 10)
 args            =   parser.parse_args()
 
 if args.quiet:
     QUIET       =   True
+
+if args.processes > 0:
+    try:
+        from multiprocessing.pool import ThreadPool
+    except ImportError:
+        alert("Please install multiprocessing. `pip install multiprocessing`", os.EX_UNAVAILABLE)
 
 # load the config file
 try:
@@ -179,17 +206,101 @@ if AWS_KEY is None:
     AWS_KEY     =   os.environ.get('AWS_ACCESS_KEY_ID')
 if AWS_SECRET is None:
     AWS_SECRET  =   os.environ.get('AWS_SECRET_ACCESS_KEY')
-    
-def upload_files(env, config):
+
+# this is where the actual upload happens, called by upload_files
+def upload_file(filename):
+    if killswitch.is_set():
+        return (filename, 0)
+    updated         =   0
+    keyname         =   '/'.join([bucket_path.rstrip('/'), prefix_regex.sub('', filename).lstrip('/')])
+    s3key           =   s3bucket.get_key(keyname)
+    local_file      =   open(filename, 'r')
+    md5             =   boto.utils.compute_md5(local_file)[0] # this needs to be computed before gzipping
+    local_file.close()
+
+    if args.gzip or environ_config.get('gzip', False):
+        if not mimetypes.guess_type(filename)[1] == 'gzip':
+            f_in    =   open(filename, 'rb')
+            f_out   =   gzip.open(filename + '.gz', 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+            filename    =   f_out.name
+    local_file      =   open(filename, 'r')
+    is_gzipped      =   local_file.read().find('\x1f\x8b') == 0
+    local_file.seek(0)
+    if s3key is None or args.force or not s3key.get_metadata('d3ploy-hash') == md5:
+        updated     +=  1
+        if bar:
+            progress_update(bar, bar.currval + 1)
+        else:
+            alert('Copying %s to %s/%s' % (filename, s3bucket.name, keyname.lstrip('/')))
+        if args.dry_run:
+            if not filename in files:
+                # this filename was modified by gzipping
+                os.remove(filename)
+            return keyname.lstrip('/')
+        if s3key is None:
+            s3key   =   s3bucket.new_key(keyname)
+        headers     =   {}
+        mimetype    =   mimetypes.guess_type(filename)
+        if is_gzipped or mimetype[1] == 'gzip':
+            headers['Content-Encoding'] =   'gzip'
+        if args.charset or environ_config.get('charset', False) and mimetype[0] and mimetype[0].split('/')[0] == 'text':
+            headers['Content-Type']     =   str('%s;charset=%s' % (mimetype[0], args.charset or environ_config.get('charset')))
+        if mimetype[0] in caches.keys():
+            s3key.set_metadata('Cache-Control', str('max-age=%s, public' % str(caches.get(mimetype[0]))))
+        s3key.set_metadata('d3ploy-hash', md5)
+        s3key.set_contents_from_file(local_file, headers = headers)
+        s3key.set_acl(args.acl)
+    else:
+        if(bar):
+            progress_update(bar, bar.currval + 1)
+    if not filename in files:
+        # this filename was modified by gzipping
+        os.remove(filename)
+    local_file.close()
+
+    return (keyname.lstrip('/'), updated)
+
+# this where the actual removal happens, called by upload_files
+def delete_file(keyname):
+    if killswitch.is_set():
+        return 0
+    key                 =   s3bucket.get_key(keyname)
+    deleted             =   0
+    needs_confirmation  =   args.confirm or environ_config.get('confirm', False)
+    if needs_confirmation:
+        confirmed   =   raw_input('%sRemove %s/%s [yN]: ' % ('\n' if bar and not needs_confirmation else '', s3bucket.name, key.name.lstrip('/'))) in ["Y", "y"]
+    else:
+        confirmed   =   True
+    if confirmed:
+        if bar and not needs_confirmation:
+            progress_update(bar, bar.currval + 1)
+        else:
+            alert('Deleting %s/%s' % (s3bucket.name, key.name.lstrip('/')))
+        deleted     +=  1
+        if not args.dry_run:
+            key.delete()
+    else:
+        if bar and not needs_confirmation:
+            progress_update(bar, bar.currval + 1)
+        alert('%sSkipping removal of %s/%s' % ('\n' if bar and not needs_confirmation else '', s3bucket.name, key.name.lstrip('/')))
+    return deleted
+
+# this is where the setup for each environment happens then passes off the work to upload_file()    
+def upload_files(env):
+    global environ_config, bucket_path, s3bucket, prefix_regex, files, caches, pool
+
     alert('Using settings for "%s" environment' % env)
     
-    bucket              =   config.get('bucket')
+    bucket              =   environ_config.get('bucket')
     if not bucket:
         alert('A bucket to upload to was not specified for "%s" environment' % args.environment, os.EX_NOINPUT)
 
-    KEY         =   config.get('aws_key', AWS_KEY)
+    KEY         =   environ_config.get('aws_key', AWS_KEY)
 
-    SECRET      =   config.get('aws_secret', AWS_SECRET)
+    SECRET      =   environ_config.get('aws_secret', AWS_SECRET)
     
     if KEY is None or SECRET is None:
         alert("AWS credentials were not found. See https://gist.github.com/dryan/5317321 for more information.", os.EX_NOINPUT)
@@ -203,11 +314,11 @@ def upload_files(env, config):
         alert('Bucket "%s" could not be retrieved with the specified credentials' % bucket, os.EX_NOINPUT)
 
     # get the rest of the options
-    local_path          =   config.get('local_path', '.')
-    bucket_path         =   config.get('bucket_path', '/')
-    excludes            =   config.get('exclude', [])
+    local_path          =   environ_config.get('local_path', '.')
+    bucket_path         =   environ_config.get('bucket_path', '/')
+    excludes            =   environ_config.get('exclude', [])
     svc_directories     =   ['.git', '.svn']
-    if args.gitignore or config.get('gitignore', False):
+    if args.gitignore or environ_config.get('gitignore', False):
         if os.path.exists('.gitignore'):
             gitignore   =   open('.gitignore', 'r')
             for line in gitignore.readlines():
@@ -221,6 +332,7 @@ def upload_files(env, config):
     exclude_regexes     =   [re.compile(r'%s' % s) for s in excludes]
 
     files               =   []
+    prefix_regex        =   re.compile(r'^%s' % local_path)
 
     for dirname, dirnames, filenames in os.walk(local_path):
         for filename in filenames:
@@ -236,109 +348,72 @@ def upload_files(env, config):
             if svc_directory in dirnames:
                 dirnames.remove(svc_directory)
             
-    prefix_regex        =   re.compile(r'^%s' % local_path)
-
-    keynames            =   []
-    updated             =   0
     deleted             =   0
-    count               =   0
-    caches              =   config.get('cache', {})
-    bar                 =   progress_setup(len(files))
+    caches              =   environ_config.get('cache', {})
+    progress_setup('Updating %s: ' % env, len(files), OK_COLOR)
 
-    for filename in files:
-        keyname         =   '/'.join([bucket_path.rstrip('/'), prefix_regex.sub('', filename).lstrip('/')])
-        keynames.append(keyname.lstrip('/'))
-        s3key           =   s3bucket.get_key(keyname)
-        local_file      =   open(filename, 'r')
-        md5             =   boto.utils.compute_md5(local_file)[0] # this needs to be computed before gzipping
-        local_file.close()
-
-        if args.gzip or config.get('gzip', False):
-            if not mimetypes.guess_type(filename)[1] == 'gzip':
-                f_in    =   open(filename, 'rb')
-                f_out   =   gzip.open(filename + '.gz', 'wb')
-                f_out.writelines(f_in)
-                f_out.close()
-                f_in.close()
-                filename    =   f_out.name
-        local_file      =   open(filename, 'r')
-        is_gzipped      =   local_file.read().find('\x1f\x8b') == 0
-        local_file.seek(0)
-        if s3key is None or args.force or not s3key.get_metadata('d3ploy-hash') == md5:
-            updated     +=  1
-            count       +=  1
-            if progressbar:
-                progress_update(bar, count)
-            else:
-                alert('Copying %s to %s/%s' % (filename, bucket, keyname.lstrip('/')))
-            if args.dry_run:
-                if not filename in files:
-                    # this filename was modified by gzipping
-                    os.remove(filename)
-                continue
-            if s3key is None:
-                s3key   =   s3bucket.new_key(keyname)
-            headers     =   {}
-            mimetype    =   mimetypes.guess_type(filename)
-            if is_gzipped or mimetype[1] == 'gzip':
-                headers['Content-Encoding'] =   'gzip'
-            if args.charset or config.get('charset', False) and mimetype[0] and mimetype[0].split('/')[0] == 'text':
-                headers['Content-Type']     =   str('%s;charset=%s' % (mimetype[0], args.charset or config.get('charset')))
-            if mimetype[0] in caches.keys():
-                s3key.set_metadata('Cache-Control', str('max-age=%s, public' % str(caches.get(mimetype[0]))))
-            s3key.set_metadata('d3ploy-hash', md5)
-            s3key.set_contents_from_file(local_file, headers = headers)
-            s3key.set_acl(args.acl)
-        else:
-            count       +=  1
-            progress_update(bar, count)
-        if not filename in files:
-            # this filename was modified by gzipping
-            os.remove(filename)
-        local_file.close()
-
-    if bar:
+    if args.processes > 0:
+        keynames            =   []
+        updated             =   0
+        pool                =   ThreadPool(args.processes)
+        for fn in files:
+            job             =   pool.apply_async(upload_file, args = (fn,))
+            try:
+                keynames.append(job.get())
+            except KeyboardInterrupt:
+                killswitch.set()
+    else:
+        keynames            =   []
+        for fn in files:
+            keynames.append(upload_file(fn))
+    if bar and not killswitch.is_set():
         bar.finish()
 
-    if args.delete or config.get('delete', False):
+    updated                 =   sum([i[1] for i in keynames])
+    keynames                =   [i[0] for i in keynames if i[0]]
+
+    if args.delete or environ_config.get('delete', False) and not killswitch.is_set():
         to_remove       =   [key.name for key in s3bucket.list(prefix = bucket_path.lstrip('/')) if key.name not in keynames]
-        for keyname in to_remove:
-            key         =   s3bucket.get_key(keyname)
-            if args.confirm or config.get('confirm', False):
-                confirmed   =   raw_input('Remove %s/%s [yN]: ' % (bucket, key.name.lstrip('/'))) in ["Y", "y"]
+        if len(to_remove):
+            progress_setup('Cleaning %s: ' % env, len(to_remove), ALERT_COLOR)
+            if args.processes > 0:
+                deleted             =   0
+                pool                =   ThreadPool(args.processes)
+                for kn in to_remove:
+                    job             =   pool.apply_async(delete_file, args = (kn,))
+                    try:
+                        deleted     +=  job.get()
+                    except KeyboardInterrupt:
+                        killswitch.set()
             else:
-                confirmed   =   True
-            if confirmed:
-                alert('Deleting %s/%s' % (bucket, key.name.lstrip('/')))
-                deleted     +=  1
-                if args.dry_run:
-                    continue
-                key.delete()
-            else:
-                alert('Skipping removal of %s/%s' % (bucket, key.name.lstrip('/')))
+                for kn in to_remove:
+                    deleted     +=  delete_file(kn)
+            if bar and not killswitch.is_set():
+                bar.finish()
 
     verb    =   "would be" if args.dry_run else "were"
-    notify(args.environment, "%d files %s updated" % (updated, verb), color = OK_COLOR)
-    if args.delete or config.get('delete', False):
-        notify(args.environment, "%d files %s removed" % (deleted, verb))
     alert("")
+    notify(args.environment, "%d files %s updated" % (updated, verb), color = OK_COLOR)
+    if args.delete or environ_config.get('delete', False):
+        notify(args.environment, "%d files %s removed" % (deleted, verb), color = ALERT_COLOR)
 
 if not args.environment in config:
     alert('The "%s" environment was not found in deploy.json' % args.environment, os.EX_NOINPUT)
 
 def main():
+    global environ_config
     if args.all:
         for environ in config:
             alert("Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys())))
             environ_config  =   config[environ]
             if not environ == "default":
                 environ_config  =   dict(config['default'].items() + config[environ].items())
-            upload_files(environ, environ_config)
+            upload_files(environ)
     else:
         environ_config  =   config[args.environment]
         if not args.environment == "default":
             environ_config  =   dict(config['default'].items() + config[args.environment].items())
-        upload_files(args.environment, environ_config)
+        upload_files(args.environment)
 
 if __name__ == "__main__":
     main()
