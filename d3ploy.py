@@ -1,11 +1,34 @@
 #!/usr/bin/env python
+from __future__ import unicode_literals
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
 VERSION =   '2.0.1'
 
-import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
+import os, sys, json, re, hashlib, argparse, time, base64, gzip, mimetypes, zipfile, signal, threading
 from xml.dom import minidom
+
+# Python 3 compatibily
+
+try:
+    basestring  =   basestring
+except:
+    basestring  =   str
+
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
+
+try:
+    import raw_input as input
+except ImportError:
+    pass # input is the Python 3 name
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 # disable import warnings
 import warnings
@@ -82,7 +105,7 @@ now =   int(time.time())
 if now - last_checked > 86400:
     # it has been a day since the last update check
     try:
-        pypi_data       =    minidom.parse(urllib.urlopen(PYPI_URL))
+        pypi_data       =    minidom.parse(urlopen(PYPI_URL))
         pypi_version    =    pypi_data.getElementsByTagName('revision')[0].firstChild.data
         if pypi_version > VERSION:
             alert('There has been an update for d3ploy. Version %s is now available.\nPlease see https://github.com/dryan/d3ploy or run `pip install --upgrade d3ploy`.' % pypi_version, color = ALERT_COLOR)
@@ -169,7 +192,7 @@ except IOError:
 
 config          =   json.load(config)
 
-environments    =   [str(item) for item in config.keys()]
+environments    =   [str(item) for item in list(config.keys())]
 
 #Check if no environments are configured in the file
 if not environments:
@@ -186,7 +209,7 @@ AWS_SECRET      =   args.access_secret
 
 # look for credentials file in this directory
 if os.path.exists('.aws'):
-    local_config    =   ConfigParser.ConfigParser()
+    local_config    =   configparser.ConfigParser()
     local_config.read('.aws')
     if local_config.has_section('Credentials'):
         if AWS_KEY is None:
@@ -248,7 +271,7 @@ def upload_file(filename):
             headers['Content-Encoding'] =   'gzip'
         if args.charset or environ_config.get('charset', False) and mimetype[0] and mimetype[0].split('/')[0] == 'text':
             headers['Content-Type']     =   str('%s;charset=%s' % (mimetype[0], args.charset or environ_config.get('charset')))
-        if mimetype[0] in caches.keys():
+        if mimetype[0] in list(caches.keys()):
             s3key.set_metadata('Cache-Control', str('max-age=%s, public' % str(caches.get(mimetype[0]))))
         s3key.set_metadata('d3ploy-hash', md5)
         s3key.set_contents_from_file(local_file, headers = headers)
@@ -271,7 +294,7 @@ def delete_file(keyname):
     deleted             =   0
     needs_confirmation  =   args.confirm or environ_config.get('confirm', False)
     if needs_confirmation:
-        confirmed   =   raw_input('%sRemove %s/%s [yN]: ' % ('\n' if bar and not needs_confirmation else '', s3bucket.name, key.name.lstrip('/'))) in ["Y", "y"]
+        confirmed   =   input('%sRemove %s/%s [yN]: ' % ('\n' if bar and not needs_confirmation else '', s3bucket.name, key.name.lstrip('/'))) in ["Y", "y"]
     else:
         confirmed   =   True
     if confirmed:
@@ -326,7 +349,7 @@ def upload_files(env):
         else:
             alert("--gitignore option set, but .gitignore file was not found", color = ALERT_COLOR)
 
-    if type(excludes) == str or type(excludes) == unicode:
+    if isinstance(excludes, basestring):
         excludes        =   [excludes]
     
     exclude_regexes     =   [re.compile(r'%s' % s) for s in excludes]
@@ -404,15 +427,15 @@ def main():
     global environ_config
     if args.all:
         for environ in config:
-            alert("Uploading environment %d of %d" % (config.keys().index(environ) + 1, len(config.keys())))
+            alert("Uploading environment %d of %d" % (list(config.keys()).index(environ) + 1, len(list(config.keys()))))
             environ_config  =   config[environ]
             if not environ == "default":
-                environ_config  =   dict(config['default'].items() + config[environ].items())
+                environ_config  =   dict(list(config['default'].items()) + list(config[environ].items()))
             upload_files(environ)
     else:
         environ_config  =   config[args.environment]
         if not args.environment == "default":
-            environ_config  =   dict(config['default'].items() + config[args.environment].items())
+            environ_config  =   dict(list(config['default'].items()) + list(config[args.environment].items()))
         upload_files(args.environment)
 
 if __name__ == "__main__":
