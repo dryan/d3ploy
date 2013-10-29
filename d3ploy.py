@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '2.0.1'
+VERSION =   '2.0.2'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
 from xml.dom import minidom
@@ -408,11 +408,17 @@ def main():
             environ_config  =   config[environ]
             if not environ == "default":
                 environ_config  =   dict(config['default'].items() + config[environ].items())
+            if not environ_config.get('excludes', False):
+                environ_config['excludes']  =   []
+            environ_config['excludes'].append(args.config)
             upload_files(environ)
     else:
         environ_config  =   config[args.environment]
         if not args.environment == "default":
             environ_config  =   dict(config['default'].items() + config[args.environment].items())
+        if not environ_config.get('exclude', False):
+            environ_config['exclude']   =   []
+        environ_config['exclude'].append(args.config)
         upload_files(args.environment)
 
 if __name__ == "__main__":
