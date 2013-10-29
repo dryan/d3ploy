@@ -216,10 +216,11 @@ def upload_file(filename):
     s3key           =   s3bucket.get_key(keyname)
     local_file      =   open(filename, 'r')
     md5             =   boto.utils.compute_md5(local_file)[0] # this needs to be computed before gzipping
+    mimetype    =   mimetypes.guess_type(filename)
     local_file.close()
 
     if args.gzip or environ_config.get('gzip', False):
-        if not mimetypes.guess_type(filename)[1] == 'gzip':
+        if not mimetype[1] == 'gzip' and not mimetype[0] in environ_config.get('gzip_skip', []):
             f_in    =   open(filename, 'rb')
             f_out   =   gzip.open(filename + '.gz', 'wb')
             f_out.writelines(f_in)
@@ -243,7 +244,6 @@ def upload_file(filename):
         if s3key is None:
             s3key   =   s3bucket.new_key(keyname)
         headers     =   {}
-        mimetype    =   mimetypes.guess_type(filename)
         if is_gzipped or mimetype[1] == 'gzip':
             headers['Content-Encoding'] =   'gzip'
         if args.charset or environ_config.get('charset', False) and mimetype[0] and mimetype[0].split('/')[0] == 'text':
