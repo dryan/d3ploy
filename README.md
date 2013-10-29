@@ -35,6 +35,7 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "aws_secret" to specify the AWS Secret Access Key to use for uploading
 * "exclude" to specify patterns to not upload
 * "gzip" to automatically gzip files before uploading to S3
+* "gzip_skip" to specify mimetypes to not gzip when `gzip` is set to true
 * "delete" to remove files on S3 that are not present in the local directory
 * "charset" to set the charset flag on 'Content-Type' headers of text files
 * "cache" to set the Cache-Control header for various mimetypes. See below for more.
