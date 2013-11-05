@@ -44,10 +44,10 @@ gh-pages:
 	rm -rf ./*
 	touch .nojekyll
 	git checkout master $(GH_PAGES_SOURCES)
-	mv doctrees docs/
 	git submodule init
 	git submodule update
 	git reset HEAD
+	mv doctrees docs/
 	cp docs/conf.py .
 	pandoc -o index.rst -f markdown -t rst README.md
 	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)
