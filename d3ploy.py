@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '2.0.5'
+VERSION =   '2.0.6'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
 from xml.dom import minidom
@@ -219,19 +219,19 @@ def upload_file(filename):
     mimetype    =   mimetypes.guess_type(filename)
     local_file.close()
 
-    if args.gzip or environ_config.get('gzip', False):
-        if not mimetype[1] == 'gzip' and not mimetype[0] in environ_config.get('gzip_skip', []):
-            f_in    =   open(filename, 'rb')
-            f_out   =   gzip.open(filename + '.gz', 'wb')
-            f_out.writelines(f_in)
-            f_out.close()
-            f_in.close()
-            filename    =   f_out.name
-    local_file      =   open(filename, 'r')
-    is_gzipped      =   local_file.read().find('\x1f\x8b') == 0
-    local_file.seek(0)
     if s3key is None or args.force or not s3key.get_metadata('d3ploy-hash') == md5:
-        updated     +=  1
+        if args.gzip or environ_config.get('gzip', False):
+            if not mimetype[1] == 'gzip' and not mimetype[0] in environ_config.get('gzip_skip', []):
+                f_in    =   open(filename, 'rb')
+                f_out   =   gzip.open(filename + '.gz', 'wb')
+                f_out.writelines(f_in)
+                f_out.close()
+                f_in.close()
+                filename    =   f_out.name
+        local_file      =   open(filename, 'r')
+        is_gzipped      =   local_file.read().find('\x1f\x8b') == 0
+        local_file.seek(0)
+        updated         +=  1
         if bar:
             progress_update(bar, bar.currval + 1)
         else:
