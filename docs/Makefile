@@ -49,7 +49,7 @@ gh-pages:
 	git reset HEAD
 	cp docs/conf.py .
 	pandoc -o index.rst -f markdown -t rst README.md
-	mv doctrees docs/.
+	mv doctrees docs/
 	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)
 	mv $(BUILDDIR)/* ./
 	rm -rf $(GH_PAGES_SOURCES) $(BUILDDIR)
