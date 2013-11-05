@@ -43,7 +43,8 @@ gh-pages:
 	git checkout gh-pages
 	rm -rf ./*
 	touch .nojekyll
-	git checkout master -- docs README.md .gitmodules
+	git checkout master $(GH_PAGES_SOURCES)
+	mv doctrees docs/
 	git submodule init
 	git submodule update
 	git reset HEAD
