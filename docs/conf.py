@@ -55,7 +55,7 @@ copyright = u', '.join([ '-'.join(list(set([u'2013', date.today().strftime('%Y')
 # built documents.
 #
 # The short X.Y version.
-version = '2.0.6'
+version = '2.0.7'
 # The full version, including alpha/beta/rc tags.
 release = version
 

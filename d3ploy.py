@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '2.0.6'
+VERSION =   '2.0.7'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
 from xml.dom import minidom
@@ -42,6 +42,8 @@ def progress_setup(label = 'Uploading: ', num_files = 0, marker_color = DEFAULT_
     global bar
     if progressbar and not QUIET:
         bar =   progressbar.ProgressBar(widgets = [marker_color, label, progressbar.Percentage(), ' ', progressbar.Bar(), ' ', progressbar.ETA(), DEFAULT_COLOR], maxval = num_files).start()
+    else:
+        bar =   None
 
 def progress_update(bar, count):
     if bar and not QUIET:
