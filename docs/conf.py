@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, re
+import sys, os, re, sphinx_rtd_theme
 from datetime import date
 
 d3ploy_path     =   'd3ploy.py'
@@ -98,18 +98,18 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'flask'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "index_logo": None,
-    "index_logo_height": 0
-}
+# html_theme_options = {
+#     "index_logo": None,
+#     "index_logo_height": 0
+# }
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['_themes', 'docs/_themes']
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
