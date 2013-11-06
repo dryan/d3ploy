@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, re
+import sys, os
 from datetime import date
 
 d3ploy_path     =   'd3ploy.py'
@@ -55,7 +55,7 @@ copyright = u', '.join([ '-'.join(list(set([u'2013', date.today().strftime('%Y')
 # built documents.
 #
 # The short X.Y version.
-version = re.search(r'VERSION\s+=\s+\'(\d\.\d\.\d)\'', open(d3ploy_path, 'r').read()).group(1)
+version = '2.0.6'
 # The full version, including alpha/beta/rc tags.
 release = version
 
