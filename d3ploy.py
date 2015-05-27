@@ -2,7 +2,7 @@
 
 # Notification Center code borrowed from https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
 
-VERSION =   '2.0.7'
+VERSION =   '2.1.0'
 
 import os, sys, json, re, hashlib, argparse, urllib, time, base64, ConfigParser, gzip, mimetypes, zipfile, signal, Queue, threading
 from xml.dom import minidom
@@ -99,6 +99,8 @@ try:
     import boto
 except ImportError:
     alert("Please install boto. `pip install boto`", os.EX_UNAVAILABLE)
+
+from boto.s3.connection import OrdinaryCallingFormat
 
 try:
     import Foundation, objc
@@ -307,7 +309,10 @@ def upload_files(env):
     if KEY is None or SECRET is None:
         alert("AWS credentials were not found. See https://gist.github.com/dryan/5317321 for more information.", os.EX_NOINPUT)
     
-    s3connection        =   boto.connect_s3(KEY, SECRET)
+    if '.' in bucket:
+        s3connection        =   boto.connect_s3(KEY, SECRET, calling_format=OrdinaryCallingFormat())
+    else:
+        s3connection        =   boto.connect_s3(KEY, SECRET)
 
     # test the bucket connection
     try:
