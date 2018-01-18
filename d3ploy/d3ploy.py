@@ -64,9 +64,11 @@ def progress_setup(label='Uploading: ', num_files=0, marker_color=DEFAULT_COLOR)
     global bar
     if progressbar and not QUIET:
         bar = progressbar.ProgressBar(widgets=[marker_color, label, progressbar.Percentage(
-        ), ' ', progressbar.Bar(), ' ', progressbar.ETA(), DEFAULT_COLOR], maxval=num_files).start()
+        ), ' ', progressbar.Bar(), ' ', progressbar.ETA(), DEFAULT_COLOR], maxval=num_files)
         if not hasattr(bar, 'currval'):
             bar = None  # this isn't the version we're expecting
+        else:
+            bar.start()
     else:
         bar = None
 
