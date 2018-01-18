@@ -1,3 +1,4 @@
+import os
 import re
 from distutils.core import setup
 
@@ -15,11 +16,16 @@ if VERSION:
 else:
     raise ValueError('Could not find version number in script file')
 
+DESCRIPTION = open('README.md', 'r').read()
+if os.path.exists('README.rst'):
+    DESCRIPTION = open('README.rst', 'r').read()
+
 setup(
     name='d3ploy',
     packages=['d3ploy'],
     version=VERSION,
     description='Script for uploading files to S3 with multiple environment support.',
+    long_description=DESCRIPTION,
     author='Dan Ryan',
     author_email='d@dryan.com',
     url='https://github.com/dryan/d3ploy',

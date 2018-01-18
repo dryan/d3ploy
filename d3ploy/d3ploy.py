@@ -25,7 +25,7 @@ from xml.dom import minidom
 
 from boto.s3.connection import OrdinaryCallingFormat
 
-VERSION = '2.1.1'
+VERSION = '2.1.2'
 
 warnings.filterwarnings('ignore')
 

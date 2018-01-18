@@ -35,3 +35,4 @@ nosetests.xml
 docs/_build
 index.rst
 MANIFEST
+README.rst
