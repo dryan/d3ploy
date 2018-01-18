@@ -34,3 +34,4 @@ nosetests.xml
 .pydevproject
 docs/_build
 index.rst
+MANIFEST
