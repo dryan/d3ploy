@@ -25,7 +25,7 @@ from xml.dom import minidom
 
 from boto.s3.connection import OrdinaryCallingFormat
 
-VERSION = '2.1.2'
+VERSION = '2.2.0'
 
 warnings.filterwarnings('ignore')
 
@@ -206,6 +206,8 @@ parser.add_argument('-q', '--quiet', help="Suppress all output. Useful for autom
                     action="store_true", default=False)
 parser.add_argument('-p', '--processes',
                     help="The number of concurrent processes to use for uploading/deleting.", type=int, default=10)
+parser.add_argument(
+    '--cloudfront', help="Specify a CloudFront distribution to invalidate after updating.", default=None)
 args = parser.parse_args()
 
 if args.quiet:
@@ -479,6 +481,12 @@ def upload_files(env):
     if args.delete or environ_config.get('delete', False):
         notify(args.environment, "%d files %s removed" %
                (deleted, verb), color=ALERT_COLOR)
+    cloudfront_id = environ_config.get('cloudfront', None)
+    if cloudfront_id:
+        cloudfront = boto.connect_cloudfront(KEY, SECRET)
+        cloudfront.create_invalidation_request(cloudfront_id, ['*'])
+        notify(args.environment, "CloudFront distribution {} invalidation requested".format(
+            cloudfront_id), color=OK_COLOR)
 
 
 if args.environment not in config:

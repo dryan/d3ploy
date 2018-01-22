@@ -23,7 +23,7 @@ When you run `d3ploy`, it will look in the current directory for a "deploy.json"
 
 To supress all output, pass `-q` or `--quiet` to the command. Note that there is not a way to set the quiet option in the config file(s).
 
-To set the number of separate processes to use, pass `-p 10` or `--processess 10` where '10' is the number to use. If you do not want to use multiple processes, set this to '0'. 
+To set the number of separate processes to use, pass `-p 10` or `--processess 10` where '10' is the number to use. If you do not want to use multiple processes, set this to '0'.
 
 You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`. Environments besides "default" will inherit any settings not explicitly set from the default configuration.
 
@@ -40,6 +40,7 @@ The only required option for any environment is "bucket" for the S3 bucket to up
 * "charset" to set the charset flag on 'Content-Type' headers of text files
 * "cache" to set the Cache-Control header for various mimetypes. See below for more.
 * "gitignore" to add all entries in a .gitignore file to the exclude patterns
+* "cloudfront" to invalidate all paths in the given CloudFront distribution ID
 
 ## Cache-Control Headers
 
@@ -53,7 +54,7 @@ If you want to set Cache-Control headers on various files, add a `cache` object 
   "image/jpeg": 22896000,
   "image/webp": 22896000,
   "image/gif": 22896000
-} 
+}
 ```
 
 Each key is the mimetype of the kind of file you want to have cached, with a value that is the seconds the `max-age` flag set to. In the above example, CSS and JavaScript files will be cached for 30 days while images will be cached for 1 year. For more about Cache-Control, read [Leverage Browser Caching](https://developers.google.com/speed/docs/insights/LeverageBrowserCaching).
@@ -69,4 +70,3 @@ d3ploy will use the `progressbar` module if it's available to display output. Th
 ## Caution About Using the gzip Option
 
 Almost all modern browsers will support files that are served with gzip compression. The notable exception is non-smartphone mobile browsers. If you have significant traffic over those browsers, it is advisable to avoid the gzip option.
-
