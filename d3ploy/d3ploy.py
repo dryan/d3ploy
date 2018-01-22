@@ -25,7 +25,7 @@ from xml.dom import minidom
 
 from boto.s3.connection import OrdinaryCallingFormat
 
-VERSION = '2.2.0'
+VERSION = '2.2.1'
 
 warnings.filterwarnings('ignore')
 
@@ -483,10 +483,14 @@ def upload_files(env):
                (deleted, verb), color=ALERT_COLOR)
     cloudfront_id = environ_config.get('cloudfront', None)
     if cloudfront_id:
-        cloudfront = boto.connect_cloudfront(KEY, SECRET)
-        cloudfront.create_invalidation_request(cloudfront_id, ['*'])
-        notify(args.environment, "CloudFront distribution {} invalidation requested".format(
-            cloudfront_id), color=OK_COLOR)
+        if args.dry_run:
+            notify(args.environment, "CloudFront distribution {} invalidation would be requested".format(
+                cloudfront_id), color=OK_COLOR)
+        else:
+            cloudfront = boto.connect_cloudfront(KEY, SECRET)
+            cloudfront.create_invalidation_request(cloudfront_id, ['*'])
+            notify(args.environment, "CloudFront distribution {} invalidation requested".format(
+                cloudfront_id), color=OK_COLOR)
 
 
 if args.environment not in config:
