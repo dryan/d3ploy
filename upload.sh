@@ -5,3 +5,4 @@ python setup.py clean
 python setup.py sdist
 twine upload dist/*
 rm README.rst
+rm -r dist
