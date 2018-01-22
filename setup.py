@@ -16,7 +16,10 @@ if VERSION:
 else:
     raise ValueError('Could not find version number in script file')
 
-DESCRIPTION = open('README.md', 'r').read()
+DESCRIPTION = ''
+
+if os.path.exists('README.md'):
+    DESCRIPTION = open('README.md', 'r').read()
 if os.path.exists('README.rst'):
     DESCRIPTION = open('README.rst', 'r').read()
 
