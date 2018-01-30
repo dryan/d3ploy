@@ -25,9 +25,12 @@ from xml.dom import minidom
 
 from boto.s3.connection import OrdinaryCallingFormat
 
-VERSION = '2.2.1'
+VERSION = '2.2.2'
 
 warnings.filterwarnings('ignore')
+
+# add woff2 mimetype since it's not supported by default
+mimetypes.add_type('application/font-woff2', '.woff2')
 
 DEFAULT_COLOR = '\033[0;0m'
 ERROR_COLOR = '\033[31m'
