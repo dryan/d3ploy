@@ -1,12 +1,10 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "bc4fe7cbef7d2f175ddbe4c5d34331922aca352c9714e1357c5570eadce42764"
+            "sha256": "05fb18435ffa4c7f6053732cae31f5c0b4da14589984fdf164c5a5f7a8d59e74"
         },
         "pipfile-spec": 6,
-        "requires": {
-            "python_version": "3.6"
-        },
+        "requires": {},
         "sources": [
             {
                 "name": "pypi",
@@ -53,6 +51,14 @@
             "index": "pypi",
             "version": "==0.5.9"
         },
+        "progressbar2": {
+            "hashes": [
+                "sha256:1ea89e2aaa1da85450aabbd2af62cefa04f1ee1c567f3a11ee0d8ded14fd1fea",
+                "sha256:8e5b5419e04193bb7c3fea71579937bbbcd64c26472b929718c2fe7ec420fe39"
+            ],
+            "index": "pypi",
+            "version": "==3.39.3"
+        },
         "pync": {
             "hashes": [
                 "sha256:38b9e61735a3161f9211a5773c5f5ea698f36af4ff7f77fa03e8d1ff0caa117f"
@@ -67,6 +73,13 @@
             ],
             "markers": "python_version >= '2.7'",
             "version": "==2.8.0"
+        },
+        "python-utils": {
+            "hashes": [
+                "sha256:34aaf26b39b0b86628008f2ae0ac001b30e7986a8d303b61e1357dfcdad4f6d3",
+                "sha256:e25f840564554eaded56eaa395bca507b0b9e9f0ae5ecb13a8cb785305c56d25"
+            ],
+            "version": "==2.3.0"
         },
         "s3transfer": {
             "hashes": [
@@ -238,14 +251,6 @@
             ],
             "version": "==1.5.0.1"
         },
-        "progressbar2": {
-            "hashes": [
-                "sha256:1ea89e2aaa1da85450aabbd2af62cefa04f1ee1c567f3a11ee0d8ded14fd1fea",
-                "sha256:8e5b5419e04193bb7c3fea71579937bbbcd64c26472b929718c2fe7ec420fe39"
-            ],
-            "index": "pypi",
-            "version": "==3.39.3"
-        },
         "prompt-toolkit": {
             "hashes": [
                 "sha256:11adf3389a996a6d45cc277580d0d53e8a5afd281d0c9ec71b28e6f121463780",
@@ -267,13 +272,6 @@
                 "sha256:e8218dd399a61674745138520d0d4cf2621d7e032439341bc3f647bff125818d"
             ],
             "version": "==2.3.1"
-        },
-        "python-utils": {
-            "hashes": [
-                "sha256:34aaf26b39b0b86628008f2ae0ac001b30e7986a8d303b61e1357dfcdad4f6d3",
-                "sha256:e25f840564554eaded56eaa395bca507b0b9e9f0ae5ecb13a8cb785305c56d25"
-            ],
-            "version": "==2.3.0"
         },
         "readme-renderer": {
             "hashes": [
