@@ -40,3 +40,5 @@ jobs:
       <<: *test-template
       docker:
         - image: circleci/python:latest
+          environment:
+            PIPENV_VENV_IN_PROJECT: true
