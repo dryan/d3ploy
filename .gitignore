@@ -124,3 +124,5 @@ dmypy.json
 
 .DS_Store
 *.ignore
+Pipfile.lock
+
