@@ -64,7 +64,6 @@ TEST_FILES = [
     'tests/files/sample.xml',
 ]
 TEST_FILES_WITH_IGNORED_FILES = TEST_FILES + [
-    'tests/files/.DS_Store',
     'tests/files/js/ignore.js',
     'tests/files/please.ignoreme',
     'tests/files/test.ignore',
@@ -129,6 +128,25 @@ PREFIX_REGEX = re.compile(
         ),
     ),
 )
+
+
+# we need to remove .DS_Store files before testing on macOS to keep tests consistent on other platforms
+def clean_ds_store():
+    for root, dir_names, file_names in os.walk(relative_path('./')):
+        for fn in file_names:
+            if fn == '.DS_Store':
+                os.unlink(
+                    os.path.join(
+                        root,
+                        fn
+                    )
+                )
+
+
+class BaseTestCase(unittest.TestCase):
+    def setUp(self):
+        clean_ds_store()
+        super().setUp()
 
 
 class S3BucketMixin(unittest.TestCase):
@@ -206,7 +224,7 @@ class MockSyncFiles(Mock):
         self.configure_mock(**kwargs)
 
 
-class AlertTestCase(unittest.TestCase):
+class AlertTestCase(BaseTestCase):
     def test_non_error_alerts(self):
         for color in [d3ploy.DEFAULT_COLOR, d3ploy.ALERT_COLOR, d3ploy.ERROR_COLOR, d3ploy.OK_COLOR]:
             with patch('sys.stdout', new=MockBuffer()) as std_out:
@@ -295,7 +313,7 @@ class AlertTestCase(unittest.TestCase):
                 )
 
 
-class ProgressBarTestCase(S3BucketMixin):
+class ProgressBarTestCase(BaseTestCase, S3BucketMixin):
     def test_progress_setup(self):
         try:
             import progressbar
@@ -351,7 +369,7 @@ class ProgressBarTestCase(S3BucketMixin):
             )
 
 
-class DetermineFilesToSyncTestCase(unittest.TestCase):
+class DetermineFilesToSyncTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.maxDiff = None
@@ -443,7 +461,7 @@ class DetermineFilesToSyncTestCase(unittest.TestCase):
         os.chdir(cwd)
 
 
-class CheckForUpdatesTestCase(TestFileMixin):
+class CheckForUpdatesTestCase(BaseTestCase, TestFileMixin):
     def setUp(self):
         time.sleep(0.5)
         super().setUp()
@@ -496,6 +514,7 @@ class CheckForUpdatesTestCase(TestFileMixin):
 
 
 class UploadFileTestCase(
+    BaseTestCase,
     S3BucketMixin,
     TestFileMixin,
 ):
@@ -744,6 +763,7 @@ class UploadFileTestCase(
 
 
 class DeleteFileTestCase(
+    BaseTestCase,
     S3BucketMixin,
     TestFileMixin,
 ):
@@ -873,7 +893,7 @@ class DeleteFileTestCase(
         )
 
 
-class InvalidateCloudfrontTestCase(unittest.TestCase):
+class InvalidateCloudfrontTestCase(BaseTestCase):
     def test_dry_run(self):
         response = d3ploy.invalidate_cloudfront(
             TEST_CLOUDFRONT_DISTRIBUTION,
@@ -899,6 +919,7 @@ class InvalidateCloudfrontTestCase(unittest.TestCase):
 
 
 class SyncFilesTestCase(
+    BaseTestCase,
     S3BucketMixin,
     TestFileMixin,
 ):
@@ -1286,7 +1307,7 @@ class SyncFilesTestCase(
             )
 
 
-class CLITestCase(unittest.TestCase):
+class CLITestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         cls.cwd = os.getcwd()
