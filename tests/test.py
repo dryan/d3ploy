@@ -71,6 +71,22 @@ TEST_FILES_WITH_IGNORED_FILES = TEST_FILES + [
 ]
 TEST_FILES.sort()
 TEST_FILES_WITH_IGNORED_FILES.sort()
+TEST_MIMETYPES = [
+    ('css/sample.css', 'text/css'),
+    ('fonts/open-sans.eot', 'application/vnd.ms-fontobject'),
+    ('fonts/open-sans.svg', 'image/svg+xml'),
+    ('fonts/open-sans.ttf', 'font/ttf'),
+    ('fonts/open-sans.woff', 'font/woff'),
+    ('fonts/open-sans.woff2', 'font/woff2'),
+    ('img/32d08f4a5eb10332506ebedbb9bc7257.jpg', 'image/jpeg'),
+    ('img/6c853ed9dacd5716bc54eb59cec30889.png', 'image/png'),
+    ('img/6d939393058de0579fca1bbf10ecff25.gif', 'image/gif'),
+    ('img/http.svg', 'image/svg+xml'),
+    ('html/index.html', 'text/html'),
+    ('js/sample.js', 'text/javascript'),
+    ('sample.json', 'application/json'),
+    ('sample.xml', 'application/xml'),
+]
 ACL_GRANTS = {
     'private': [],
     'public-read': [{'Grantee': {'Type': 'Group', 'URI': 'http://acs.amazonaws.com/groups/global/AllUsers'}, 'Permission': 'READ'}],
@@ -689,23 +705,7 @@ class UploadFileTestCase(
             )
 
     def test_mimetypes(self):
-        checks = [
-            ('css/sample.css', 'text/css'),
-            ('fonts/open-sans.eot', 'application/vnd.ms-fontobject'),
-            ('fonts/open-sans.svg', 'image/svg+xml'),
-            ('fonts/open-sans.ttf', 'font/ttf'),
-            ('fonts/open-sans.woff', 'font/woff'),
-            ('fonts/open-sans.woff2', 'font/woff2'),
-            ('img/32d08f4a5eb10332506ebedbb9bc7257.jpg', 'image/jpeg'),
-            ('img/6c853ed9dacd5716bc54eb59cec30889.png', 'image/png'),
-            ('img/6d939393058de0579fca1bbf10ecff25.gif', 'image/gif'),
-            ('img/http.svg', 'image/svg+xml'),
-            ('html/index.html', 'text/html'),
-            ('js/sample.js', 'application/javascript'),
-            ('sample.json', 'application/json'),
-            ('sample.xml', 'application/xml'),
-        ]
-        for check in checks:
+        for check in TEST_MIMETYPES:
             result = d3ploy.upload_file(
                 relative_path(
                     os.path.join('./files', check[0]),
@@ -1075,22 +1075,6 @@ class SyncFilesTestCase(
             )
 
     def test_mimetypes(self):
-        checks = [
-            ('css/sample.css', 'text/css'),
-            ('fonts/open-sans.eot', 'application/vnd.ms-fontobject'),
-            ('fonts/open-sans.svg', 'image/svg+xml'),
-            ('fonts/open-sans.ttf', 'font/ttf'),
-            ('fonts/open-sans.woff', 'font/woff'),
-            ('fonts/open-sans.woff2', 'font/woff2'),
-            ('img/32d08f4a5eb10332506ebedbb9bc7257.jpg', 'image/jpeg'),
-            ('img/6c853ed9dacd5716bc54eb59cec30889.png', 'image/png'),
-            ('img/6d939393058de0579fca1bbf10ecff25.gif', 'image/gif'),
-            ('img/http.svg', 'image/svg+xml'),
-            ('html/index.html', 'text/html'),
-            ('js/sample.js', 'application/javascript'),
-            ('sample.json', 'application/json'),
-            ('sample.xml', 'application/xml'),
-        ]
         d3ploy.sync_files(
             'test',
             local_path=relative_path('./files'),
@@ -1098,7 +1082,7 @@ class SyncFilesTestCase(
             bucket_path='sync_files/test-mimetypes',
             excludes=EXCLUDES,
         )
-        for check in checks:
+        for check in TEST_MIMETYPES:
             s3_object = self.s3.Object(
                 self.bucket.name,
                 'sync_files/test-mimetypes/{}'.format(check[0]),

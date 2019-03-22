@@ -45,6 +45,33 @@ ALERT_COLOR = '\033[33m'
 OK_COLOR = '\033[92m'
 QUIET = False
 
+# From https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#Important_MIME_types_for_Web_developers
+MIMETYPES = {
+    'application/ogg': ['.ogg'],
+    'audio/wave': ['.wav'],
+    'font/otf': ['.otf'],
+    'font/ttf': ['.ttf'],
+    'font/woff': ['.woff'],
+    'font/woff2': ['.woff2'],
+    'image/gif': ['.gif'],
+    'image/jpeg': ['.jpeg', '.jpg'],
+    'image/png': ['.png'],
+    'image/svg+xml': ['.svg'],
+    'image/webp': ['.webp'],
+    'image/x-icon': ['.ico'],
+    'text/css': ['.css'],
+    'text/html': ['.html', '.htm'],
+    'text/javascript': ['.js'],
+    'video/webm': ['.webm'],
+}
+
+for mimetype in MIMETYPES:
+    for extension in MIMETYPES[mimetype]:
+        mimetypes.add_type(
+            mimetype,
+            extension,
+        )
+
 
 def alert(
     text,
