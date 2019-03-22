@@ -433,16 +433,9 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
             relative_path('./files'),
             'index.html',
         )
-        expected = [
-            x for x in TEST_FILES_WITH_IGNORED_FILES if not x.endswith('index.html')]
-        expected.append('tests/files/.gitignore')
-        expected.append('tests/files/txt/.gitkeep')
-        expected.append('tests/files/js/.gitignore')
-        expected.sort()
-        files_list.sort()
-        self.assertListEqual(
+        self.assertNotIn(
+            relative_path('./files/html/index.html'),
             files_list,
-            expected,
         )
 
     def test_gitignore_files_not_found(self):
