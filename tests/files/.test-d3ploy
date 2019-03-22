@@ -1,0 +1,23 @@
+{
+  "environments": {
+    "prod": {
+      "bucket_path": "/alt-config/"
+    },
+    "test": {
+      "bucket_path": "/test/",
+      "exclude": [
+        ".gitignore",
+        ".gitkeep",
+        ".hidden"
+      ]
+    }
+  },
+  "defaults": {
+    "bucket_name": "d3ploy-tests",
+    "local_path": ".",
+    "exclude": [
+      ".gitignore",
+      ".gitkeep"
+    ]
+  }
+}
