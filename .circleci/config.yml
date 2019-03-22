@@ -19,17 +19,10 @@ jobs:
           name: build lock file
           command: |
             pipenv lock
-      - restore_cache:
-          keys:
-            - deps9-{{ .Environment.PYTHON_VERSION }}-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
       - run:
           name: install dependencies
           command: |
             pipenv sync --dev
-      - save_cache:
-          key: deps9-{{ .Environment.PYTHON_VERSION }}-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
-          paths:
-            - ".venv"
       - run:
           name: run tests
           command: |
