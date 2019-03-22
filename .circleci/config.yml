@@ -33,11 +33,11 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
-    test-latest:
-        <<: *test-template
-        docker:
-          - image: circleci/python:latest
-    test-2.7:
-        <<: *test-template
-        docker:
-          - image: circleci/python:2.7
+  test-latest:
+      <<: *test-template
+      docker:
+        - image: circleci/python:latest
+  test-2.7:
+      <<: *test-template
+      docker:
+        - image: circleci/python:2.7
