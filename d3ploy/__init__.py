@@ -1,1 +1,1 @@
-from d3ploy import main
+from .d3ploy import cli

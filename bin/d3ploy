@@ -2,4 +2,4 @@
 
 import d3ploy
 
-d3ploy.main()
+d3ploy.cli()
