@@ -1,0 +1,14 @@
+{
+  "environments": {
+    "default": {
+      "bucket_name": "d3ploy-tests",
+      "local_path": "./tests/files",
+      "bucket_path": "/default/"
+    },
+    "staging": {
+      "bucket_name": "d3ploy-tests",
+      "local_path": "./tests/files",
+      "bucket_path": "/staging/"
+    }
+  }
+}
