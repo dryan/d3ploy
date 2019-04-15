@@ -19,7 +19,7 @@ import time
 import urllib
 import uuid
 import warnings
-from multiprocessing.pool import ThreadPool
+from concurrent.futures import ThreadPoolExecutor
 
 import boto3
 import botocore
@@ -94,7 +94,6 @@ def alert(
 
 
 killswitch = threading.Event()
-pool = None
 
 
 def progress_setup(
@@ -132,12 +131,6 @@ def bail(
         progress_update(bar, 0)
         alert('')
     except NameError:
-        pass
-    try:
-        pool.close()
-        pool.terminate()
-        pool.join()
-    except Exception:
         pass
     alert('\nExiting...', os.EX_OK, ALERT_COLOR)
 
@@ -477,14 +470,12 @@ def sync_files(
     dry_run=False,
     charset=False,
     gitignore=False,
-    processes=0,
+    processes=1,
     delete=False,
     confirm=False,
     cloudfront_id=[],
     caches={},
 ):
-    global pool
-
     alert(
         'Using settings for "{}" environment'.format(
             env,
@@ -532,21 +523,20 @@ def sync_files(
         OK_COLOR,
     )
 
-    if processes > 1:
-        key_names = []
-        updated = 0
-        pool = ThreadPool(processes)
+    key_names = []
+    updated = 0
+    with ThreadPoolExecutor(max_workers=processes) as executor:
         for fn in files:
-            job = pool.apply_async(
+            job = executor.submit(
                 upload_file,
-                (
+                *(
                     fn,
                     bucket_name,
                     s3,
                     bucket_path,
                     prefix_regex,
                 ),
-                {
+                **{
                     'acl': acl,
                     'bar': bar,
                     'force': force,
@@ -556,27 +546,10 @@ def sync_files(
                 }
             )
             try:
-                key_names.append(job.get())
+                key_names.append(job.result())
             except KeyboardInterrupt:  # pragma: no cover
                 killswitch.set()
-    else:
-        key_names = []
-        for fn in files:
-            key_names.append(
-                upload_file(
-                    fn,
-                    bucket_name,
-                    s3,
-                    bucket_path,
-                    prefix_regex,
-                    acl=acl,
-                    bar=bar,
-                    force=force,
-                    dry_run=dry_run,
-                    charset=charset,
-                    caches=caches,
-                )
-            )
+
     if bar and not killswitch.is_set():
         bar.finish()
 
@@ -595,37 +568,27 @@ def sync_files(
                 len(to_remove),
                 ALERT_COLOR,
             )
-            if processes > 1:
-                deleted = 0
-                pool = ThreadPool(processes)
+            deleted = 0
+            with ThreadPoolExecutor(max_workers=processes) as executor:
                 for kn in to_remove:
-                    job = pool.apply_async(
+                    job = executor.submit(
                         delete_file,
-                        (
+                        *(
                             kn,
                             bucket_name,
                             s3,
                         ),
-                        {
+                        **{
                             'needs_confirmation': confirm,
                             'bar': bar,
                             'dry_run': dry_run,
                         },
                     )
                     try:
-                        deleted += job.get()
+                        deleted += job.result()
                     except KeyboardInterrupt:  # pragma: no cover
                         killswitch.set()
-            else:
-                for key_name in to_remove:
-                    deleted += delete_file(
-                        key_name,
-                        bucket_name,
-                        s3,
-                        needs_confirmation=confirm,
-                        bar=bar,
-                        dry_run=dry_run,
-                    )
+
             if bar and not killswitch.is_set():
                 bar.finish()
 
@@ -796,6 +759,12 @@ def cli():
     args = parser.parse_args()
     if args.quiet:
         QUIET = True
+
+    if args.processes < 1:
+        alert(
+            'processes must be 1 or more',
+            os.EX_CONFIG,
+        )
 
     if os.path.exists('deploy.json'):
         alert(
