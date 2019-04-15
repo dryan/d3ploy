@@ -632,9 +632,9 @@ def sync_files(
 
 def processes_int(x):
     x = int(x)
-    if x <= 0 or x > 50:
+    if x < 1 or x > 50:
         raise argparse.ArgumentTypeError(
-            'An integer between 0 and 50 is required'
+            'An integer between 1 and 50 is required'
         )
     return x
 
@@ -761,12 +761,6 @@ def cli():
     args = parser.parse_args()
     if args.quiet:
         QUIET = True
-
-    if args.processes < 1:
-        alert(
-            'processes must be 1 or more',
-            os.EX_CONFIG,
-        )
 
     if os.path.exists('deploy.json'):
         alert(
