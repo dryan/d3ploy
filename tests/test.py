@@ -727,10 +727,14 @@ class UploadFileTestCase(
                 'test-mimetypes',
                 PREFIX_REGEX,
             )
-            s3_object = self.s3.Object(
-                self.bucket.name,
-                result[0],
-            )
+            try:
+                s3_object = self.s3.Object(
+                    self.bucket.name,
+                    result[0],
+                )
+            except Exception as e:
+                print(result)
+                raise e
             self.assertEqual(
                 s3_object.content_type,
                 check[1],
@@ -1249,13 +1253,13 @@ class SyncFilesTestCase(
             'sync_files/test-deleting',
             PREFIX_REGEX,
         )
-        self.destroy_test_file()
         self.assertTrue(
             s3_object_exists(
                 self.bucket.name,
                 uploaded_file[0],
             )
         )
+        self.destroy_test_file()
         d3ploy.sync_files(
             'test',
             local_path=relative_path('./files'),
