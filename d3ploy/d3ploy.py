@@ -549,6 +549,7 @@ def sync_files(
                 key_names.append(job.result())
             except KeyboardInterrupt:  # pragma: no cover
                 killswitch.set()
+        executor.shutdown(wait=True)
 
     if bar and not killswitch.is_set():
         bar.finish()
@@ -588,6 +589,7 @@ def sync_files(
                         deleted += job.result()
                     except KeyboardInterrupt:  # pragma: no cover
                         killswitch.set()
+                executor.shutdown(wait=True)
 
             if bar and not killswitch.is_set():
                 bar.finish()
