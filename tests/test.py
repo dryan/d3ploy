@@ -978,65 +978,6 @@ class SyncFilesTestCase(
                 ),
             )
 
-    def test_md5_hashing(self):
-        with open(self.test_file_name, 'w') as f:
-            f.write(uuid.uuid4().hex)
-            f.write('\n')
-            f.flush()
-        d3ploy.sync_files(
-            'test',
-            local_path=relative_path('./files/txt'),
-            bucket_name=self.bucket.name,
-            bucket_path='sync_files/test-md5-hashing',
-            excludes=EXCLUDES,
-        )
-        s3_object_1_hash = self.s3.Object(
-            self.bucket.name,
-            'sync_files/test-md5-hashing/{}'.format(
-                os.path.basename(self.test_file_name),
-            ),
-        ).metadata.get('d3ploy-hash')
-        d3ploy.sync_files(
-            'test',
-            local_path=relative_path('./files/txt'),
-            bucket_name=self.bucket.name,
-            bucket_path='sync_files/test-md5-hashing',
-            excludes=EXCLUDES,
-        )
-        s3_object_2_hash = self.s3.Object(
-            self.bucket.name,
-            'sync_files/test-md5-hashing/{}'.format(
-                os.path.basename(self.test_file_name),
-            ),
-        ).metadata.get('d3ploy-hash')
-        self.assertEqual(
-            s3_object_1_hash,
-            s3_object_2_hash,
-            msg='sync_files hashes match for original and unchanged file',
-        )
-        with open(self.test_file_name, 'w') as f:
-            f.write(uuid.uuid4().hex)
-            f.write('\n')
-            f.flush()
-        d3ploy.sync_files(
-            'test',
-            local_path=relative_path('./files/txt'),
-            bucket_name=self.bucket.name,
-            bucket_path='sync_files/test-md5-hashing',
-            excludes=EXCLUDES,
-        )
-        s3_object_3_hash = self.s3.Object(
-            self.bucket.name,
-            'sync_files/test-md5-hashing/{}'.format(
-                os.path.basename(self.test_file_name),
-            ),
-        ).metadata.get('d3ploy-hash')
-        self.assertNotEqual(
-            s3_object_1_hash,
-            s3_object_3_hash,
-            msg='sync_files hashes do not match for original and changed file',
-        )
-
     def test_dry_run(self):
         d3ploy.sync_files(
             'test',
