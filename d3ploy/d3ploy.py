@@ -32,7 +32,7 @@ with warnings.catch_warnings():
     except Exception:  # pragma: no cover, sadly this module raises a base Exception when imported on unsupported platforms
         pync = False
 
-VERSION = '3.0.0-beta'
+VERSION = '3.0.0'
 VALID_ACLS = [
     'private',
     'public-read',
