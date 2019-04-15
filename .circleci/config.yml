@@ -4,7 +4,7 @@ workflows:
   test:
     jobs:
       - test-3.6
-      - test-latest
+      - test-3.7
 jobs:
   test-3.6: &test-template
     docker:
@@ -30,9 +30,9 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
-  test-latest:
-      <<: *test-template
-      docker:
-        - image: circleci/python:latest
-          environment:
-            PIPENV_VENV_IN_PROJECT: true
+  test-3.7:
+    <<: *test-template
+    docker:
+      - image: circleci/python:3.7
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
