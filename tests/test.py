@@ -591,6 +591,12 @@ class UploadFileTestCase(
             'test-md5-hashing',
             PREFIX_REGEX,
         )
+        self.assertTrue(
+            s3_object_exists(
+                self.bucket.name,
+                result_1[0],
+            )
+        )
         s3_object_1_hash = self.s3.Object(
             self.bucket.name,
             result_1[0],
@@ -606,6 +612,12 @@ class UploadFileTestCase(
             self.s3,
             'test-md5-hashing',
             PREFIX_REGEX,
+        )
+        self.assertTrue(
+            s3_object_exists(
+                self.bucket.name,
+                result_2[0],
+            )
         )
         s3_object_2_hash = self.s3.Object(
             self.bucket.name,
@@ -727,14 +739,16 @@ class UploadFileTestCase(
                 'test-mimetypes',
                 PREFIX_REGEX,
             )
-            try:
-                s3_object = self.s3.Object(
+            self.assertTrue(
+                s3_object_exists(
                     self.bucket.name,
                     result[0],
                 )
-            except Exception as e:
-                print(result)
-                raise e
+            )
+            s3_object = self.s3.Object(
+                self.bucket.name,
+                result[0],
+            )
             self.assertEqual(
                 s3_object.content_type,
                 check[1],
@@ -1090,27 +1104,6 @@ class SyncFilesTestCase(
                 'max-age={:d}, public'.format(expiration),
                 msg='sync_files sets proper cache-control header for max-age={:d}'.format(
                     expiration),
-            )
-
-    def test_mimetypes(self):
-        d3ploy.sync_files(
-            'test',
-            local_path=relative_path('./files'),
-            bucket_name=self.bucket.name,
-            bucket_path='sync_files/test-mimetypes',
-            excludes=EXCLUDES,
-        )
-        for check in TEST_MIMETYPES:
-            s3_object = self.s3.Object(
-                self.bucket.name,
-                'sync_files/test-mimetypes/{}'.format(check[0]),
-            )
-            self.assertEqual(
-                s3_object.content_type,
-                check[1],
-                msg='sync_files sets the correct mimetype for {} files'.format(
-                    check[0].split('.')[-1],
-                ),
             )
 
     def test_multiple_processes(self):
