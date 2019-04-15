@@ -19,7 +19,7 @@ import time
 import urllib
 import uuid
 import warnings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent import futures
 
 import boto3
 import botocore
@@ -525,7 +525,8 @@ def sync_files(
 
     key_names = []
     updated = 0
-    with ThreadPoolExecutor(max_workers=processes) as executor:
+    with futures.ThreadPoolExecutor(max_workers=processes) as executor:
+        jobs = []
         for fn in files:
             job = executor.submit(
                 upload_file,
@@ -545,10 +546,9 @@ def sync_files(
                     'caches': caches,
                 }
             )
-            try:
-                key_names.append(job.result())
-            except KeyboardInterrupt:  # pragma: no cover
-                killswitch.set()
+            jobs.append(job)
+        for job in futures.as_completed(jobs):
+            key_names.append(job.result())
         executor.shutdown(wait=True)
 
     if bar and not killswitch.is_set():
@@ -570,7 +570,8 @@ def sync_files(
                 ALERT_COLOR,
             )
             deleted = 0
-            with ThreadPoolExecutor(max_workers=processes) as executor:
+            with futures.ThreadPoolExecutor(max_workers=processes) as executor:
+                jobs = []
                 for kn in to_remove:
                     job = executor.submit(
                         delete_file,
@@ -585,10 +586,9 @@ def sync_files(
                             'dry_run': dry_run,
                         },
                     )
-                    try:
-                        deleted += job.result()
-                    except KeyboardInterrupt:  # pragma: no cover
-                        killswitch.set()
+                    jobs.append(job)
+                for job in futures.as_completed(jobs):
+                    deleted += job.result()
                 executor.shutdown(wait=True)
 
             if bar and not killswitch.is_set():
