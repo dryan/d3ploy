@@ -17,7 +17,7 @@ jobs:
       D3PLOY_DEBUG: true
     runs-on: ubuntu-latest
     steps:
-      - uses: dryan/action-polynotify
+      - uses: dryan/action-polynotify@v1
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           message: Running d3ploy tests on Python ${{ matrix.python-version }}
@@ -64,12 +64,12 @@ jobs:
         with:
           name: python-coverage
           path: htmlcov
-      - uses: dryan/action-polynotify
+      - uses: dryan/action-polynotify@v1
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           message: d3ploy tests on Python ${{ matrix.python-version }} succeeded
         if: success()
-      - uses: dryan/action-polynotify
+      - uses: dryan/action-polynotify@v1
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           message: d3ploy tests on Python ${{ matrix.python-version }} failed
