@@ -546,6 +546,7 @@ class UploadFileTestCase(
             "test-md5-hashing",
             PREFIX_REGEX,
         )
+        time.sleep(1)
         self.assertTrue(s3_object_exists(self.bucket.name, result_1[0]))
         s3_object_1_hash = self.s3.Object(self.bucket.name, result_1[0]).metadata.get(
             "d3ploy-hash"
@@ -560,6 +561,7 @@ class UploadFileTestCase(
             "test-md5-hashing",
             PREFIX_REGEX,
         )
+        time.sleep(1)
         self.assertTrue(s3_object_exists(self.bucket.name, result_2[0]))
         s3_object_2_hash = self.s3.Object(self.bucket.name, result_2[0]).metadata.get(
             "d3ploy-hash"
@@ -585,6 +587,7 @@ class UploadFileTestCase(
             "test-md5-hashing",
             PREFIX_REGEX,
         )
+        time.sleep(1)
         s3_object_3_hash = self.s3.Object(self.bucket.name, result_3[0]).metadata.get(
             "d3ploy-hash"
         )
@@ -624,6 +627,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
                 charset=charset,
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(self.bucket.name, result[0])
             if charset:
                 self.assertEqual(
@@ -644,6 +648,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
                 caches={"text/css": expiration},
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(self.bucket.name, response[0])
             self.assertEqual(
                 s3_obj.cache_control,
@@ -664,6 +669,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
             )
             self.assertTrue(s3_object_exists(self.bucket.name, result[0]))
+            time.sleep(1)
             s3_object = self.s3.Object(self.bucket.name, result[0])
             self.assertEqual(
                 s3_object.content_type,
@@ -872,6 +878,7 @@ class SyncFilesTestCase(
                 bucket_path="sync_files/test-charset-{}".format(charset or "none"),
                 charset=charset,
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(
                 self.bucket.name,
                 "sync_files/test-charset-{}/index.html".format(charset or "none"),
@@ -895,6 +902,7 @@ class SyncFilesTestCase(
                 excludes=EXCLUDES,
                 caches={"text/css": expiration},
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(
                 self.bucket.name,
                 "sync_files/test-cache-{:d}/sample.css".format(expiration),
