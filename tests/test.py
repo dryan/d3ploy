@@ -954,7 +954,7 @@ class SyncFilesTestCase(
             gitignore=True,
             delete=True,
         )
-        time.sleep(1)
+        time.sleep(5)
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
 
     def test_deleting_files_single_process(self):
@@ -980,7 +980,7 @@ class SyncFilesTestCase(
             gitignore=True,
             delete=True,
         )
-        time.sleep(1)
+        time.sleep(5)
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
         self.assertGreaterEqual(
             outcome["deleted"], 1,
@@ -1010,7 +1010,7 @@ class SyncFilesTestCase(
             delete=True,
             confirm=True,
         )
-        time.sleep(1)
+        time.sleep(5)
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
 
     @patch("d3ploy.d3ploy.get_confirmation", return_value=False)
