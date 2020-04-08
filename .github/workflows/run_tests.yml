@@ -38,11 +38,11 @@ jobs:
           cache-name: cache-poetry-packages
         with:
           path: ~/.poetry/environments
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/poetry.lock') }}
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-build-${{ env.cache-name }}-
-            ${{ runner.os }}-poetry-build-
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-python-${{ matrix.python-version }}-build-
+            ${{ runner.os }}-python-${{ matrix.python-version }}-
       - name: Install Python dependencies
         run: |
           poetry install
