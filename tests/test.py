@@ -502,6 +502,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
                 acl=acl,
             )
+            time.sleep(1)
             object_acl = self.s3.ObjectAcl(self.bucket.name, result[0])
             grants = []
             for grant in object_acl.grants:
@@ -840,6 +841,7 @@ class SyncFilesTestCase(
                 excludes=EXCLUDES,
                 acl=acl,
             )
+            time.sleep(1)
             object_acl = self.s3.ObjectAcl(
                 self.bucket.name, "sync_files/test-acl-{}/sample.css".format(acl),
             )
