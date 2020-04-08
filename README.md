@@ -17,13 +17,13 @@ Your AWS credentials can be set in a number of ways:
 
 ## Configuration options
 
-When you run `d3ploy`, it will look in the current directory for a "deploy.json" file that defines the different deploy enviroments and their options. At a minimum, a "default" environment is required and is the environment used if you pass no arguments to `d3ploy`. Additionally, you may pass in a different path for you config file with the `-c` or `--config` options.
+When you run `d3ploy`, it will look in the current directory for a ".d3ploy.json" file that defines the different deploy enviroments and their options. At a minimum, a "default" environment is required and is the environment used if you pass no arguments to `d3ploy`. Additionally, you may pass in a different path for you config file with the `-c` or `--config` options.
 
 To supress all output, pass `-q` or `--quiet` to the command. Note that there is not a way to set the quiet option in the config file(s).
 
 To set the number of separate processes to use, pass `-p 10` or `--processess 10` where '10' is the number to use. If you do not want to use multiple processes, set this to '0'.
 
-You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`. Environments besides "default" will inherit any settings not explicitly set from the default configuration.
+You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`. As of version 3.0, environments no longer inherit settings from the default environment. Instead, a separate `defaults` object in the config file can be used to set options across all environments.
 
 The only required option for any environment is "bucket_name" for the S3 bucket to upload to. Additionally, you may define:
 
@@ -36,6 +36,35 @@ The only required option for any environment is "bucket_name" for the S3 bucket 
 - "caches" to set the Cache-Control header for various mimetypes. See below for more.
 - "gitignore" to add all entries in a .gitignore file to the exclude patterns
 - "cloudfront_id" to invalidate all paths in the given CloudFront distribution IDs. Can be a string for one distribution or an array for multiple.
+
+### Example .d3ploy.json
+
+```json
+{
+  "environments": {
+    "default": {
+      "bucket_name": "d3ploy-tests",
+      "local_path": "./tests/files",
+      "bucket_path": "/default/"
+    },
+    "staging": {
+      "bucket_name": "d3ploy-tests",
+      "local_path": "./tests/files",
+      "bucket_path": "/staging/"
+    }
+  },
+  "defaults": {
+    "caches": {
+      "text/css": 2592000,
+      "application/javascript": 2592000,
+      "image/png": 22896000,
+      "image/jpeg": 22896000,
+      "image/webp": 22896000,
+      "image/gif": 22896000
+    }
+  }
+}
+```
 
 ## Cache-Control Headers
 

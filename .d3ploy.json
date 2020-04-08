@@ -10,5 +10,15 @@
       "local_path": "./tests/files",
       "bucket_path": "/staging/"
     }
+  },
+  "defaults": {
+    "caches": {
+      "text/css": 2592000,
+      "application/javascript": 2592000,
+      "image/png": 22896000,
+      "image/jpeg": 22896000,
+      "image/webp": 22896000,
+      "image/gif": 22896000
+    }
   }
 }
