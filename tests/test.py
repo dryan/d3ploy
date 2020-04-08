@@ -1,6 +1,8 @@
 import argparse
 import os
+import pathlib
 import re
+import shutil
 import sys
 import time
 import unittest
@@ -13,6 +15,7 @@ import botocore
 
 parent_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(os.path.join(parent_dir))
+
 
 from d3ploy import d3ploy  # noqa # isort:skip
 
@@ -1388,6 +1391,15 @@ class CLITestCase(BaseTestCase):
 
 
 if __name__ == "__main__":
+    # we need one vcs directory to exist for the GitHub Action tests to
+    # have complete coverage
+    svn_dir = pathlib.Path(os.path.join(parent_dir, "tests", "files", ".svn"))
+    svn_dir_existed = svn_dir.exists()
+    svn_dir.mkdir(exist_ok=True)
+
     unittest.main(
         buffer=True, verbosity=2,
     )
+
+    if not svn_dir_existed:
+        shutil.rmtree(svn_dir)
