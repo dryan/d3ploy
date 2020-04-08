@@ -1,6 +1,9 @@
 import argparse
+import json
 import os
+import pathlib
 import re
+import shutil
 import sys
 import time
 import unittest
@@ -13,6 +16,7 @@ import botocore
 
 parent_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(os.path.join(parent_dir))
+
 
 from d3ploy import d3ploy  # noqa # isort:skip
 
@@ -499,6 +503,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
                 acl=acl,
             )
+            time.sleep(1)
             object_acl = self.s3.ObjectAcl(self.bucket.name, result[0])
             grants = []
             for grant in object_acl.grants:
@@ -543,6 +548,7 @@ class UploadFileTestCase(
             "test-md5-hashing",
             PREFIX_REGEX,
         )
+        time.sleep(1)
         self.assertTrue(s3_object_exists(self.bucket.name, result_1[0]))
         s3_object_1_hash = self.s3.Object(self.bucket.name, result_1[0]).metadata.get(
             "d3ploy-hash"
@@ -557,6 +563,7 @@ class UploadFileTestCase(
             "test-md5-hashing",
             PREFIX_REGEX,
         )
+        time.sleep(1)
         self.assertTrue(s3_object_exists(self.bucket.name, result_2[0]))
         s3_object_2_hash = self.s3.Object(self.bucket.name, result_2[0]).metadata.get(
             "d3ploy-hash"
@@ -582,6 +589,7 @@ class UploadFileTestCase(
             "test-md5-hashing",
             PREFIX_REGEX,
         )
+        time.sleep(1)
         s3_object_3_hash = self.s3.Object(self.bucket.name, result_3[0]).metadata.get(
             "d3ploy-hash"
         )
@@ -621,6 +629,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
                 charset=charset,
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(self.bucket.name, result[0])
             if charset:
                 self.assertEqual(
@@ -641,6 +650,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
                 caches={"text/css": expiration},
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(self.bucket.name, response[0])
             self.assertEqual(
                 s3_obj.cache_control,
@@ -661,6 +671,7 @@ class UploadFileTestCase(
                 PREFIX_REGEX,
             )
             self.assertTrue(s3_object_exists(self.bucket.name, result[0]))
+            time.sleep(1)
             s3_object = self.s3.Object(self.bucket.name, result[0])
             self.assertEqual(
                 s3_object.content_type,
@@ -831,6 +842,7 @@ class SyncFilesTestCase(
                 excludes=EXCLUDES,
                 acl=acl,
             )
+            time.sleep(1)
             object_acl = self.s3.ObjectAcl(
                 self.bucket.name, "sync_files/test-acl-{}/sample.css".format(acl),
             )
@@ -869,6 +881,7 @@ class SyncFilesTestCase(
                 bucket_path="sync_files/test-charset-{}".format(charset or "none"),
                 charset=charset,
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(
                 self.bucket.name,
                 "sync_files/test-charset-{}/index.html".format(charset or "none"),
@@ -892,6 +905,7 @@ class SyncFilesTestCase(
                 excludes=EXCLUDES,
                 caches={"text/css": expiration},
             )
+            time.sleep(1)
             s3_obj = self.s3.Object(
                 self.bucket.name,
                 "sync_files/test-cache-{:d}/sample.css".format(expiration),
@@ -951,6 +965,7 @@ class SyncFilesTestCase(
             gitignore=True,
             delete=True,
         )
+        time.sleep(5)
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
 
     def test_deleting_files_single_process(self):
@@ -976,6 +991,7 @@ class SyncFilesTestCase(
             gitignore=True,
             delete=True,
         )
+        time.sleep(5)
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
         self.assertGreaterEqual(
             outcome["deleted"], 1,
@@ -1005,6 +1021,7 @@ class SyncFilesTestCase(
             delete=True,
             confirm=True,
         )
+        time.sleep(5)
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
 
     @patch("d3ploy.d3ploy.get_confirmation", return_value=False)
@@ -1388,6 +1405,23 @@ class CLITestCase(BaseTestCase):
 
 
 if __name__ == "__main__":
+    # we need one vcs directory to exist for the GitHub Action tests to
+    # have complete coverage
+    svn_dir = pathlib.Path(os.path.join(parent_dir, "tests", "files", ".svn"))
+    svn_dir_existed = svn_dir.exists()
+    svn_dir.mkdir(exist_ok=True)
+
+    # update our config file to use the current test bucket
+    config_file = pathlib.Path(
+        os.path.join(parent_dir, "tests", "files", ".d3ploy.json")
+    )
+    config = json.loads(config_file.read_text())
+    config["defaults"]["bucket_name"] = TEST_BUCKET
+    config_file.write_text(json.dumps(config, indent=2))
+
     unittest.main(
         buffer=True, verbosity=2,
     )
+
+    if not svn_dir_existed:
+        shutil.rmtree(svn_dir)

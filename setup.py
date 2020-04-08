@@ -1,14 +1,12 @@
-import os
+import pathlib
 import re
 from distutils.core import setup
 
 VERSION_FINDER = re.compile(
-    r"^VERSION = \'([\d+]\.[\d+].[\d+](-beta[\d+]?)?)\'$", re.MULTILINE
+    r"^VERSION = \"([\d+]\.[\d+].[\d+](-beta[\d+]?)?)\"$", re.MULTILINE
 )
 
-script = open("d3ploy/d3ploy.py", "r").read()
-
-VERSION = VERSION_FINDER.findall(script)
+VERSION = VERSION_FINDER.findall(pathlib.Path("d3ploy/d3ploy.py").read_text())
 
 if VERSION:
     VERSION = VERSION.pop()[0]
@@ -17,10 +15,12 @@ else:
 
 DESCRIPTION = ""
 
-if os.path.exists("README.md"):
-    DESCRIPTION = open("README.md", "r").read()
-if os.path.exists("README.rst"):
-    DESCRIPTION = open("README.rst", "r").read()
+readme_md = pathlib.Path("README.md")
+readme_rst = pathlib.Path("README.rst")
+if readme_md.exists():
+    DESCRIPTION = readme_md.read_text()
+if readme_rst.exists():
+    DESCRIPTION = readme_rst.read_text()
 
 setup(
     name="d3ploy",

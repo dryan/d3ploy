@@ -1,0 +1,14 @@
+[run]
+omit =
+	*/test*.py
+	.venv/*
+source = .
+
+[report]
+precision = 1
+show_missing = True
+ignore_errors = True
+exclude_lines = 
+	pragma: no cover
+
+
