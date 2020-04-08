@@ -1,1 +1,1 @@
-from .d3ploy import cli
+from .d3ploy import cli  # noqa

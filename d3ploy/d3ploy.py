@@ -22,7 +22,6 @@ from concurrent import futures
 import boto3
 import botocore
 import pathspec
-
 import progressbar
 
 with warnings.catch_warnings():
@@ -272,7 +271,7 @@ def upload_file(
     return (key_name.lstrip("/"), updated)
 
 
-def get_confirmation(message,):  # pragma: no cover
+def get_confirmation(message):  # pragma: no cover
     confirm = input(f"{message} [yN]: ")
 
     return confirm.lower() in ["y", "yes"]
@@ -314,7 +313,7 @@ def determine_files_to_sync(
 ):
     if isinstance(excludes, str):
         excludes = [excludes]
-    gitignore_patterns = list(map(pathspec.patterns.GitWildMatchPattern, excludes,))
+    gitignore_patterns = list(map(pathspec.patterns.GitWildMatchPattern, excludes))
     svc_directories = [".git", ".svn"]
     if gitignore:
         gitignores = []
@@ -421,7 +420,7 @@ def sync_files(
 
     # test the bucket connection
     try:
-        s3.meta.client.head_bucket(Bucket=bucket_name,)
+        s3.meta.client.head_bucket(Bucket=bucket_name)
         bucket = s3.Bucket(bucket_name)
     except botocore.exceptions.ClientError as e:  # pragma: no cover
         if e.response["Error"]["Code"] == "403":
@@ -437,9 +436,9 @@ def sync_files(
             raise e
 
     prefix_regex = re.compile(r"^{}".format(local_path))
-    files = determine_files_to_sync(local_path, excludes, gitignore=gitignore,)
+    files = determine_files_to_sync(local_path, excludes, gitignore=gitignore)
     deleted = 0
-    bar = progress_setup(f"Updating {env}: ", len(files), OK_COLOR,)
+    bar = progress_setup(f"Updating {env}: ", len(files), OK_COLOR)
 
     key_names = []
     updated = 0
@@ -448,7 +447,7 @@ def sync_files(
         for fn in files:
             job = executor.submit(
                 upload_file,
-                *(fn, bucket_name, s3, bucket_path, prefix_regex,),
+                *(fn, bucket_name, s3, bucket_path, prefix_regex),
                 **{
                     "acl": acl,
                     "bar": bar,
@@ -476,14 +475,14 @@ def sync_files(
             if key.key not in key_names
         ]
         if len(to_remove):
-            bar = progress_setup(f"Cleaning {env}: ", len(to_remove), ALERT_COLOR,)
+            bar = progress_setup(f"Cleaning {env}: ", len(to_remove), ALERT_COLOR)
             deleted = 0
             with futures.ThreadPoolExecutor(max_workers=processes) as executor:
                 jobs = []
                 for kn in to_remove:
                     job = executor.submit(
                         delete_file,
-                        *(kn, bucket_name, s3,),
+                        *(kn, bucket_name, s3),
                         **{
                             "needs_confirmation": confirm,
                             "bar": bar,
@@ -523,7 +522,7 @@ def sync_files(
             color=ALERT_COLOR,
         )
     if cloudfront_id:
-        invalidations = invalidate_cloudfront(cloudfront_id, env, dry_run=dry_run,)
+        invalidations = invalidate_cloudfront(cloudfront_id, env, dry_run=dry_run)
         outcome["invalidated"] = len(invalidations)
     return outcome
 

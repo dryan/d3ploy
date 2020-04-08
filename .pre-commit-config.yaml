@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/ambv/black
+    rev: stable
+    hooks:
+      - id: black
+        language_version: python3.8
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: master
+    hooks:
+      - id: flake8
+  - repo: https://github.com/asottile/seed-isort-config
+    rev: v1.9.1
+    hooks:
+      - id: seed-isort-config
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: master # Use the revision sha / tag you want to point at
+    hooks:
+      - id: isort
+        additional_dependencies:
+          - toml
