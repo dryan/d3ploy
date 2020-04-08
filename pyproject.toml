@@ -4,6 +4,13 @@ version = "3.0.0"
 description = "Easily deploy to S3 with multiple environment support."
 authors = ["dryan <dryan@users.noreply.github.com>"]
 license = "MIT"
+homepage = "https://github.com/dryan/d3ploy"
+repository = "https://github.com/dryan/d3ploy"
+documentation = "https://github.com/dryan/d3ploy#readme"
+readme = "README.md"
+
+[tool.poetry.scripts]
+d3ploy = "d3ploy.d3ploy:cli"
 
 [tool.poetry.dependencies]
 python = "^3.6"

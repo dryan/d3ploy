@@ -19,8 +19,6 @@ readme_md = pathlib.Path("README.md")
 readme_rst = pathlib.Path("README.rst")
 if readme_md.exists():
     DESCRIPTION = readme_md.read_text()
-if readme_rst.exists():
-    DESCRIPTION = readme_rst.read_text()
 
 setup(
     name="d3ploy",
@@ -28,6 +26,7 @@ setup(
     version=VERSION,
     description="Utility for uploading files to S3 with multiple environment support.",
     long_description=DESCRIPTION,
+    long_description_content_type="text/markdown",
     author="Dan Ryan",
     author_email="opensource@dryan.com",
     url="https://github.com/dryan/d3ploy",
