@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import pathlib
 import re
@@ -1409,6 +1410,14 @@ if __name__ == "__main__":
     svn_dir = pathlib.Path(os.path.join(parent_dir, "tests", "files", ".svn"))
     svn_dir_existed = svn_dir.exists()
     svn_dir.mkdir(exist_ok=True)
+
+    # update our config file to use the current test bucket
+    config_file = pathlib.Path(
+        os.path.join(parent_dir, "tests", "files", ".d3ploy.json")
+    )
+    config = json.loads(config_file.read_text())
+    config["defaults"]["bucket_name"] = TEST_BUCKET
+    config_file.write_text(json.dumps(config, indent=2))
 
     unittest.main(
         buffer=True, verbosity=2,
