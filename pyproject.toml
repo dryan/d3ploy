@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "d3ploy"
-version = "3.0.0"
+version = "3.0.1"
 description = "Easily deploy to S3 with multiple environment support."
 authors = ["dryan <dryan@users.noreply.github.com>"]
 license = "MIT"
