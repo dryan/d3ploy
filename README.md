@@ -1,6 +1,6 @@
 # d3ploy
 
-Easily deploy to S3 with multiple environment support. Version 2 now supports multiprocessing for faster uploads.
+Easily deploy to S3 with multiple environment support. Version 3 supports Python 3.6+.
 
 ## Installation & Usage
 
@@ -29,18 +29,18 @@ You can add as many environments as needed. Deploy to an environment by passing 
 
 The only required option for any environment is "bucket" for the S3 bucket to upload to. Additionally, you may define:
 
-* "local_path" to upload only the contents of a directory under the current one; defaults to "." (current directory)
-* "bucket_path" to upload to a subfolder in the bucket; defaults to "/" (root)
-* "aws_key" to specify the AWS Access Key ID to use for uploading
-* "aws_secret" to specify the AWS Secret Access Key to use for uploading
-* "exclude" to specify patterns to not upload
-* "gzip" to automatically gzip files before uploading to S3
-* "gzip_skip" to specify mimetypes to not gzip when `gzip` is set to true
-* "delete" to remove files on S3 that are not present in the local directory
-* "charset" to set the charset flag on 'Content-Type' headers of text files
-* "cache" to set the Cache-Control header for various mimetypes. See below for more.
-* "gitignore" to add all entries in a .gitignore file to the exclude patterns
-* "cloudfront" to invalidate all paths in the given CloudFront distribution ID
+- "local_path" to upload only the contents of a directory under the current one; defaults to "." (current directory)
+- "bucket_path" to upload to a subfolder in the bucket; defaults to "/" (root)
+- "aws_key" to specify the AWS Access Key ID to use for uploading
+- "aws_secret" to specify the AWS Secret Access Key to use for uploading
+- "exclude" to specify patterns to not upload
+- "gzip" to automatically gzip files before uploading to S3
+- "gzip_skip" to specify mimetypes to not gzip when `gzip` is set to true
+- "delete" to remove files on S3 that are not present in the local directory
+- "charset" to set the charset flag on 'Content-Type' headers of text files
+- "cache" to set the Cache-Control header for various mimetypes. See below for more.
+- "gitignore" to add all entries in a .gitignore file to the exclude patterns
+- "cloudfront" to invalidate all paths in the given CloudFront distribution ID
 
 ## Cache-Control Headers
 
@@ -65,8 +65,8 @@ d3ploy will attempt to alert you via Notification Center when it is completed. T
 
 ## Progress Bar
 
-d3ploy will use the `progressbar` module if it's available to display output. This includes a percentage completed and an ETA. To enable, run `pip install progressbar`.
+d3ploy will use the `progressbar2` module if it's available to display output. This includes a percentage completed and an ETA. To enable, run `pip install progressbar2`.
 
 ## Caution About Using the gzip Option
 
-Almost all modern browsers will support files that are served with gzip compression. The notable exception is non-smartphone mobile browsers. If you have significant traffic over those browsers, it is advisable to avoid the gzip option.
+Almost all modern browsers will support files that are served with gzip compression. The notable exception is non-smartphone mobile browsers. If you have significant traffic over those browsers, it is advisable to avoid the gzip option. Additionally, your CDN make offer compression on-the-fly for you; this is the preferred method when available.
