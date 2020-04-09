@@ -74,9 +74,7 @@ MIMETYPES = {
 
 for mimetype in MIMETYPES:
     for extension in MIMETYPES[mimetype]:
-        mimetypes.add_type(
-            mimetype, extension,
-        )
+        mimetypes.add_type(mimetype, extension)
 
 
 # inspired by
