@@ -36,7 +36,7 @@ with warnings.catch_warnings():
         # unsupported platforms
         pync = False
 
-VERSION = "3.0.3"
+VERSION = "3.0.4"
 VALID_ACLS = [
     "private",
     "public-read",
@@ -736,10 +736,12 @@ def cli():
             or defaults.get("bucket_name"),
             local_path=args.local_path
             or environ_config.get("local_path")
-            or defaults.get("local_path"),
+            or defaults.get("local_path")
+            or ".",
             bucket_path=args.bucket_path
             or environ_config.get("bucket_path")
-            or defaults.get("bucket_path"),
+            or defaults.get("bucket_path")
+            or "/",
             excludes=excludes,
             acl=args.acl or environ_config.get("acl") or defaults.get("acl"),
             force=args.force or environ_config.get("force") or defaults.get("force"),
