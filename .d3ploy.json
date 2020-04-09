@@ -13,7 +13,7 @@
   },
   "defaults": {
     "caches": {
-      "application/javascript": 2592000,
+      "text/javascript": 2592000,
       "image/gif": 22896000,
       "image/jpeg": 22896000,
       "image/png": 22896000,

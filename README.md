@@ -55,7 +55,7 @@ The only required option for any environment is "bucket_name" for the S3 bucket 
   },
   "defaults": {
     "caches": {
-      "application/javascript": 2592000,
+      "text/javascript": 2592000,
       "image/gif": 22896000,
       "image/jpeg": 22896000,
       "image/png": 22896000,
@@ -74,7 +74,7 @@ If you want to set Cache-Control headers on various files, add a `caches` object
 
 ```
 "caches": {
-  "application/javascript": 2592000,
+  "text/javascript": 2592000,
   "image/gif": 22896000,
   "image/jpeg": 22896000,
   "image/png": 22896000,
