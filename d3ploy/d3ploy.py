@@ -277,6 +277,8 @@ def upload_file(
                 local_file, bucket_name, key_name, ExtraArgs=extra_args,
             )
     else:
+        if s3_obj and s3_obj.metadata.get("d3ploy-hash") == local_md5:
+            alert(f"Skipping {file_name}: already up-to-date")
         if bar:  # pragma: no cover
             progress_update(bar, +1)
     return (key_name.lstrip("/"), updated)
@@ -483,7 +485,7 @@ def sync_files(
         to_remove = [
             key.key
             for key in bucket.objects.filter(Prefix=bucket_path.lstrip("/"))
-            if key.key not in key_names
+            if key.key.lstrip("/") not in key_names
         ]
         if len(to_remove):
             bar = progress_setup(f"Cleaning {env}: ", len(to_remove), ALERT_COLOR)
