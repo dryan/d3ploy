@@ -22,9 +22,13 @@ from concurrent import futures
 import boto3
 import botocore
 import pathspec
-import progressbar
 
 with warnings.catch_warnings():
+    try:
+        import progressbar
+    except ImportError:  # pragma: no cover
+        progressbar = None
+
     try:
         import pync
     except Exception:  # pragma: no cover

@@ -45,7 +45,7 @@ use_parentheses=true
 known_django=["django"]
 sections=["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 skip=[".venv"]
-known_third_party = ["boto3", "botocore", "pathspec", "progressbar"]
+known_third_party = ["boto3", "botocore", "pathspec"]
 
 [build-system]
 requires = ["poetry>=0.12"]
