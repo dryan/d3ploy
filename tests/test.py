@@ -864,7 +864,7 @@ class SyncFilesTestCase(
         )
 
     def test_charset(self):
-        for charset in [None, "UTF-8", "ISO-8859-1", "Windows-1251"]:
+        for charset in CHARSETS:
             d3ploy.sync_files(
                 "test",
                 excludes=EXCLUDES,
