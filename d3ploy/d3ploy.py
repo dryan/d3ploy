@@ -258,10 +258,17 @@ def upload_file(
                 extra_args["ContentType"] = f"{mimetype[0]};charset={charset}"
             elif mimetype[0]:
                 extra_args["ContentType"] = mimetype[0]
+            cache_timeout = None
             if mimetype[0] in caches.keys():
-                extra_args[
-                    "CacheControl"
-                ] = f"max-age={caches.get(mimetype[0])}, public"
+                cache_timeout = caches.get(mimetype[0])
+            elif mimetype[0] and f"{mimetype[0].split('/')[0]}/*" in caches.keys():
+                cache_timeout = caches.get(f"{mimetype[0].split('/')[0]}/*")
+            if cache_timeout is not None:
+                if cache_timeout == 0:
+                    extra_args["CacheControl"] = f"max-age={cache_timeout}, private"
+                else:
+                    extra_args["CacheControl"] = f"max-age={cache_timeout}, public"
+
             s3.meta.client.upload_fileobj(
                 local_file, bucket_name, key_name, ExtraArgs=extra_args,
             )

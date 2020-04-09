@@ -55,12 +55,14 @@ The only required option for any environment is "bucket_name" for the S3 bucket 
   },
   "defaults": {
     "caches": {
-      "text/css": 2592000,
       "application/javascript": 2592000,
-      "image/png": 22896000,
+      "image/gif": 22896000,
       "image/jpeg": 22896000,
+      "image/png": 22896000,
       "image/webp": 22896000,
-      "image/gif": 22896000
+      "text/*": 2592000,
+      "text/html": 0,
+      "text/plain": 0
     }
   }
 }
@@ -72,16 +74,27 @@ If you want to set Cache-Control headers on various files, add a `caches` object
 
 ```
 "caches": {
-  "text/css": 2592000,
   "application/javascript": 2592000,
-  "image/png": 22896000,
+  "image/gif": 22896000,
   "image/jpeg": 22896000,
+  "image/png": 22896000,
   "image/webp": 22896000,
-  "image/gif": 22896000
+  "text/*": 2592000,
+  "text/html": 0,
+  "text/plain": 0
 }
 ```
 
-Each key is the mimetype of the kind of file you want to have cached, with a value that is the seconds the `max-age` flag set to. In the above example, CSS and JavaScript files will be cached for 30 days while images will be cached for 1 year. For more about Cache-Control, read [Leverage Browser Caching](https://developers.google.com/speed/docs/insights/LeverageBrowserCaching).
+Each key is the mimetype of the kind of file you want to have cached, with a value that is the seconds the `max-age` flag set to. In the above example, CSS and JavaScript files will be cached for 30 days, images will be cached for 1 year, and html files will not be cached. For more about Cache-Control, read [Leverage Browser Caching](https://developers.google.com/speed/docs/insights/LeverageBrowserCaching). You may use wildcards like `image/*` to apply to all images. If there's a more specific match for a particular image type, that will override the wildcard. For example:
+
+```
+"caches": {
+  "image/png": 300,
+  "image/*": 31536000
+}
+```
+
+In this case JPGs, GIFs and all other images except for PNGs will be cached for 1 year. PNGs, however, will be cached for 5 minutes.
 
 ## macOS Notification Center
 

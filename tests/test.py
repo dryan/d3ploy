@@ -652,14 +652,24 @@ class UploadFileTestCase(
             )
             time.sleep(1)
             s3_obj = self.s3.Object(self.bucket.name, response[0])
-            self.assertEqual(
-                s3_obj.cache_control,
-                "max-age={:d}, public".format(expiration),
-                msg=(
-                    f"upload_file sets proper cache-control header for "
-                    f"max-age={expiration:d}"
-                ),
-            )
+            if expiration == 0:
+                self.assertEqual(
+                    s3_obj.cache_control,
+                    "max-age={:d}, private".format(expiration),
+                    msg=(
+                        f"upload_file sets proper cache-control header for "
+                        f"max-age={expiration:d}"
+                    ),
+                )
+            else:
+                self.assertEqual(
+                    s3_obj.cache_control,
+                    "max-age={:d}, public".format(expiration),
+                    msg=(
+                        f"upload_file sets proper cache-control header for "
+                        f"max-age={expiration:d}"
+                    ),
+                )
 
     def test_mimetypes(self):
         for check in TEST_MIMETYPES:
@@ -895,7 +905,7 @@ class SyncFilesTestCase(
                     s3_obj.content_type, "text/html",
                 )
 
-    def test_caches(self):
+    def test_caches_explicit(self):
         for expiration in [0, 86400, 86400 * 30, 86400 * 365]:
             d3ploy.sync_files(
                 "test",
@@ -910,14 +920,58 @@ class SyncFilesTestCase(
                 self.bucket.name,
                 "sync_files/test-cache-{:d}/sample.css".format(expiration),
             )
-            self.assertEqual(
-                s3_obj.cache_control,
-                "max-age={:d}, public".format(expiration),
-                msg=(
-                    f"sync_files sets proper cache-control header for "
-                    f"max-age={expiration:d}"
-                ),
+            if expiration == 0:
+                self.assertEqual(
+                    s3_obj.cache_control,
+                    "max-age={:d}, private".format(expiration),
+                    msg=(
+                        f"sync_files sets proper cache-control header for "
+                        f"max-age={expiration:d}"
+                    ),
+                )
+            else:
+                self.assertEqual(
+                    s3_obj.cache_control,
+                    "max-age={:d}, public".format(expiration),
+                    msg=(
+                        f"sync_files sets proper cache-control header for "
+                        f"max-age={expiration:d}"
+                    ),
+                )
+
+    def test_caches_implicit(self):
+        for expiration in [0, 86400, 86400 * 30, 86400 * 365]:
+            d3ploy.sync_files(
+                "test",
+                local_path=relative_path("./files/css"),
+                bucket_name=self.bucket.name,
+                bucket_path="sync_files/test-cache-{:d}".format(expiration),
+                excludes=EXCLUDES,
+                caches={"text/*": expiration},
             )
+            time.sleep(1)
+            s3_obj = self.s3.Object(
+                self.bucket.name,
+                "sync_files/test-cache-{:d}/sample.css".format(expiration),
+            )
+            if expiration == 0:
+                self.assertEqual(
+                    s3_obj.cache_control,
+                    "max-age={:d}, private".format(expiration),
+                    msg=(
+                        f"sync_files sets proper cache-control header for "
+                        f"max-age={expiration:d}"
+                    ),
+                )
+            else:
+                self.assertEqual(
+                    s3_obj.cache_control,
+                    "max-age={:d}, public".format(expiration),
+                    msg=(
+                        f"sync_files sets proper cache-control header for "
+                        f"max-age={expiration:d}"
+                    ),
+                )
 
     def test_multiple_processes(self):
         d3ploy.sync_files(
@@ -929,6 +983,7 @@ class SyncFilesTestCase(
             processes=10,
             gitignore=True,
         )
+        time.sleep(5)
         passed = 0
         for fn in TEST_FILES:
             if s3_object_exists(
