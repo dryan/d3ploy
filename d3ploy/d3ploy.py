@@ -76,6 +76,14 @@ for mimetype in MIMETYPES:
         )
 
 
+# inspired by
+# https://www.peterbe.com/plog/fastest-way-to-find-out-if-a-file-exists-in-s3
+def key_exists(s3, bucket_name, key_name):
+    bucket = s3.Bucket(bucket_name)
+    for obj in bucket.objects.filter(Prefix=key_name):
+        return obj.size
+
+
 def alert(
     text, error_code=None, color=None,
 ):
@@ -227,17 +235,14 @@ def upload_file(
     if killswitch.is_set():
         return (file_name, 0)
     updated = 0
+
     key_name = "/".join(
         [bucket_path.rstrip("/"), prefix_regex.sub("", file_name).lstrip("/")]
-    )
-    s3_obj = s3.Object(bucket_name, key_name)
-    try:
-        s3_obj.load()
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            s3_obj = None
-        else:  # pragma: no cover
-            raise e
+    ).lstrip("/")
+    if key_exists(s3, bucket_name, key_name):
+        s3_obj = s3.Object(bucket_name, key_name)
+    else:
+        s3_obj = None
     local_md5 = hashlib.md5()
     with open(file_name, "rb") as local_file:
         for chunk in iter(lambda: local_file.read(4096), b""):
