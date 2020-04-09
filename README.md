@@ -83,13 +83,13 @@ If you want to set Cache-Control headers on various files, add a `caches` object
 
 Each key is the mimetype of the kind of file you want to have cached, with a value that is the seconds the `max-age` flag set to. In the above example, CSS and JavaScript files will be cached for 30 days while images will be cached for 1 year. For more about Cache-Control, read [Leverage Browser Caching](https://developers.google.com/speed/docs/insights/LeverageBrowserCaching).
 
-## OS X Notification Center
+## macOS Notification Center
 
-d3ploy will attempt to alert you via Notification Center when it is completed. To enable this feature, you need pyobjc; run `pip install pyobjc` to install.
+d3ploy will attempt to alert you via Notification Center when it is completed. To enable this feature run `pip install d3ploy[notifications]`.
 
 ## Progress Bar
 
-d3ploy will use the `progressbar2` module if it's available to display output. This includes a percentage completed and an ETA. To enable, run `pip install progressbar2`.
+d3ploy will use the `progressbar2` module if it's available to display output. This includes a percentage completed and an ETA. To enable, run `pip install d3ploy[progress]`.
 
 ## Caution About Using the gzip Option
 
