@@ -36,17 +36,20 @@ with warnings.catch_warnings():
         # unsupported platforms
         pync = False
 
-VERSION = "3.0.4"
+VERSION = "3.0.5"
+
 VALID_ACLS = [
     "private",
     "public-read",
     "public-read-write",
     "authenticated-read",
 ]
+
 DEFAULT_COLOR = "\033[0;0m"
 ERROR_COLOR = "\033[31m"
 ALERT_COLOR = "\033[33m"
 OK_COLOR = "\033[92m"
+
 QUIET = False
 
 # From https://mzl.la/39XkRvH
@@ -81,7 +84,9 @@ for mimetype in MIMETYPES:
 def key_exists(s3, bucket_name, key_name):
     bucket = s3.Bucket(bucket_name)
     for obj in bucket.objects.filter(Prefix=key_name):
-        return obj.size
+        if obj.key == key_name:
+            return True
+    return False
 
 
 def alert(
