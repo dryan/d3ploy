@@ -36,17 +36,20 @@ with warnings.catch_warnings():
         # unsupported platforms
         pync = False
 
-VERSION = "3.0.4"
+VERSION = "3.0.5"
+
 VALID_ACLS = [
     "private",
     "public-read",
     "public-read-write",
     "authenticated-read",
 ]
+
 DEFAULT_COLOR = "\033[0;0m"
 ERROR_COLOR = "\033[31m"
 ALERT_COLOR = "\033[33m"
 OK_COLOR = "\033[92m"
+
 QUIET = False
 
 # From https://mzl.la/39XkRvH
@@ -57,23 +60,35 @@ MIMETYPES = {
     "font/ttf": [".ttf"],
     "font/woff": [".woff"],
     "font/woff2": [".woff2"],
+    "image/apng": [".apng"],
+    "image/bmp": [".bmp"],
     "image/gif": [".gif"],
-    "image/jpeg": [".jpeg", ".jpg"],
+    "image/jpeg": [".jpeg", ".jpg", ".jfif", ".pjpeg", ".pjp"],
     "image/png": [".png"],
     "image/svg+xml": [".svg"],
+    "image/tiff": [".tif", ".tiff"],
     "image/webp": [".webp"],
-    "image/x-icon": [".ico"],
+    "image/x-icon": [".ico", ".cur"],
     "text/css": [".css"],
     "text/html": [".html", ".htm"],
+    "text/plain": [".txt"],
     "text/javascript": [".js"],
     "video/webm": [".webm"],
 }
 
 for mimetype in MIMETYPES:
     for extension in MIMETYPES[mimetype]:
-        mimetypes.add_type(
-            mimetype, extension,
-        )
+        mimetypes.add_type(mimetype, extension)
+
+
+# inspired by
+# https://www.peterbe.com/plog/fastest-way-to-find-out-if-a-file-exists-in-s3
+def key_exists(s3, bucket_name, key_name):
+    bucket = s3.Bucket(bucket_name)
+    for obj in bucket.objects.filter(Prefix=key_name):
+        if obj.key == key_name:
+            return True
+    return False
 
 
 def alert(
@@ -227,17 +242,14 @@ def upload_file(
     if killswitch.is_set():
         return (file_name, 0)
     updated = 0
+
     key_name = "/".join(
         [bucket_path.rstrip("/"), prefix_regex.sub("", file_name).lstrip("/")]
-    )
-    s3_obj = s3.Object(bucket_name, key_name)
-    try:
-        s3_obj.load()
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            s3_obj = None
-        else:  # pragma: no cover
-            raise e
+    ).lstrip("/")
+    if key_exists(s3, bucket_name, key_name):
+        s3_obj = s3.Object(bucket_name, key_name)
+    else:
+        s3_obj = None
     local_md5 = hashlib.md5()
     with open(file_name, "rb") as local_file:
         for chunk in iter(lambda: local_file.read(4096), b""):
@@ -277,6 +289,8 @@ def upload_file(
                 local_file, bucket_name, key_name, ExtraArgs=extra_args,
             )
     else:
+        if s3_obj and s3_obj.metadata.get("d3ploy-hash") == local_md5:
+            alert(f"Skipping {file_name}: already up-to-date")
         if bar:  # pragma: no cover
             progress_update(bar, +1)
     return (key_name.lstrip("/"), updated)
@@ -483,7 +497,7 @@ def sync_files(
         to_remove = [
             key.key
             for key in bucket.objects.filter(Prefix=bucket_path.lstrip("/"))
-            if key.key not in key_names
+            if key.key.lstrip("/") not in key_names
         ]
         if len(to_remove):
             bar = progress_setup(f"Cleaning {env}: ", len(to_remove), ALERT_COLOR)
