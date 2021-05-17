@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "d3ploy"
-version = "3.0.5"
+version = "3.0.6"
 description = "Easily deploy to S3 with multiple environment support."
 authors = ["dryan <dryan@users.noreply.github.com>"]
 license = "MIT"
@@ -22,11 +22,11 @@ progress = ['progressbar2']
 notifications = ['pync']
 
 [tool.poetry.dev-dependencies]
-black = "^19.10b0"
-isort = "^4.3.21"
-flake8 = "^3.7.9"
-coverage = "^5.0.4"
-ipython = "^7.13.0"
+black = "*"
+isort = "*"
+flake8 = "*"
+coverage = "*"
+ipython = "*"
 progressbar2 = "^3.50.1"
 pync = "^2.0.3"
 
