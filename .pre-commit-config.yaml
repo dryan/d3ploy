@@ -1,20 +1,14 @@
 repos:
   - repo: https://github.com/ambv/black
-    rev: stable
+    rev: 20.8b1
     hooks:
       - id: black
         language_version: python3.8
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: master
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: "3.8.4"
     hooks:
       - id: flake8
-  - repo: https://github.com/asottile/seed-isort-config
-    rev: v1.9.1
-    hooks:
-      - id: seed-isort-config
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: master # Use the revision sha / tag you want to point at
+  - repo: https://github.com/timothycrosley/isort
+    rev: "5.7.0"
     hooks:
       - id: isort
-        additional_dependencies:
-          - toml
