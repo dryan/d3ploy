@@ -36,7 +36,7 @@ with warnings.catch_warnings():
         # unsupported platforms
         pync = False
 
-VERSION = "3.0.5"
+VERSION = "3.0.6"
 
 VALID_ACLS = [
     "private",
@@ -92,7 +92,9 @@ def key_exists(s3, bucket_name, key_name):
 
 
 def alert(
-    text, error_code=None, color=None,
+    text,
+    error_code=None,
+    color=None,
 ):
     buffer = sys.stderr if error_code else sys.stdout
     if not QUIET:
@@ -109,7 +111,9 @@ killswitch = threading.Event()
 
 
 def progress_setup(
-    label="Uploading: ", num_files=0, marker_color=DEFAULT_COLOR,
+    label="Uploading: ",
+    num_files=0,
+    marker_color=DEFAULT_COLOR,
 ):
     if progressbar and not QUIET:
         bar = progressbar.ProgressBar(
@@ -132,7 +136,8 @@ def progress_setup(
 
 
 def progress_update(
-    bar, count,
+    bar,
+    count,
 ):
     if bar and not QUIET:
         bar.update(bar.value + count)
@@ -209,7 +214,10 @@ def check_for_updates(check_file_path="~/.d3ploy-update-check", this_version=VER
 
 
 def notify(
-    env, text, error_code=None, color=None,
+    env,
+    text,
+    error_code=None,
+    color=None,
 ):  # pragma: no cover
     if QUIET:
         return
@@ -286,7 +294,10 @@ def upload_file(
                     extra_args["CacheControl"] = f"max-age={cache_timeout}, public"
 
             s3.meta.client.upload_fileobj(
-                local_file, bucket_name, key_name, ExtraArgs=extra_args,
+                local_file,
+                bucket_name,
+                key_name,
+                ExtraArgs=extra_args,
             )
     else:
         if s3_obj and s3_obj.metadata.get("d3ploy-hash") == local_md5:
@@ -334,7 +345,9 @@ def delete_file(
 
 
 def determine_files_to_sync(
-    local_path, excludes=[], gitignore=False,
+    local_path,
+    excludes=[],
+    gitignore=False,
 ):
     if isinstance(excludes, str):
         excludes = [excludes]
@@ -384,7 +397,9 @@ def determine_files_to_sync(
 
 
 def invalidate_cloudfront(
-    cloudfront_id, env, dry_run=False,
+    cloudfront_id,
+    env,
+    dry_run=False,
 ):
     output = []
     if not isinstance(cloudfront_id, list):
@@ -574,13 +589,19 @@ def cli():
         default=["default"],
     )
     parser.add_argument(
-        "--bucket-name", help="The bucket to upload files to", type=str,
+        "--bucket-name",
+        help="The bucket to upload files to",
+        type=str,
     )
     parser.add_argument(
-        "--local-path", help="The local folder to upload files from", type=str,
+        "--local-path",
+        help="The local folder to upload files from",
+        type=str,
     )
     parser.add_argument(
-        "--bucket-path", help="The remote folder to upload files to", type=str,
+        "--bucket-path",
+        help="The remote folder to upload files to",
+        type=str,
     )
     parser.add_argument(
         "--exclude",
@@ -592,7 +613,7 @@ def cli():
         "--acl",
         help="The ACL to apply to uploaded files.",
         type=str,
-        default="public-read",
+        default=None,
         choices=VALID_ACLS,
     )
     parser.add_argument(
@@ -610,7 +631,9 @@ def cli():
         default=False,
     )
     parser.add_argument(
-        "--charset", help="The charset header to add to text files", default=False,
+        "--charset",
+        help="The charset header to add to text files",
+        default=False,
     )
     parser.add_argument(
         "--gitignore",
@@ -647,7 +670,10 @@ def cli():
         default=[],
     )
     parser.add_argument(
-        "--all", help="Upload to all environments", action="store_true", default=False,
+        "--all",
+        help="Upload to all environments",
+        action="store_true",
+        default=False,
     )
     parser.add_argument(
         "-v",
@@ -704,7 +730,8 @@ def cli():
     # Check if no environments are configured in the file
     if not environments:
         alert(
-            f"No environments found in config file: {args.config}", os.EX_NOINPUT,
+            f"No environments found in config file: {args.config}",
+            os.EX_NOINPUT,
         )
 
     if args.all:
