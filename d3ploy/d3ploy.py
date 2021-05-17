@@ -36,7 +36,7 @@ with warnings.catch_warnings():
         # unsupported platforms
         pync = False
 
-VERSION = "3.0.6"
+VERSION = "3.0.7"
 
 VALID_ACLS = [
     "private",
