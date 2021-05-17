@@ -1,8 +1,6 @@
 #! /bin/bash
 
-pandoc --from=markdown --to=rst --output=README.rst README.md
-pipenv python setup.py clean
-pipenv python setup.py sdist
-twine upload dist/*
-rm README.rst
+poetry run python setup.py clean
+poetry run python setup.py sdist
+poetry run twine upload dist/*
 rm -r dist

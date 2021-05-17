@@ -13,20 +13,15 @@ if VERSION:
 else:
     raise ValueError("Could not find version number in script file")
 
-DESCRIPTION = ""
-
-readme_md = pathlib.Path("README.md")
-readme_rst = pathlib.Path("README.rst")
-if readme_md.exists():
-    DESCRIPTION = readme_md.read_text()
+DESCRIPTION = """Full documentation at https://github.com/dryan/d3ploy#readme."""
 
 setup(
     name="d3ploy",
     packages=["d3ploy"],
     version=VERSION,
     description="Utility for uploading files to S3 with multiple environment support.",
-    long_description=DESCRIPTION,
     long_description_content_type="text/markdown",
+    long_description=DESCRIPTION,
     author="Dan Ryan",
     author_email="opensource@dryan.com",
     url="https://github.com/dryan/d3ploy",

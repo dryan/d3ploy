@@ -29,6 +29,7 @@ coverage = "*"
 ipython = "*"
 progressbar2 = "^3.50.1"
 pync = "^2.0.3"
+twine = "^3.4.1"
 
 [tool.black]
 line-length = 88
