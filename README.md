@@ -30,7 +30,7 @@ The only required option for any environment is "bucket_name" for the S3 bucket 
 - "local_path" to upload only the contents of a directory under the current one; defaults to "." (current directory)
 - "bucket_path" to upload to a subfolder in the bucket; defaults to "/" (root)
 - "exclude" to specify patterns to not upload
-- "acl" to specify the canned ACL set on each object. See https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl.
+- "acl" to specify the canned ACL set on each object. See [the AWS docs for more](https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl).
 - "delete" to remove files on S3 that are not present in the local directory
 - "charset" to set the charset flag on 'Content-Type' headers of text files
 - "caches" to set the Cache-Control header for various mimetypes. See below for more.
@@ -72,7 +72,7 @@ The only required option for any environment is "bucket_name" for the S3 bucket 
 
 If you want to set Cache-Control headers on various files, add a `caches` object to your config file like:
 
-```
+```json
 "caches": {
   "text/javascript": 2592000,
   "image/gif": 22896000,
@@ -87,7 +87,7 @@ If you want to set Cache-Control headers on various files, add a `caches` object
 
 Each key is the mimetype of the kind of file you want to have cached, with a value that is the seconds the `max-age` flag set to. In the above example, CSS and JavaScript files will be cached for 30 days, images will be cached for 1 year, and html files will not be cached. For more about Cache-Control, read [Leverage Browser Caching](https://developers.google.com/speed/docs/insights/LeverageBrowserCaching). You may use wildcards like `image/*` to apply to all images. If there's a more specific match for a particular image type, that will override the wildcard. For example:
 
-```
+```json
 "caches": {
   "image/png": 300,
   "image/*": 31536000
@@ -96,13 +96,9 @@ Each key is the mimetype of the kind of file you want to have cached, with a val
 
 In this case JPGs, GIFs and all other images except for PNGs will be cached for 1 year. PNGs, however, will be cached for 5 minutes.
 
-## macOS Notification Center
-
-d3ploy will attempt to alert you via Notification Center when it is completed. To enable this feature run `pip install d3ploy[notifications]`.
-
 ## Progress Bar
 
-d3ploy will use the `progressbar2` module if it's available to display output. This includes a percentage completed and an ETA. To enable, run `pip install d3ploy[progress]`.
+d3ploy uses the `tqdm` module to display output when `--quiet` is not set.
 
 ## Caution About Using the gzip Option
 
