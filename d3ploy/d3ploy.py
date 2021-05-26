@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-# Notification Center code borrowed from
-# https://github.com/maranas/pyNotificationCenter/blob/master/pyNotificationCenter.py
+#!/usr/bin/env python3
 
 import argparse
 import contextlib
