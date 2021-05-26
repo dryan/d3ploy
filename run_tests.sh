@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+set -e
+
 poetry run coverage erase
 poetry run coverage run --source='d3ploy' tests/test.py "$@"
 poetry run coverage html

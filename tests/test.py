@@ -1,4 +1,6 @@
 import argparse
+import contextlib
+import io
 import json
 import os
 import pathlib
@@ -6,22 +8,26 @@ import re
 import shutil
 import sys
 import time
+import typing
 import unittest
 import uuid
 import warnings
 from unittest.mock import Mock, patch
 
 import boto3
+import colorama
 
-parent_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-sys.path.append(os.path.join(parent_dir))
+parent_dir = pathlib.Path(__file__).parent.parent.absolute()
+tests_dir = parent_dir / "tests"
+sys.path.append(str(parent_dir))
 
 
 from d3ploy import d3ploy  # noqa # isort:skip
 
 TEST_BUCKET = os.getenv("D3PLOY_TEST_BUCKET", "d3ploy-tests")
 TEST_CLOUDFRONT_DISTRIBUTION = os.getenv(
-    "D3PLOY_TEST_CLOUDFRONT_DISTRIBUTION", "ECVGU5V5GT5GO",
+    "D3PLOY_TEST_CLOUDFRONT_DISTRIBUTION",
+    "ECVGU5V5GT5GO",
 )
 TEST_FILES = [
     "tests/files/.d3ploy.json",
@@ -55,7 +61,9 @@ TEST_FILES_WITH_IGNORED_FILES = TEST_FILES + [
     "tests/files/test.ignore",
 ]
 TEST_FILES.sort()
+TEST_FILES = [pathlib.Path(x) for x in TEST_FILES]
 TEST_FILES_WITH_IGNORED_FILES.sort()
+TEST_FILES_WITH_IGNORED_FILES = [pathlib.Path(x) for x in TEST_FILES_WITH_IGNORED_FILES]
 TEST_MIMETYPES = [
     ("css/sample.css", "text/css"),
     ("fonts/open-sans.eot", "application/vnd.ms-fontobject"),
@@ -113,14 +121,17 @@ EXCLUDES = [".gitignore", ".gitkeep"]
 CHARSETS = [None, "UTF-8", "ISO-8859-1", "Windows-1251"]
 
 
-def s3_object_exists(bucket_name, key_name):
+def s3_object_exists(bucket_name: str, key_name: str) -> bool:
     warnings.simplefilter("ignore", ResourceWarning)
     s3 = boto3.resource("s3")
     return d3ploy.key_exists(s3, bucket_name, key_name)
 
 
-def relative_path(p):
-    return os.path.relpath(os.path.join(parent_dir, "tests", p))
+def relative_path(p: str, convert=False) -> typing.Union[str, pathlib.Path]:
+    relpath = os.path.relpath(os.path.join(parent_dir, "tests", p))
+    if convert:
+        relpath = pathlib.Path(relpath)
+    return relpath
 
 
 PREFIX_REGEX = re.compile(r"^{}".format(relative_path("./files")))
@@ -162,7 +173,8 @@ class TestFileMixin(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.test_file_name = os.path.join(
-            relative_path("./files/txt"), "test-{}.txt".format(uuid.uuid4().hex),
+            relative_path("./files/txt"),
+            "test-{}.txt".format(uuid.uuid4().hex),
         )
         cls.destroy_test_file()
         super().setUpClass()
@@ -208,140 +220,61 @@ class MockBuffer:
 class MockSyncFiles(Mock):
     def __call__(self, env, **kwargs):
         self.configure_mock(env=env)
-        print(kwargs)
+        # print(kwargs)
         self.configure_mock(**kwargs)
 
 
 class AlertTestCase(BaseTestCase):
     def test_non_error_alerts(self):
         for color in [
-            d3ploy.DEFAULT_COLOR,
-            d3ploy.ALERT_COLOR,
-            d3ploy.ERROR_COLOR,
-            d3ploy.OK_COLOR,
+            colorama.Fore.GREEN,
+            colorama.Fore.RED,
+            colorama.Fore.YELLOW,
         ]:
-            with patch("sys.stdout", new=MockBuffer()) as std_out:
-                d3ploy.alert(
-                    "Testing alert colors", color=color,
-                )
-                self.assertEqual(
-                    std_out.value,
-                    "{}Testing alert colors{}\n".format(color, d3ploy.DEFAULT_COLOR),
-                )
+            d3ploy.alert(
+                "Testing alert colors",
+                color=color,
+            )
+            self.assertEqual(
+                d3ploy.OUTPUT.pop()[0],
+                f"{color}Testing alert colors{colorama.Style.RESET_ALL}",
+            )
 
     def test_non_error_alerts_quieted(self):
         d3ploy.QUIET = True
-        with patch("sys.stdout", new=MockBuffer()) as std_out:
+        std_out = io.StringIO()
+        with contextlib.redirect_stdout(std_out):
             d3ploy.alert("Testing alert colors")
-            self.assertEqual(
-                std_out.value, "",
-            )
+        self.assertEqual(
+            std_out.getvalue(),
+            "",
+        )
         d3ploy.QUIET = False
 
     def test_error_alerts(self):
-        with patch("sys.stdout", new=MockBuffer()) as std_out:
-            with self.assertRaises(SystemExit) as exception:
-                d3ploy.alert(
-                    "Testing alert colors", error_code=os.EX_OK,
-                )
-                self.assertEqual(
-                    exception.exception.code, os.EX_OK,
-                )
-            self.assertEqual(
-                std_out.value,
-                "{}Testing alert colors{}\n".format(
-                    d3ploy.DEFAULT_COLOR, d3ploy.DEFAULT_COLOR,
-                ),
-                msg="Testing error code {}".format(os.EX_OK),
+        with self.assertRaises(SystemExit) as exception:
+            d3ploy.alert(
+                "Testing alert colors",
+                error_code=os.EX_OK,
             )
+        self.assertEqual(
+            exception.exception.code,
+            os.EX_OK,
+        )
         for error_code in [
             os.EX_NOINPUT,
             os.EX_NOUSER,
             os.EX_CONFIG,
             os.EX_UNAVAILABLE,
         ]:
-            with patch("sys.stderr", new=MockBuffer()) as std_err:
-                with self.assertRaises(SystemExit) as exception:
-                    d3ploy.alert(
-                        "Testing alert colors", error_code=error_code,
-                    )
-                    self.assertEqual(
-                        exception.exception.code, error_code,
-                    )
-                self.assertEqual(
-                    std_err.value,
-                    "{}Testing alert colors{}\n".format(
-                        d3ploy.ERROR_COLOR, d3ploy.DEFAULT_COLOR,
-                    ),
-                    msg="Testing error code {}".format(error_code),
+            with self.assertRaises(SystemExit) as exception:
+                d3ploy.alert(
+                    "Testing alert colors",
+                    error_code=error_code,
                 )
-
-    def test_error_alerts_with_color(self):
-        for color in [
-            d3ploy.DEFAULT_COLOR,
-            d3ploy.ALERT_COLOR,
-            d3ploy.ERROR_COLOR,
-            d3ploy.OK_COLOR,
-        ]:
-            with patch("sys.stderr", new=MockBuffer()) as std_err:
-                with self.assertRaises(SystemExit) as exception:
-                    d3ploy.alert(
-                        "Testing alert colors", error_code=os.EX_NOINPUT, color=color,
-                    )
-                    self.assertEqual(
-                        exception.exception.code, os.EX_NOINPUT,
-                    )
-                self.assertEqual(
-                    std_err.value,
-                    "{}Testing alert colors{}\n".format(color, d3ploy.DEFAULT_COLOR),
-                )
-
-
-class ProgressBarTestCase(BaseTestCase, S3BucketMixin):
-    def test_progress_setup(self):
-        try:
-            import progressbar
-        except ImportError:
-            progressbar = None
-        bar = d3ploy.progress_setup(num_files=10)
-        print(bar)
-        if progressbar:
-            self.assertIsInstance(
-                bar, progressbar.ProgressBar,
-            )
-        else:
-            self.assertIsNone(bar)
-
-    def test_progress_setup_quiet(self):
-        d3ploy.QUIET = True
-        bar = d3ploy.progress_setup(num_files=10)
-        self.assertIsNone(bar)
-        d3ploy.QUIET = False
-
-    def test_progress_update(self):
-        bar = d3ploy.progress_setup(num_files=10)
-        if bar is not None:
-            current_value = bar.value + 0
-            d3ploy.progress_update(
-                bar, 1,
-            )
             self.assertEqual(
-                current_value + 1, bar.value,
-            )
-
-    def test_delete_file_bar_update(self):
-        bar = d3ploy.progress_setup(num_files=10)
-        if bar is not None:
-            current_value = bar.value + 0
-            d3ploy.delete_file(
-                "test.txt",
-                self.bucket.name,
-                self.s3,
-                needs_confirmation=False,
-                bar=bar,
-            )
-            self.assertEqual(
-                current_value + 1, bar.value,
+                exception.exception.code,
+                error_code,
             )
 
 
@@ -350,67 +283,94 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
     def setUpClass(cls):
         cls.maxDiff = None
 
+    def test_no_excludes(self):
+        files_list = d3ploy.determine_files_to_sync(
+            relative_path("./files/txt"),
+            None,
+            gitignore=False,
+        )
+        files_list.sort()
+        self.assertListEqual(
+            files_list, [relative_path("./files/txt/.gitkeep", convert=True)]
+        )
+
     def test_no_gitignore(self):
         files_list = d3ploy.determine_files_to_sync(
-            relative_path("./files"), EXCLUDES, gitignore=False,
+            relative_path("./files"),
+            EXCLUDES,
+            gitignore=False,
         )
         files_list.sort()
         self.assertListEqual(files_list, TEST_FILES_WITH_IGNORED_FILES)
 
     def test_with_gitignore(self):
         files_list = d3ploy.determine_files_to_sync(
-            relative_path("./files"), EXCLUDES, gitignore=True,
+            relative_path("./files"),
+            EXCLUDES,
+            gitignore=True,
         )
         files_list.sort()
         self.assertListEqual(files_list, TEST_FILES)
 
     def test_single_file_path_no_gitignore(self):
         files_list = d3ploy.determine_files_to_sync(
-            relative_path("./files/test.ignore"), EXCLUDES, gitignore=False,
+            relative_path("./files/test.ignore"),
+            EXCLUDES,
+            gitignore=False,
         )
         self.assertListEqual(
-            files_list, [relative_path("./files/test.ignore")],
+            files_list,
+            [relative_path("./files/test.ignore", convert=True)],
         )
 
     def test_single_file_path_with_gitignore(self):
         files_list = d3ploy.determine_files_to_sync(
-            relative_path("./files/test.ignore"), EXCLUDES, gitignore=True,
+            relative_path("./files/test.ignore"),
+            EXCLUDES,
+            gitignore=True,
         )
         self.assertListEqual(
-            files_list, [],
+            files_list,
+            [],
         )
 
     def test_ignored_paths_list(self):
         files_list = d3ploy.determine_files_to_sync(
-            relative_path("./files"), EXCLUDES + ["index.html"],
+            relative_path("./files"),
+            EXCLUDES + ["index.html"],
         )
         expected = [
-            x for x in TEST_FILES_WITH_IGNORED_FILES if not x.endswith("index.html")
+            x for x in TEST_FILES_WITH_IGNORED_FILES if not x.match("*/index.html")
         ]
         expected.sort()
         files_list.sort()
         self.assertListEqual(
-            files_list, expected,
+            files_list,
+            expected,
         )
 
     def test_ignored_paths_string(self):
         files_list = d3ploy.determine_files_to_sync(
-            relative_path("./files"), "index.html",
+            relative_path("./files"),
+            "index.html",
         )
         self.assertNotIn(
-            relative_path("./files/html/index.html"), files_list,
+            relative_path("./files/html/index.html"),
+            files_list,
         )
 
     def test_gitignore_files_not_found(self):
         cwd = "{}".format(os.getcwd())
         os.chdir(relative_path("./files/txt"))
-        with patch("sys.stdout", new=MockBuffer()) as std_out:
-            d3ploy.determine_files_to_sync(
-                relative_path("./files/txt"), EXCLUDES, gitignore=True,
-            )
-            self.assertIn(
-                "no .gitignore files were found", std_out.value,
-            )
+        d3ploy.determine_files_to_sync(
+            relative_path("./files/txt"),
+            EXCLUDES,
+            gitignore=True,
+        )
+        self.assertIn(
+            "no .gitignore files were found",
+            d3ploy.OUTPUT[-1][0],
+        )
         os.chdir(cwd)
 
 
@@ -463,7 +423,9 @@ class CheckForUpdatesTestCase(BaseTestCase, TestFileMixin):
 
 
 class UploadFileTestCase(
-    BaseTestCase, S3BucketMixin, TestFileMixin,
+    BaseTestCase,
+    S3BucketMixin,
+    TestFileMixin,
 ):
     def test_bucket_path(self):
         for prefix in ["test", "testing"]:
@@ -480,7 +442,9 @@ class UploadFileTestCase(
                 msg="upload_file returns the correct path",
             )
             self.assertEqual(
-                result[1], 1, msg="upload_file returns the correct status",
+                result[1],
+                1,
+                msg="upload_file returns the correct status",
             )
 
     def test_acls(self):
@@ -522,7 +486,8 @@ class UploadFileTestCase(
             force=True,
         )
         self.assertTrue(
-            result[1] > 0, msg="upload_file force=True overwrites existing file",
+            result[1] > 0,
+            msg="upload_file force=True overwrites existing file",
         )
 
     def test_md5_hashing(self):
@@ -542,7 +507,9 @@ class UploadFileTestCase(
             "d3ploy-hash"
         )
         self.assertEqual(
-            result_1[1], 1, msg="upload_file correctly uploads a new file",
+            result_1[1],
+            1,
+            msg="upload_file correctly uploads a new file",
         )
         result_2 = d3ploy.upload_file(
             self.test_file_name,
@@ -580,7 +547,9 @@ class UploadFileTestCase(
             "d3ploy-hash"
         )
         self.assertEqual(
-            result_3[1], 1, msg="upload_file correctly uploads a changed file",
+            result_3[1],
+            1,
+            msg="upload_file correctly uploads a changed file",
         )
         self.assertNotEqual(
             s3_object_1_hash,
@@ -598,7 +567,8 @@ class UploadFileTestCase(
             dry_run=True,
         )
         self.assertEqual(
-            result[1], 1,
+            result[1],
+            1,
         )
         self.assertFalse(
             s3_object_exists(self.bucket.name, result[0]),
@@ -618,11 +588,13 @@ class UploadFileTestCase(
             s3_obj = self.s3.Object(self.bucket.name, result[0])
             if charset:
                 self.assertEqual(
-                    s3_obj.content_type, "text/html;charset={}".format(charset),
+                    s3_obj.content_type,
+                    "text/html;charset={}".format(charset),
                 )
             else:
                 self.assertEqual(
-                    s3_obj.content_type, "text/html",
+                    s3_obj.content_type,
+                    "text/html",
                 )
 
     def test_caches(self):
@@ -691,7 +663,9 @@ class UploadFileTestCase(
 
 
 class DeleteFileTestCase(
-    BaseTestCase, S3BucketMixin, TestFileMixin,
+    BaseTestCase,
+    S3BucketMixin,
+    TestFileMixin,
 ):
     def setUp(self):
         super().setUp()
@@ -704,7 +678,9 @@ class DeleteFileTestCase(
             PREFIX_REGEX,
         )
         self.assertEqual(
-            upload_result[1], 1, msg="delete_file uploading file worked",
+            upload_result[1],
+            1,
+            msg="delete_file uploading file worked",
         )
         self.assertTrue(
             s3_object_exists(self.bucket.name, upload_result[0]),
@@ -718,10 +694,15 @@ class DeleteFileTestCase(
 
     def test_dry_run(self, *args):
         result = d3ploy.delete_file(
-            self.uploaded_file, self.bucket.name, self.s3, dry_run=True,
+            self.uploaded_file,
+            self.bucket.name,
+            self.s3,
+            dry_run=True,
         )
         self.assertEqual(
-            result, 1, msg="delete_file dry_run=True returns 1",
+            result,
+            1,
+            msg="delete_file dry_run=True returns 1",
         )
         self.assertTrue(
             s3_object_exists(self.bucket.name, self.uploaded_file),
@@ -731,7 +712,9 @@ class DeleteFileTestCase(
     def test_deletion(self):
         result = d3ploy.delete_file(self.uploaded_file, self.bucket.name, self.s3)
         self.assertEqual(
-            result, 1, msg="delete_file returns 1",
+            result,
+            1,
+            msg="delete_file returns 1",
         )
         self.assertFalse(
             s3_object_exists(self.bucket.name, self.uploaded_file),
@@ -741,7 +724,10 @@ class DeleteFileTestCase(
     @patch("d3ploy.d3ploy.get_confirmation", return_value=True)
     def test_confirmation_affirmative(self, *args):
         result = d3ploy.delete_file(
-            self.uploaded_file, self.bucket.name, self.s3, needs_confirmation=True,
+            self.uploaded_file,
+            self.bucket.name,
+            self.s3,
+            needs_confirmation=True,
         )
         self.assertEqual(
             result,
@@ -762,7 +748,10 @@ class DeleteFileTestCase(
     @patch("d3ploy.d3ploy.get_confirmation", return_value=False)
     def test_confirmation_negative(self, *args):
         result = d3ploy.delete_file(
-            self.uploaded_file, self.bucket.name, self.s3, needs_confirmation=True,
+            self.uploaded_file,
+            self.bucket.name,
+            self.s3,
+            needs_confirmation=True,
         )
         self.assertEqual(
             result,
@@ -784,14 +773,18 @@ class DeleteFileTestCase(
     def test_deletion_with_killswitch_flipped(self, *args):
         result = d3ploy.delete_file(self.uploaded_file, self.bucket.name, self.s3)
         self.assertEqual(
-            result, 0, msg="delete_file returns 0 when killswitch.is_set is True",
+            result,
+            0,
+            msg="delete_file returns 0 when killswitch.is_set is True",
         )
 
 
 class InvalidateCloudfrontTestCase(BaseTestCase):
     def test_dry_run(self):
         response = d3ploy.invalidate_cloudfront(
-            TEST_CLOUDFRONT_DISTRIBUTION, "test", dry_run=True,
+            TEST_CLOUDFRONT_DISTRIBUTION,
+            "test",
+            dry_run=True,
         )
         self.assertListEqual(
             response,
@@ -802,12 +795,16 @@ class InvalidateCloudfrontTestCase(BaseTestCase):
     def test_invalidation(self):
         response = d3ploy.invalidate_cloudfront(TEST_CLOUDFRONT_DISTRIBUTION, "test")
         self.assertEqual(
-            len(response), 1, msg="invalidate_cloudfront returns 1 invalidation ID",
+            len(response),
+            1,
+            msg="invalidate_cloudfront returns 1 invalidation ID",
         )
 
 
 class SyncFilesTestCase(
-    BaseTestCase, S3BucketMixin, TestFileMixin,
+    BaseTestCase,
+    S3BucketMixin,
+    TestFileMixin,
 ):
     def test_bucket_path(self):
         for prefix in ["test", "testing"]:
@@ -820,7 +817,8 @@ class SyncFilesTestCase(
             )
             self.assertTrue(
                 s3_object_exists(
-                    self.bucket.name, "sync_files/{}/sample.css".format(prefix),
+                    self.bucket.name,
+                    "sync_files/{}/sample.css".format(prefix),
                 ),
                 msg="sync_files puts files in the correct bucket path",
             )
@@ -836,7 +834,8 @@ class SyncFilesTestCase(
                 acl=acl,
             )
             object_acl = self.s3.ObjectAcl(
-                self.bucket.name, "sync_files/test-acl-{}/sample.css".format(acl),
+                self.bucket.name,
+                "sync_files/test-acl-{}/sample.css".format(acl),
             )
             grants = []
             for grant in object_acl.grants:
@@ -879,11 +878,13 @@ class SyncFilesTestCase(
             )
             if charset:
                 self.assertEqual(
-                    s3_obj.content_type, "text/html;charset={}".format(charset),
+                    s3_obj.content_type,
+                    "text/html;charset={}".format(charset),
                 )
             else:
                 self.assertEqual(
-                    s3_obj.content_type, "text/html",
+                    s3_obj.content_type,
+                    "text/html",
                 )
 
     def test_caches_explicit(self):
@@ -967,14 +968,15 @@ class SyncFilesTestCase(
             if s3_object_exists(
                 self.bucket.name,
                 "sync_files/test-multiple-processes/{}".format(
-                    fn.replace("tests/files/", "")
+                    str(fn).replace("tests/files/", "")
                 ),
             ):
                 passed += 1
             else:
                 print("missing file", fn)
         self.assertEqual(
-            passed, len(TEST_FILES),
+            passed,
+            len(TEST_FILES),
         )
 
     def test_deleting_files(self):
@@ -1027,7 +1029,8 @@ class SyncFilesTestCase(
         )
         self.assertFalse(s3_object_exists(self.bucket.name, uploaded_file[0]))
         self.assertGreaterEqual(
-            outcome["deleted"], 1,
+            outcome["deleted"],
+            1,
         )
 
     @patch("d3ploy.d3ploy.get_confirmation", return_value=True)
@@ -1085,9 +1088,10 @@ class SyncFilesTestCase(
     def test_no_bucket_name(self):
         with self.assertRaises(SystemExit) as exception:
             d3ploy.sync_files("test")
-            self.assertEqual(
-                exception.exception.code, os.EX_NOINPUT,
-            )
+        self.assertEqual(
+            exception.exception.code,
+            os.EX_NOINPUT,
+        )
 
     def test_cloudfront_id(self):
         for distro_ids in [[TEST_CLOUDFRONT_DISTRIBUTION], []]:
@@ -1100,7 +1104,21 @@ class SyncFilesTestCase(
                 cloudfront_id=distro_ids,
             )
             self.assertEqual(
-                outcome["invalidated"], len(distro_ids),
+                outcome["invalidated"],
+                len(distro_ids),
+            )
+            # run it again and make sure we don't send another invalidation
+            outcome = d3ploy.sync_files(
+                "test",
+                local_path=relative_path("./files/html"),
+                bucket_name=self.bucket.name,
+                bucket_path="sync_files/test-cloudfront-id",
+                excludes=EXCLUDES,
+                cloudfront_id=distro_ids,
+            )
+            self.assertEqual(
+                outcome["invalidated"],
+                0,
             )
 
 
@@ -1126,39 +1144,46 @@ class CLITestCase(BaseTestCase):
     def test_version(self):
         for testargs in [["-v"], ["--version"]]:
             with patch.object(sys, "argv", ["d3ploy"] + testargs):
-                with patch("sys.stdout", new=MockBuffer()) as std_out:
-                    with self.assertRaises(SystemExit) as exception:
-                        d3ploy.cli()
-                        self.assertEqual(
-                            exception.exception.code, os.EX_OK,
-                        )
-                        output = std_out.value.replace("checking for update", "")
-                        output = output.split("\n")
-                        output = [x.strip() for x in output if x]
-                        output = "\n".join(output)
-                        self.assertEqual(
-                            output, "d3ploy {}".format(d3ploy.VERSION),
-                        )
+                std_out = io.StringIO()
+                with self.assertRaises(
+                    SystemExit
+                ) as exception, contextlib.redirect_stdout(std_out):
+                    d3ploy.cli()
+                self.assertEqual(
+                    exception.exception.code,
+                    os.EX_OK,
+                )
+                output = std_out.getvalue().replace("checking for update", "")
+                output = output.split("\n")
+                output = [x.strip() for x in output if x]
+                output = "\n".join(output)
+                self.assertIn(
+                    "d3ploy {}".format(d3ploy.VERSION),
+                    output,
+                )
 
     def test_environment_argument(self):
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.env, "test",
+                self.sync_files.env,
+                "test",
             )
 
         with patch.object(sys, "argv", ["d3ploy", "test", "prod"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.env, "prod",
+                self.sync_files.env,
+                "prod",
             )
 
         with patch.object(sys, "argv", ["d3ploy"]):
             with self.assertRaises(SystemExit) as exception:
                 d3ploy.cli()
-                self.assertEqual(
-                    exception.exception.code, os.EX_NOINPUT,
-                )
+            self.assertEqual(
+                exception.exception.code,
+                os.EX_NOINPUT,
+            )
 
     def test_bucket_name(self):
         # test passing the variable to the cli
@@ -1167,14 +1192,16 @@ class CLITestCase(BaseTestCase):
         ):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.bucket_name, TEST_BUCKET + "-foo",
+                self.sync_files.bucket_name,
+                TEST_BUCKET + "-foo",
             )
 
         # test getting the variable from the config file
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.bucket_name, TEST_BUCKET,
+                self.sync_files.bucket_name,
+                TEST_BUCKET,
             )
 
     def test_local_path(self):
@@ -1182,14 +1209,16 @@ class CLITestCase(BaseTestCase):
         with patch.object(sys, "argv", ["d3ploy", "test", "--local-path", "./tests/"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.local_path, "./tests/",
+                self.sync_files.local_path,
+                "./tests/",
             )
 
         # test getting the variable from the config file
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.local_path, ".",
+                self.sync_files.local_path,
+                ".",
             )
 
     def test_bucket_path(self):
@@ -1197,14 +1226,16 @@ class CLITestCase(BaseTestCase):
         with patch.object(sys, "argv", ["d3ploy", "test", "--bucket-path", "/tests/"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.bucket_path, "/tests/",
+                self.sync_files.bucket_path,
+                "/tests/",
             )
 
         # test getting the variable from the config file
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.bucket_path, "/test/",
+                self.sync_files.bucket_path,
+                "/test/",
             )
 
     def test_exclude(self):
@@ -1218,7 +1249,8 @@ class CLITestCase(BaseTestCase):
             ]
             expected.sort()
             self.assertListEqual(
-                self.sync_files.excludes, expected,
+                self.sync_files.excludes,
+                expected,
             )
 
         # test passing multiple variables to the cli
@@ -1234,7 +1266,8 @@ class CLITestCase(BaseTestCase):
             ]
             expected.sort()
             self.assertListEqual(
-                self.sync_files.excludes, expected,
+                self.sync_files.excludes,
+                expected,
             )
 
         # test getting the variable from the config file
@@ -1248,7 +1281,8 @@ class CLITestCase(BaseTestCase):
             ]
             expected.sort()
             self.assertEqual(
-                self.sync_files.excludes, expected,
+                self.sync_files.excludes,
+                expected,
             )
 
     def test_acl(self):
@@ -1257,14 +1291,16 @@ class CLITestCase(BaseTestCase):
             with patch.object(sys, "argv", ["d3ploy", "test", "--acl", acl]):
                 d3ploy.cli()
                 self.assertEqual(
-                    self.sync_files.acl, acl,
+                    self.sync_files.acl,
+                    acl,
                 )
 
         # test passing no variable to the cli
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.acl, "public-read",
+                self.sync_files.acl,
+                None,
             )
 
     def test_force(self):
@@ -1291,7 +1327,8 @@ class CLITestCase(BaseTestCase):
                 d3ploy.cli()
                 if charset:
                     self.assertEqual(
-                        self.sync_files.charset, charset,
+                        self.sync_files.charset,
+                        charset,
                     )
                 else:
                     self.assertFalse(self.sync_files.charset)
@@ -1313,13 +1350,15 @@ class CLITestCase(BaseTestCase):
                 ):
                     d3ploy.cli()
                     self.assertEqual(
-                        self.sync_files.processes, count,
+                        self.sync_files.processes,
+                        count,
                     )
 
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.processes, 10,
+                self.sync_files.processes,
+                10,
             )
 
     def test_delete(self):
@@ -1355,14 +1394,16 @@ class CLITestCase(BaseTestCase):
                 d3ploy.cli()
                 self.sync_files.cloudfront_id.sort()
                 self.assertListEqual(
-                    self.sync_files.cloudfront_id, distro_ids,
+                    self.sync_files.cloudfront_id,
+                    distro_ids,
                 )
 
     def test_all(self):
         with patch.object(sys, "argv", ["d3ploy", "--all"]):
             d3ploy.cli()
             self.assertIn(
-                self.sync_files.env, ["test", "prod"],
+                self.sync_files.env,
+                ["test", "prod"],
             )
 
     def test_config(self):
@@ -1370,24 +1411,27 @@ class CLITestCase(BaseTestCase):
         with patch.object(sys, "argv", ["d3ploy", "prod", "-c", ".test-d3ploy"]):
             d3ploy.cli()
             self.assertEqual(
-                self.sync_files.bucket_path, "/alt-config/",
+                self.sync_files.bucket_path,
+                "/alt-config/",
             )
 
         # test that a non existant config file raises an error
         with patch.object(sys, "argv", ["d3ploy", "test", "-c", ".test-d3ploy.json"]):
             with self.assertRaises(SystemExit) as exception:
                 d3ploy.cli()
-                self.assertEqual(
-                    exception.exception.code, os.EX_NOINPUT,
-                )
+            self.assertEqual(
+                exception.exception.code,
+                os.EX_NOINPUT,
+            )
 
         # test that an empty config file raises an error
         with patch.object(sys, "argv", ["d3ploy", "test", "-c", ".empty-config.json"]):
             with self.assertRaises(SystemExit) as exception:
                 d3ploy.cli()
-                self.assertEqual(
-                    exception.exception.code, os.EX_NOINPUT,
-                )
+            self.assertEqual(
+                exception.exception.code,
+                os.EX_NOINPUT,
+            )
 
     def test_quiet(self):
         with patch.object(sys, "argv", ["d3ploy", "test"]):
@@ -1408,15 +1452,22 @@ class CLITestCase(BaseTestCase):
         d3ploy.QUIET = False
 
     def test_old_config_check(self):
-        with open("deploy.json", "w") as f:
-            f.write("\n")
-            f.flush()
-        with self.assertRaises(SystemExit) as exception:
+        config_file = relative_path("./files/deploy.json", convert=True)
+        config_file.write_text("")
+        std_err = io.StringIO()
+        with self.assertRaises(SystemExit) as exception, contextlib.redirect_stderr(
+            std_err
+        ):
             d3ploy.cli()
-            self.assertTrue(
-                exception.exception.code, os.EX_CONFIG,
-            )
-        os.unlink("deploy.json")
+        self.assertEqual(
+            exception.exception.code,
+            os.EX_CONFIG,
+        )
+        self.assertIn(
+            "It looks like you have an old version of deploy.json in your project",
+            std_err.getvalue(),
+        )
+        config_file.unlink()
 
     def test_positive_int(self):
         with self.assertRaises(argparse.ArgumentTypeError):
@@ -1424,35 +1475,56 @@ class CLITestCase(BaseTestCase):
         with self.assertRaises(argparse.ArgumentTypeError):
             d3ploy.processes_int(-10)
         self.assertEqual(
-            d3ploy.processes_int(1), 1,
+            d3ploy.processes_int(1),
+            1,
         )
         self.assertEqual(
-            d3ploy.processes_int(10), 10,
+            d3ploy.processes_int(10),
+            10,
         )
         self.assertEqual(
-            d3ploy.processes_int(50), 50,
+            d3ploy.processes_int(50),
+            50,
         )
         with self.assertRaises(argparse.ArgumentTypeError):
             d3ploy.processes_int(51)
 
 
+class get_progress_barTests(BaseTestCase):
+    def test_quiet(self):
+        d3ploy.QUIET = True
+        bar = d3ploy.get_progress_bar()
+        self.assertTrue(bar.disable)
+        d3ploy.QUIET = False
+
+
+class display_outputTests(BaseTestCase):
+    def test_quiet(self):
+        d3ploy.QUIET = True
+        std_out = io.StringIO()
+        with contextlib.redirect_stdout(std_out):
+            d3ploy.alert("Test message")
+            d3ploy.display_output()
+        self.assertEqual(std_out.getvalue(), "")
+        d3ploy.QUIET = False
+
+
 if __name__ == "__main__":
     # we need one vcs directory to exist for the GitHub Action tests to
     # have complete coverage
-    svn_dir = pathlib.Path(os.path.join(parent_dir, "tests", "files", ".svn"))
+    svn_dir = pathlib.Path(parent_dir) / "tests/files/.svn"
     svn_dir_existed = svn_dir.exists()
     svn_dir.mkdir(exist_ok=True)
 
     # update our config file to use the current test bucket
-    config_file = pathlib.Path(
-        os.path.join(parent_dir, "tests", "files", ".d3ploy.json")
-    )
+    config_file = pathlib.Path(parent_dir) / "tests/files/.d3ploy.json"
     config = json.loads(config_file.read_text())
     config["defaults"]["bucket_name"] = TEST_BUCKET
     config_file.write_text(json.dumps(config, indent=2))
 
     unittest.main(
-        buffer=True, verbosity=2,
+        buffer=True,
+        verbosity=2,
     )
 
     if not svn_dir_existed:

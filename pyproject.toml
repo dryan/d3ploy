@@ -15,25 +15,21 @@ d3ploy = "d3ploy.d3ploy:cli"
 [tool.poetry.dependencies]
 python = "^3.7"
 boto3 = "^1.12.38"
-pathspec = "^0.7.0"
-
-[tool.poetry.extras]
-progress = ['progressbar2']
-notifications = ['pync']
+pathspec = "^0.8.1"
+tqdm = "^4.61.0"
+colorama = "^0.4.4"
 
 [tool.poetry.dev-dependencies]
-black = "*"
+black = "^21.5b1"
 isort = "*"
 flake8 = "*"
 coverage = "*"
-ipython = "*"
-progressbar2 = "^3.50.1"
-pync = "^2.0.3"
+ipython = "^7.23.1"
 twine = "^3.4.1"
 
 [tool.black]
 line-length = 88
-target_version = ['py38']
+target_version = ['py39']
 include = '\.pyi?$'
 exclude = '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist|node_modules)/'
 

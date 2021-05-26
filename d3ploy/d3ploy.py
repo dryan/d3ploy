@@ -6,34 +6,26 @@ import hashlib
 import json
 import mimetypes
 import os
+import pathlib
 import re
 import signal
 import sys
 import threading
 import time
+import typing
 import urllib
 import uuid
-import warnings
 from concurrent import futures
 
 import boto3
 import botocore
+import colorama
 import pathspec
+from boto3.resources.base import ServiceResource as AWSServiceResource
+from colorama import init as colorama_init
+from tqdm import tqdm
 
-with warnings.catch_warnings():
-    try:
-        import progressbar
-    except ImportError:  # pragma: no cover
-        progressbar = None
-
-    try:
-        import pync
-    except Exception:  # pragma: no cover
-        # sadly this module raises a base Exception when imported on
-        # unsupported platforms
-        pync = False
-
-VERSION = "3.0.7"
+VERSION = "4.0.0"
 
 VALID_ACLS = [
     "private",
@@ -41,11 +33,6 @@ VALID_ACLS = [
     "public-read-write",
     "authenticated-read",
 ]
-
-DEFAULT_COLOR = "\033[0;0m"
-ERROR_COLOR = "\033[31m"
-ALERT_COLOR = "\033[33m"
-OK_COLOR = "\033[92m"
 
 QUIET = False
 
@@ -78,9 +65,21 @@ for mimetype in MIMETYPES:
         mimetypes.add_type(mimetype, extension)
 
 
+def get_progress_bar(*args, **kwargs) -> tqdm:
+    kwargs.setdefault("unit", "files")
+    kwargs.setdefault("colour", "GREEN")
+    if QUIET:
+        kwargs["disable"] = True
+    return tqdm(*args, **kwargs)
+
+
 # inspired by
 # https://www.peterbe.com/plog/fastest-way-to-find-out-if-a-file-exists-in-s3
-def key_exists(s3, bucket_name, key_name):
+def key_exists(
+    s3: AWSServiceResource,
+    bucket_name: str,
+    key_name: str,
+) -> bool:
     bucket = s3.Bucket(bucket_name)
     for obj in bucket.objects.filter(Prefix=key_name):
         if obj.key == key_name:
@@ -88,90 +87,73 @@ def key_exists(s3, bucket_name, key_name):
     return False
 
 
-def alert(
-    text,
-    error_code=None,
-    color=None,
-):
-    buffer = sys.stderr if error_code else sys.stdout
-    if not QUIET:
-        buffer.write(
-            f"{color or (ERROR_COLOR if error_code else DEFAULT_COLOR)}"
-            f"{text}{DEFAULT_COLOR}\n"
-        )
+OUTPUT = []
+
+
+def display_output():
+    while len(OUTPUT):
+        text, is_error = OUTPUT.pop()
+        if QUIET and not is_error:
+            continue
+        buffer = sys.stderr if is_error else sys.stdout
+        buffer.write(f"{text}\n")
         buffer.flush()
+
+
+def alert(
+    text: str,
+    error_code: typing.Optional[int] = None,
+    color: typing.Optional[str] = None,
+):
+    if color is None:
+        color = (
+            colorama.Fore.RED
+            if error_code and not error_code == os.EX_OK
+            else colorama.Style.RESET_ALL
+        )
+    if not QUIET:
+        OUTPUT.append(
+            (
+                f"{color}{text}{colorama.Style.RESET_ALL}",
+                error_code not in [None, os.EX_OK],
+            )
+        )
     if error_code is not None:
+        display_output()
         sys.exit(error_code)
 
 
 killswitch = threading.Event()
 
 
-def progress_setup(
-    label="Uploading: ",
-    num_files=0,
-    marker_color=DEFAULT_COLOR,
-):
-    if progressbar and not QUIET:
-        bar = progressbar.ProgressBar(
-            widgets=[
-                marker_color,
-                label,
-                progressbar.Percentage(),
-                " ",
-                progressbar.Bar(),
-                " ",
-                progressbar.ETA(),
-                DEFAULT_COLOR,
-            ],
-            max_value=num_files,
-        )
-        bar.start()
-    else:
-        bar = None
-    return bar
-
-
-def progress_update(
-    bar,
-    count,
-):
-    if bar and not QUIET:
-        bar.update(bar.value + count)
-
-
 def bail(*args, **kwargs):  # pragma: no cover
     killswitch.set()
-    try:
-        bar.widgets[0] = ERROR_COLOR
-        bar.finished = True
-        progress_update(bar, 0)
-        alert("")
-    except NameError:
-        pass
-    alert("\nExiting...", os.EX_OK, ALERT_COLOR)
+    alert("\nExiting...", os.EX_OK, colorama.Fore.RED)
 
 
 signal.signal(signal.SIGINT, bail)
 
 
-def check_for_updates(check_file_path="~/.d3ploy-update-check", this_version=VERSION):
+def check_for_updates(
+    check_file_path: typing.Optional[
+        typing.Union[pathlib.Path, str]
+    ] = "~/.d3ploy-update-check",
+    this_version: str = VERSION,
+) -> bool:
     update_available = None
     try:
         from pkg_resources import parse_version
     except ImportError:  # pragma: no cover
         return None
     PYPI_URL = "https://pypi.org/pypi/d3ploy/json"
-    CHECK_FILE = os.path.expanduser(check_file_path)
-    if not os.path.exists(CHECK_FILE):
+    CHECK_FILE = pathlib.Path(check_file_path).expanduser()
+    if not CHECK_FILE.exists():
         try:
-            with open(CHECK_FILE, "w") as _f:
-                pass
+            CHECK_FILE.write_text("")
         except IOError:  # pragma: no cover
             pass
     try:
-        with open(CHECK_FILE, "r") as _f:
-            last_checked = int(_f.read().strip())
+        last_checked = int(CHECK_FILE.read_text().strip())
     except ValueError:
         last_checked = 0
     now = int(time.time())
@@ -191,65 +173,43 @@ def check_for_updates(check_file_path="~/.d3ploy-update-check", this_version=VER
                             f"Please see https://github.com/dryan/d3ploy or run "
                             f"`pip install --upgrade d3ploy`."
                         ),
-                        color=ALERT_COLOR,
+                        color=colorama.Fore.YELLOW,
                     )
                     update_available = True
                 else:
                     update_available = False
         except ConnectionResetError:  # pragma: no cover
-            update_available = (
-                False  # if pypi fails, assume we can't get an update anyway
-            )
+            # if pypi fails, assume we can't get an update anyway
+            update_available = False
         except Exception as e:  # pragma: no cover
             if os.environ.get("D3PLOY_DEBUG"):
                 raise e
-        with open(CHECK_FILE, "w") as check_file:
-            check_file.write(str(now))
-            check_file.flush()
-            check_file.close()
+        CHECK_FILE.write_text(str(now))
     return update_available
-
-
-def notify(
-    env,
-    text,
-    error_code=None,
-    color=None,
-):  # pragma: no cover
-    if QUIET:
-        return
-    alert(text, error_code, color)
-    if pync:
-        pync.notify(
-            title="d3ploy",
-            subtitle=env,
-            message=text,
-            sound=os.environ.get("D3PLOY_NC_SOUND"),
-            group=os.getpid(),
-        )
-        return True
 
 
 # this is where the actual upload happens, called by sync_files
 def upload_file(
-    file_name,
-    bucket_name,
-    s3,
-    bucket_path,
-    prefix_regex,
-    acl="public-read",
-    bar=None,
-    force=False,
-    dry_run=False,
-    charset=None,
-    caches={},
-):
+    file_name: typing.Union[str, pathlib.Path],
+    bucket_name: str,
+    s3: AWSServiceResource,
+    bucket_path: str,
+    prefix_regex: re.Pattern,
+    acl: typing.Optional[str] = None,
+    force: bool = False,
+    dry_run: bool = False,
+    charset: typing.Optional[str] = None,
+    caches: typing.Optional[typing.Dict[str, int]] = None,
+    bar: typing.Optional[tqdm] = None,
+) -> typing.Tuple[str, bool]:
     if killswitch.is_set():
         return (file_name, 0)
+    if caches is None:
+        caches = {}
     updated = 0
 
     key_name = "/".join(
-        [bucket_path.rstrip("/"), prefix_regex.sub("", file_name).lstrip("/")]
+        [bucket_path.rstrip("/"), prefix_regex.sub("", str(file_name)).lstrip("/")]
     ).lstrip("/")
     if key_exists(s3, bucket_name, key_name):
         s3_obj = s3.Object(bucket_name, key_name)
@@ -261,20 +221,18 @@ def upload_file(
             local_md5.update(chunk)
     local_md5 = local_md5.hexdigest()
     mimetype = mimetypes.guess_type(file_name)
-
     if s3_obj is None or force or not s3_obj.metadata.get("d3ploy-hash") == local_md5:
         with open(file_name, "rb") as local_file:
             updated += 1
-            if bar:  # pragma: no cover
-                progress_update(bar, +1)
-            else:
-                alert(f"Copying {file_name} to {bucket_name}/{key_name.lstrip('/')}")
             if dry_run:
+                if bar:  # pragma: no cover
+                    bar.update()
                 return (key_name.lstrip("/"), updated)
             extra_args = {
-                "ACL": acl,
                 "Metadata": {"d3ploy-hash": local_md5},
             }
+            if acl is not None:
+                extra_args["ACL"] = acl
             if charset and mimetype[0] and mimetype[0].split("/")[0] == "text":
                 extra_args["ContentType"] = f"{mimetype[0]};charset={charset}"
             elif mimetype[0]:
@@ -298,13 +256,13 @@ def upload_file(
             )
     else:
         if s3_obj and s3_obj.metadata.get("d3ploy-hash") == local_md5:
-            alert(f"Skipping {file_name}: already up-to-date")
-        if bar:  # pragma: no cover
-            progress_update(bar, +1)
+            alert(f"Skipped {file_name}: already up-to-date")
+    if bar:
+        bar.update()
     return (key_name.lstrip("/"), updated)
 
 
-def get_confirmation(message):  # pragma: no cover
+def get_confirmation(message: str) -> bool:  # pragma: no cover
     confirm = input(f"{message} [yN]: ")
 
     return confirm.lower() in ["y", "yes"]
@@ -312,8 +270,13 @@ def get_confirmation(message):  # pragma: no cover
 
 # this where the actual removal happens, called by sync_files
 def delete_file(
-    key_name, bucket_name, s3, needs_confirmation=False, bar=None, dry_run=False
-):
+    key_name: str,
+    bucket_name: str,
+    s3: AWSServiceResource,
+    needs_confirmation: bool = False,
+    bar: typing.Optional[tqdm] = None,
+    dry_run: bool = False,
+) -> int:
     if killswitch.is_set():
         return 0
     deleted = 0
@@ -324,35 +287,35 @@ def delete_file(
     else:
         confirmed = True
     if confirmed:
-        if bar:
-            progress_update(bar, +1)
-        else:
-            alert(f"Deleting {bucket_name}/{key_name.lstrip('/')}")
         deleted += 1
         if not dry_run:
             s3.Object(bucket_name, key_name).delete()
     else:
-        if bar:
-            progress_update(bar, +1)
         alert(
             f"{chr(10) if bar and not needs_confirmation else ''}Skipping removal of "
-            f"{bucket_name}/{key_name.lstrip('/')}"
+            f"{bucket_name}/{key_name.lstrip('/')}",
         )
+    if bar:
+        bar.update()
     return deleted
 
 
 def determine_files_to_sync(
-    local_path,
-    excludes=[],
-    gitignore=False,
-):
+    local_path: typing.Union[pathlib.Path, str],
+    excludes: typing.Optional[typing.Union[typing.Collection, str]] = None,
+    gitignore: bool = False,
+) -> typing.List[pathlib.Path]:
+    if excludes is None:
+        excludes = []
     if isinstance(excludes, str):
         excludes = [excludes]
+    if not isinstance(local_path, pathlib.Path):
+        local_path = pathlib.Path(local_path)
     gitignore_patterns = list(map(pathspec.patterns.GitWildMatchPattern, excludes))
     svc_directories = [".git", ".svn"]
     if gitignore:
         gitignores = []
-        if os.path.exists(".gitignore"):
+        if pathlib.Path(".gitignore").exists():
             gitignores.append(".gitignore")
         for root, dir_names, file_names in os.walk(local_path):
             for dir_name in dir_names:
@@ -373,40 +336,39 @@ def determine_files_to_sync(
         if not gitignores:
             alert(
                 "--gitignore option set, but no .gitignore files were found",
-                color=ALERT_COLOR,
+                color=colorama.Fore.RED,
             )
     gitignore_spec = pathspec.PathSpec(gitignore_patterns)
 
     files = []
-    if os.path.isdir(local_path):
+    if local_path.is_dir():
         for root, dir_names, file_names in os.walk(local_path):
             for file_name in file_names:
-                file_name = os.path.join(root, file_name)
+                file_name = pathlib.Path(root) / file_name
                 if not gitignore_spec.match_file(file_name):
                     files.append(file_name)
             for svc_directory in svc_directories:
                 if svc_directory in dir_names:
                     dir_names.remove(svc_directory)
-    elif os.path.isfile(local_path) or os.path.islink(local_path):
+    elif local_path.is_file() or local_path.is_symlink():
         if not gitignore_spec.match_file(local_path):
             files.append(local_path)
     return files
 
 
 def invalidate_cloudfront(
-    cloudfront_id,
-    env,
-    dry_run=False,
-):
+    cloudfront_id: typing.Union[typing.Collection[str], str],
+    env: str,
+    dry_run: bool = False,
+) -> typing.List[str]:
     output = []
     if not isinstance(cloudfront_id, list):
         cloudfront_id = [cloudfront_id]
     for cf_id in cloudfront_id:
         if dry_run:
-            notify(
-                env,
+            alert(
                 f"CloudFront distribution {cf_id} invalidation would be requested",
-                color=OK_COLOR,
+                color=colorama.Fore.GREEN,
             )
         else:
             cloudfront = boto3.client("cloudfront")
@@ -419,33 +381,41 @@ def invalidate_cloudfront(
                     "CallerReference": uuid.uuid4().hex,
                 },
             )
-            notify(
-                env,
+            alert(
                 f"CloudFront distribution {cf_id} invalidation requested",
-                color=OK_COLOR,
+                color=colorama.Fore.GREEN,
             )
             output.append(response.get("Invalidation", {}).get("Id"))
     return [x for x in output if x]
 
 
 def sync_files(
-    env,
-    bucket_name=None,
-    local_path=".",
-    bucket_path="/",
-    excludes=[],
-    acl="public-read",
-    force=False,
-    dry_run=False,
-    charset=False,
-    gitignore=False,
-    processes=1,
-    delete=False,
-    confirm=False,
-    cloudfront_id=[],
-    caches={},
-):
+    env: str,
+    bucket_name: typing.Optional[str] = None,
+    local_path: typing.Optional[typing.Union[str, pathlib.Path]] = ".",
+    bucket_path: typing.Optional[str] = "/",
+    excludes: typing.Collection[str] = [],
+    acl: typing.Optional[str] = None,
+    force: bool = False,
+    dry_run: bool = False,
+    charset: typing.Optional[str] = None,
+    gitignore: bool = False,
+    processes: int = 1,
+    delete: bool = False,
+    confirm: bool = False,
+    cloudfront_id: typing.Optional[typing.Union[typing.Collection[str], str]] = None,
+    caches: typing.Optional[typing.Dict[str, int]] = None,
+) -> typing.Dict[str, int]:
     alert(f'Using settings for "{env}" environment')
+
+    if cloudfront_id is None:
+        cloudfront_id = []
+
+    if caches is None:
+        caches = {}
+
+    if not isinstance(local_path, pathlib.Path):
+        local_path = pathlib.Path(local_path)
 
     if not bucket_name:
         alert(
@@ -475,32 +445,31 @@ def sync_files(
     prefix_regex = re.compile(r"^{}".format(local_path))
     files = determine_files_to_sync(local_path, excludes, gitignore=gitignore)
     deleted = 0
-    bar = progress_setup(f"Updating {env}: ", len(files), OK_COLOR)
-
     key_names = []
     updated = 0
-    with futures.ThreadPoolExecutor(max_workers=processes) as executor:
-        jobs = []
-        for fn in files:
-            job = executor.submit(
-                upload_file,
-                *(fn, bucket_name, s3, bucket_path, prefix_regex),
-                **{
-                    "acl": acl,
-                    "bar": bar,
-                    "force": force,
-                    "dry_run": dry_run,
-                    "charset": charset,
-                    "caches": caches,
-                },
-            )
-            jobs.append(job)
-        for job in futures.as_completed(jobs):
-            key_names.append(job.result())
-        executor.shutdown(wait=True)
-
-    if bar and not killswitch.is_set():
-        bar.finish()
+    with get_progress_bar(
+        desc=f"{colorama.Fore.GREEN}Updating {env}{colorama.Style.RESET_ALL}",
+        total=len(files),
+    ) as bar:
+        with futures.ThreadPoolExecutor(max_workers=processes) as executor:
+            jobs = []
+            for fn in files:
+                job = executor.submit(
+                    upload_file,
+                    *(fn, bucket_name, s3, bucket_path, prefix_regex),
+                    **{
+                        "acl": acl,
+                        "force": force,
+                        "dry_run": dry_run,
+                        "charset": charset,
+                        "caches": caches,
+                        "bar": bar,
+                    },
+                )
+                jobs.append(job)
+            for job in futures.as_completed(jobs):
+                key_names.append(job.result())
+            executor.shutdown(wait=True)
 
     updated = sum([i[1] for i in key_names])
     key_names = [i[0] for i in key_names if i[0]]
@@ -512,27 +481,28 @@ def sync_files(
             if key.key.lstrip("/") not in key_names
         ]
         if len(to_remove):
-            bar = progress_setup(f"Cleaning {env}: ", len(to_remove), ALERT_COLOR)
-            deleted = 0
-            with futures.ThreadPoolExecutor(max_workers=processes) as executor:
-                jobs = []
-                for kn in to_remove:
-                    job = executor.submit(
-                        delete_file,
-                        *(kn, bucket_name, s3),
-                        **{
-                            "needs_confirmation": confirm,
-                            "bar": bar,
-                            "dry_run": dry_run,
-                        },
-                    )
-                    jobs.append(job)
-                for job in futures.as_completed(jobs):
-                    deleted += job.result()
-                executor.shutdown(wait=True)
-
-            if bar and not killswitch.is_set():
-                bar.finish()
+            with get_progress_bar(
+                desc=f"{colorama.Fore.RED}Cleaning {env}{colorama.Style.RESET_ALL}",
+                total=len(to_remove),
+                colour="RED",
+            ) as bar:
+                deleted = 0
+                with futures.ThreadPoolExecutor(max_workers=processes) as executor:
+                    jobs = []
+                    for kn in to_remove:
+                        job = executor.submit(
+                            delete_file,
+                            *(kn, bucket_name, s3),
+                            **{
+                                "needs_confirmation": confirm,
+                                "bar": bar,
+                                "dry_run": dry_run,
+                            },
+                        )
+                        jobs.append(job)
+                    for job in futures.as_completed(jobs):
+                        deleted += job.result()
+                    executor.shutdown(wait=True)
 
     verb = "would be" if dry_run else "were"
     outcome = {
@@ -541,30 +511,31 @@ def sync_files(
         "invalidated": 0,
     }
     alert("")
-    notify(
-        env,
+    alert(
         (
             f"{updated:d} file{'' if updated == 1 else 's'} "
             f"{'was' if verb == 'were' and updated == 1 else verb} updated"
         ),
-        color=OK_COLOR,
+        color=colorama.Fore.GREEN,
     )
     if delete:
-        notify(
-            env,
+        alert(
             (
                 f"{deleted:d} file{'' if deleted == 1 else 's'} "
                 f"{'was' if verb == 'were' and deleted == 1 else verb} removed"
             ),
-            color=ALERT_COLOR,
+            color=colorama.Fore.RED,
         )
-    if cloudfront_id:
+    if cloudfront_id and (updated or deleted):
         invalidations = invalidate_cloudfront(cloudfront_id, env, dry_run=dry_run)
         outcome["invalidated"] = len(invalidations)
+    elif cloudfront_id:
+        outcome["invalidated"] = 0
+        alert("Cloudfront invalidation skipped because no files changed")
     return outcome
 
 
-def processes_int(x):
+def processes_int(x: typing.Union[str, int, float]) -> int:
     x = int(x)
     if x < 1 or x > 50:
         raise argparse.ArgumentTypeError("An integer between 1 and 50 is required")
@@ -575,7 +546,7 @@ def cli():
     global QUIET
     if "-v" in sys.argv or "--version" in sys.argv:
         # do this here before any of the config checks are run
-        alert(f"d3ploy {VERSION}", os.EX_OK, DEFAULT_COLOR)
+        alert(f"d3ploy {VERSION}", os.EX_OK, colorama.Fore.GREEN)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -630,7 +601,7 @@ def cli():
     parser.add_argument(
         "--charset",
         help="The charset header to add to text files",
-        default=False,
+        default=None,
     )
     parser.add_argument(
         "--gitignore",
@@ -693,15 +664,16 @@ def cli():
         action="store_true",
         default=False,
     )
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+
     if args.quiet:
         QUIET = True
 
-    if os.path.exists("deploy.json"):
+    if pathlib.Path("deploy.json").exists():
         alert(
             (
                 "It looks like you have an old version of deploy.json in your project. "
-                "Please visit http://dryan.github.io/d3ploy#migrate for information "
+                "Please visit https://github.com/dryan/d3ploy#readme for information "
                 "on upgrading."
             ),
             os.EX_CONFIG,
@@ -709,9 +681,9 @@ def cli():
 
     # load the config file
     config = {}
-    if os.path.exists(args.config):
-        with open(args.config) as f:
-            config = json.load(f)
+    config_path = pathlib.Path(args.config)
+    if config_path.exists():
+        config = json.loads(config_path.read_text())
     else:
         alert(
             (
@@ -801,9 +773,11 @@ def cli():
             or [],
             caches=environ_config.get("caches", {}) or defaults.get("caches", {}),
         )
+        display_output()
 
 
 if __name__ == "__main__":  # pragma: no cover
+    colorama_init()
     try:
         check_for_updates()
     except Exception as e:
