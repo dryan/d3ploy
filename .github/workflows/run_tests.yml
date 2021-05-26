@@ -1,7 +1,7 @@
 name: Test Code Changes
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
 jobs:
   test-django:
     name: Python Test Suite
