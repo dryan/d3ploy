@@ -13,10 +13,10 @@ jobs:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           message: Publishing d3ploy to PyPi
       - uses: actions/checkout@v2
-      - name: Setup Python 3.6
+      - name: Setup Python 3.7
         uses: actions/setup-python@v1
         with:
-          python-version: 3.6
+          python-version: 3.7
       - name: Install poetry
         run: |
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
