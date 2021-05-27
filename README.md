@@ -99,7 +99,3 @@ In this case JPGs, GIFs and all other images except for PNGs will be cached for 
 ## Progress Bar
 
 d3ploy uses the `tqdm` module to display output when `--quiet` is not set.
-
-## Caution About Using the gzip Option
-
-Almost all modern browsers will support files that are served with gzip compression. The notable exception is non-smartphone mobile browsers. If you have significant traffic over those browsers, it is advisable to avoid the gzip option. Additionally, your CDN make offer compression on-the-fly for you; this is the preferred method when available.
