@@ -7,7 +7,6 @@ import json
 import mimetypes
 import os
 import pathlib
-import re
 import signal
 import sys
 import threading
@@ -25,7 +24,7 @@ from boto3.resources.base import ServiceResource as AWSServiceResource
 from colorama import init as colorama_init
 from tqdm import tqdm
 
-VERSION = "4.1.0"
+VERSION = "4.1.2"
 
 VALID_ACLS = [
     "private",
@@ -192,11 +191,11 @@ def check_for_updates(
 
 # this is where the actual upload happens, called by sync_files
 def upload_file(
-    file_name: typing.Union[str, pathlib.Path],
+    file_name: pathlib.Path,
     bucket_name: str,
     s3: AWSServiceResource,
     bucket_path: str,
-    prefix_regex: re.Pattern,
+    prefix: pathlib.Path,
     acl: typing.Optional[str] = None,
     force: bool = False,
     dry_run: bool = False,
@@ -210,8 +209,11 @@ def upload_file(
         caches = {}
     updated = 0
 
+    if not isinstance(file_name, pathlib.Path):
+        file_name = pathlib.Path(file_name)
+
     key_name = "/".join(
-        [bucket_path.rstrip("/"), prefix_regex.sub("", str(file_name)).lstrip("/")]
+        [bucket_path.rstrip("/"), str(file_name.relative_to(prefix)).lstrip("/")]
     ).lstrip("/")
     if key_exists(s3, bucket_name, key_name):
         s3_obj = s3.Object(bucket_name, key_name)
@@ -311,6 +313,7 @@ def determine_files_to_sync(
         excludes = []
     if isinstance(excludes, str):
         excludes = [excludes]
+    excludes.append(".gitignore")
     if not isinstance(local_path, pathlib.Path):
         local_path = pathlib.Path(local_path)
     gitignore_patterns = list(map(pathspec.patterns.GitWildMatchPattern, excludes))
@@ -444,7 +447,6 @@ def sync_files(
         else:
             raise e
 
-    prefix_regex = re.compile(r"^{}".format(local_path))
     files = determine_files_to_sync(local_path, excludes, gitignore=gitignore)
     deleted = 0
     key_names = []
@@ -458,7 +460,7 @@ def sync_files(
             for fn in files:
                 job = executor.submit(
                     upload_file,
-                    *(fn, bucket_name, s3, bucket_path, prefix_regex),
+                    *(fn, bucket_name, s3, bucket_path, local_path),
                     **{
                         "acl": acl,
                         "force": force,
