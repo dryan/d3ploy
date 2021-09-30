@@ -135,6 +135,7 @@ def relative_path(p: str, convert=False) -> typing.Union[str, pathlib.Path]:
 
 
 PREFIX_REGEX = re.compile(r"^{}".format(relative_path("./files")))
+PREFIX_PATH = pathlib.Path(relative_path("./files"))
 
 
 # we need to remove .DS_Store files before testing on macOS to keep tests consistent on
@@ -434,7 +435,7 @@ class UploadFileTestCase(
                 self.bucket.name,
                 self.s3,
                 prefix,
-                PREFIX_REGEX,
+                PREFIX_PATH,
             )
             self.assertEqual(
                 result[0],
@@ -454,7 +455,7 @@ class UploadFileTestCase(
                 self.bucket.name,
                 self.s3,
                 "test-acl-{}".format(acl),
-                PREFIX_REGEX,
+                PREFIX_PATH,
                 acl=acl,
             )
             object_acl = self.s3.ObjectAcl(self.bucket.name, result[0])
@@ -475,14 +476,14 @@ class UploadFileTestCase(
             self.bucket.name,
             self.s3,
             "test-force-upload",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         result = d3ploy.upload_file(
             relative_path("./files/css/sample.css"),
             self.bucket.name,
             self.s3,
             "test-force-upload",
-            PREFIX_REGEX,
+            PREFIX_PATH,
             force=True,
         )
         self.assertTrue(
@@ -500,7 +501,7 @@ class UploadFileTestCase(
             self.bucket.name,
             self.s3,
             "test-md5-hashing",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.assertTrue(s3_object_exists(self.bucket.name, result_1[0]))
         s3_object_1_hash = self.s3.Object(self.bucket.name, result_1[0]).metadata.get(
@@ -516,7 +517,7 @@ class UploadFileTestCase(
             self.bucket.name,
             self.s3,
             "test-md5-hashing",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.assertTrue(s3_object_exists(self.bucket.name, result_2[0]))
         s3_object_2_hash = self.s3.Object(self.bucket.name, result_2[0]).metadata.get(
@@ -541,7 +542,7 @@ class UploadFileTestCase(
             self.bucket.name,
             self.s3,
             "test-md5-hashing",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         s3_object_3_hash = self.s3.Object(self.bucket.name, result_3[0]).metadata.get(
             "d3ploy-hash"
@@ -563,7 +564,7 @@ class UploadFileTestCase(
             self.bucket.name,
             self.s3,
             "test-dry-run",
-            PREFIX_REGEX,
+            PREFIX_PATH,
             dry_run=True,
         )
         self.assertEqual(
@@ -582,7 +583,7 @@ class UploadFileTestCase(
                 self.bucket.name,
                 self.s3,
                 "test-charset-{}".format(charset),
-                PREFIX_REGEX,
+                PREFIX_PATH,
                 charset=charset,
             )
             s3_obj = self.s3.Object(self.bucket.name, result[0])
@@ -604,7 +605,7 @@ class UploadFileTestCase(
                 self.bucket.name,
                 self.s3,
                 "test-cache-{:d}".format(expiration),
-                PREFIX_REGEX,
+                PREFIX_PATH,
                 caches={"text/css": expiration},
             )
             s3_obj = self.s3.Object(self.bucket.name, response[0])
@@ -634,7 +635,7 @@ class UploadFileTestCase(
                 self.bucket.name,
                 self.s3,
                 "test-mimetypes",
-                PREFIX_REGEX,
+                PREFIX_PATH,
             )
             self.assertTrue(s3_object_exists(self.bucket.name, result[0]))
             s3_object = self.s3.Object(self.bucket.name, result[0])
@@ -653,7 +654,7 @@ class UploadFileTestCase(
             self.bucket.name,
             self.s3,
             "test-upload-killswitch",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.assertTupleEqual(
             result,
@@ -675,7 +676,7 @@ class DeleteFileTestCase(
             self.bucket.name,
             self.s3,
             "test-delete-dry-run",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.assertEqual(
             upload_result[1],
@@ -987,7 +988,7 @@ class SyncFilesTestCase(
             self.bucket.name,
             self.s3,
             "sync_files/test-deleting",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.destroy_test_file()
         self.assertFalse(os.path.exists(self.test_file_name))
@@ -1012,7 +1013,7 @@ class SyncFilesTestCase(
             self.bucket.name,
             self.s3,
             "sync_files/test-deleting-single-process",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.destroy_test_file()
         self.assertFalse(os.path.exists(self.test_file_name))
@@ -1042,7 +1043,7 @@ class SyncFilesTestCase(
             self.bucket.name,
             self.s3,
             "sync_files/test-deleting",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.destroy_test_file()
         self.assertTrue(s3_object_exists(self.bucket.name, uploaded_file[0]))
@@ -1068,7 +1069,7 @@ class SyncFilesTestCase(
             self.bucket.name,
             self.s3,
             "sync_files/test-deleting",
-            PREFIX_REGEX,
+            PREFIX_PATH,
         )
         self.assertTrue(s3_object_exists(self.bucket.name, uploaded_file[0]))
         self.destroy_test_file()
