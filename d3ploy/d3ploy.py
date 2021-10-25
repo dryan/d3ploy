@@ -24,7 +24,7 @@ from boto3.resources.base import ServiceResource as AWSServiceResource
 from colorama import init as colorama_init
 from tqdm import tqdm
 
-VERSION = "4.1.2"
+VERSION = "4.1.3"
 
 VALID_ACLS = [
     "private",

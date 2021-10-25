@@ -1,6 +1,6 @@
 # d3ploy
 
-Easily deploy to S3 with multiple environment support. Version 3 supports Python 3.6+.
+Easily deploy to S3 with multiple environment support. Version 4 supports Python 3.7+.
 
 ## Installation & Usage
 
