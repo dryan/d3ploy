@@ -24,7 +24,7 @@ from boto3.resources.base import ServiceResource as AWSServiceResource
 from colorama import init as colorama_init
 from tqdm import tqdm
 
-VERSION = "4.1.3"
+VERSION = "4.1.4"
 
 VALID_ACLS = [
     "private",
@@ -37,6 +37,7 @@ QUIET = False
 
 # From https://mzl.la/39XkRvH
 MIMETYPES = {
+    "application/manifest+json": [".webmanifest"],
     "application/ogg": [".ogg"],
     "audio/wave": [".wav"],
     "font/otf": [".otf"],
@@ -56,8 +57,8 @@ MIMETYPES = {
     "image/x-icon": [".ico", ".cur"],
     "text/css": [".css"],
     "text/html": [".html", ".htm"],
-    "text/plain": [".txt"],
     "text/javascript": [".js"],
+    "text/plain": [".txt"],
     "video/webm": [".webm"],
 }
 
