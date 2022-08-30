@@ -52,6 +52,7 @@ TEST_FILES = [
     "tests/files/img/f617c7af7f36296a37ddb419b828099c.gif",
     "tests/files/img/http.svg",
     "tests/files/js/sample.js",
+    "tests/files/js/sample.mjs",
     "tests/files/sample.json",
     "tests/files/sample.xml",
 ]
@@ -77,6 +78,7 @@ TEST_MIMETYPES = [
     ("img/http.svg", "image/svg+xml"),
     ("html/index.html", "text/html"),
     ("js/sample.js", "text/javascript"),
+    ("js/sample.mjs", "text/javascript"),
     ("sample.json", "application/json"),
     ("sample.xml", "application/xml"),
 ]

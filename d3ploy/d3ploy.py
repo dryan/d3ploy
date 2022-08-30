@@ -24,7 +24,7 @@ from boto3.resources.base import ServiceResource as AWSServiceResource
 from colorama import init as colorama_init
 from tqdm import tqdm
 
-VERSION = "4.1.4"
+VERSION = "4.1.5"
 
 VALID_ACLS = [
     "private",
@@ -57,7 +57,7 @@ MIMETYPES = {
     "image/x-icon": [".ico", ".cur"],
     "text/css": [".css"],
     "text/html": [".html", ".htm"],
-    "text/javascript": [".js"],
+    "text/javascript": [".js", ".mjs"],
     "text/plain": [".txt"],
     "video/webm": [".webm"],
 }
