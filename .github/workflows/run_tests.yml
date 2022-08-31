@@ -15,10 +15,6 @@ jobs:
       D3PLOY_TEST_BUCKET: d3ploy-tests-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: Running d3ploy tests on Python ${{ matrix.python-version }}
       - uses: actions/checkout@v2
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
@@ -62,13 +58,3 @@ jobs:
         with:
           name: python-coverage
           path: htmlcov
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: d3ploy tests on Python ${{ matrix.python-version }} succeeded
-        if: success()
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: d3ploy tests on Python ${{ matrix.python-version }} failed
-        if: failure()
