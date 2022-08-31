@@ -7,7 +7,7 @@ jobs:
     name: Python Test Suite
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, "3.10"]
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -15,10 +15,6 @@ jobs:
       D3PLOY_TEST_BUCKET: d3ploy-tests-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: Running d3ploy tests on Python ${{ matrix.python-version }}
       - uses: actions/checkout@v2
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
@@ -26,7 +22,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install poetry
         run: |
-          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python
+          curl -sSL https://install.python-poetry.org/ | python -
           sudo ln -s $HOME/.poetry/bin/poetry /usr/local/bin/poetry
           poetry config virtualenvs.path ~/.poetry/environments
       - name: Cache Python packages
@@ -62,13 +58,3 @@ jobs:
         with:
           name: python-coverage
           path: htmlcov
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: d3ploy tests on Python ${{ matrix.python-version }} succeeded
-        if: success()
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: d3ploy tests on Python ${{ matrix.python-version }} failed
-        if: failure()
