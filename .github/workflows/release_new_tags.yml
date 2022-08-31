@@ -8,10 +8,6 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: Publishing d3ploy to PyPi
       - uses: actions/checkout@v2
       - name: Setup Python 3.7
         uses: actions/setup-python@v1
@@ -29,13 +25,3 @@ jobs:
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: Publishing d3ploy to PyPi succeeded
-        if: success()
-      - uses: dryan/action-polynotify@v1
-        with:
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: Publishing d3ploy to PyPi failed
-        if: failure()
