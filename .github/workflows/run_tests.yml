@@ -1,23 +1,29 @@
 name: Test Code Changes
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
 jobs:
   test-django:
     name: Python Test Suite
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9, "3.10", "3.11-dev"]
+        python-version:
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+          - "3.12"
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      D3PLOY_DEBUG: true
+      D3PLOY_DEBUG: yes
       D3PLOY_TEST_BUCKET: d3ploy-tests-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install poetry
@@ -26,13 +32,15 @@ jobs:
           sudo ln -s $HOME/.poetry/bin/poetry /usr/local/bin/poetry
           poetry config virtualenvs.path ~/.poetry/environments
       - name: Cache Python packages
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         id: poetry-cache
         env:
           cache-name: cache-poetry-packages
         with:
           path: ~/.poetry/environments
-          key: ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name }}-${{ hashFiles('**/poetry.lock') }}
+          key:
+            ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name
+            }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
             ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-python-${{ matrix.python-version }}-build-
@@ -54,7 +62,7 @@ jobs:
           poetry run coverage html
           poetry run coverage report --fail-under=100 --skip-covered
       - name: Store Python coverage results
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: python-coverage
           path: htmlcov
