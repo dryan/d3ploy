@@ -137,11 +137,17 @@ signal.signal(signal.SIGINT, bail)
 
 
 def check_for_updates(
-    check_file_path: typing.Optional[
-        typing.Union[pathlib.Path, str]
-    ] = "~/.d3ploy-update-check",
+    check_file_path: typing.Optional[typing.Union[pathlib.Path, str]] = None,
     this_version: str = VERSION,
 ) -> bool:
+    if check_file_path is None:
+        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+        if xdg_config_home:
+            check_file_path = pathlib.Path(xdg_config_home) / "d3ploy" / "last_check"
+        else:
+            check_file_path = pathlib.Path("~/.config/d3ploy/last_check")
+        if not check_file_path.exists():
+            check_file_path.parent.mkdir(parents=True, exist_ok=True)
     update_available = None
     try:
         from pkg_resources import parse_version
