@@ -445,7 +445,7 @@ class CheckForUpdatesTestCase(BaseTestCase, TestFileMixin):
             )
 
     def test_check_without_check_file_path_with_XDG_CONFIG_HOME_not_set(self):
-        with patch.dict("os.environ", {"XDG_CONFIG_HOME": None}):
+        with patch.dict("os.environ", {"XDG_CONFIG_HOME": ""}):
             result = d3ploy.check_for_updates(None, "0.0.0")
             self.assertIn(
                 result,
