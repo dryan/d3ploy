@@ -444,6 +444,15 @@ class CheckForUpdatesTestCase(BaseTestCase, TestFileMixin):
                 msg="check_for_updates returns True or False or None when there isn't a check file path and XDG_CONFIG_HOME is set",
             )
 
+    def test_check_without_check_file_path_with_XDG_CONFIG_HOME_not_set(self):
+        with patch.dict("os.environ", {"XDG_CONFIG_HOME": None}):
+            result = d3ploy.check_for_updates(None, "0.0.0")
+            self.assertIn(
+                result,
+                [True, False, None],
+                msg="check_for_updates returns True or False or None when there isn't a check file path and XDG_CONFIG_HOME is not set",
+            )
+
 
 class UploadFileTestCase(
     BaseTestCase,
