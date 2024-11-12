@@ -143,14 +143,18 @@ def check_for_updates(
     if check_file_path is None:
         xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
         if xdg_config_home:
-            check_file_path = pathlib.Path(xdg_config_home) / "d3ploy" / "last_check"
+            check_file_path = (
+                pathlib.Path(xdg_config_home) / "d3ploy" / "last_check.txt"
+            )
         else:
-            check_file_path = pathlib.Path("~/.config/d3ploy/last_check")
+            check_file_path = pathlib.Path("~/.config/d3ploy/last_check.txt")
+        check_file_path = check_file_path.expanduser()
         if not check_file_path.exists():
             check_file_path.parent.mkdir(parents=True, exist_ok=True)
+            check_file_path.touch()
     update_available = None
     try:
-        from pkg_resources import parse_version
+        from packaging.version import parse as parse_version
     except ImportError:  # pragma: no cover
         return None
     PYPI_URL = "https://pypi.org/pypi/d3ploy/json"

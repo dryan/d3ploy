@@ -273,6 +273,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "boto3" },
     { name = "colorama" },
+    { name = "packaging" },
     { name = "pathspec" },
     { name = "tqdm" },
 ]
@@ -292,6 +293,7 @@ dev = [
 requires-dist = [
     { name = "boto3", specifier = ">=1.35.58" },
     { name = "colorama", specifier = ">=0.4.6" },
+    { name = "packaging", specifier = ">=24.2" },
     { name = "pathspec", specifier = ">=0.12.1" },
     { name = "tqdm", specifier = ">=4.67.0" },
 ]
