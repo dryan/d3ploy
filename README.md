@@ -6,6 +6,7 @@ Easily deploy to S3 with multiple environment support. Version 4 supports Python
 
 To install, run `pip install d3ploy`.
 To use, run `d3ploy`. Additional arguments may be specified. Run `d3ploy --help` for more information.
+_If you're using the excellent [uv](https://docs.astral.sh/uv) you can run `uvx d3ploy` without needing to install d3ploy._
 
 ## Authentication
 

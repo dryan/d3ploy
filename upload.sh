@@ -1,6 +1,6 @@
 #! /bin/bash
 
-poetry run python setup.py clean
-poetry run python setup.py sdist
-poetry run twine upload dist/*
+uv run python setup.py clean
+uv run python setup.py sdist
+uv run twine upload dist/*
 rm -r dist

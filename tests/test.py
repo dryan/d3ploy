@@ -424,6 +424,35 @@ class CheckForUpdatesTestCase(BaseTestCase, TestFileMixin):
             msg="check_for_updates returns True when a newer version is on pypi.org",
         )
 
+    def test_check_without_check_file_path(self):
+        check_file = pathlib.Path("~/.config/d3ploy/last_check.txt").expanduser()
+        if check_file.exists():
+            check_file.unlink()
+        result = d3ploy.check_for_updates(None, "0.0.0")
+        self.assertIn(
+            result,
+            [True, False, None],
+            msg="check_for_updates returns True or False or None when there isn't a check file path",
+        )
+
+    def test_check_without_check_file_path_with_XDG_CONFIG_HOME_set(self):
+        with patch.dict("os.environ", {"XDG_CONFIG_HOME": "/tmp"}):
+            result = d3ploy.check_for_updates(None, "0.0.0")
+            self.assertIn(
+                result,
+                [True, False, None],
+                msg="check_for_updates returns True or False or None when there isn't a check file path and XDG_CONFIG_HOME is set",
+            )
+
+    def test_check_without_check_file_path_with_XDG_CONFIG_HOME_not_set(self):
+        with patch.dict("os.environ", {"XDG_CONFIG_HOME": ""}):
+            result = d3ploy.check_for_updates(None, "0.0.0")
+            self.assertIn(
+                result,
+                [True, False, None],
+                msg="check_for_updates returns True or False or None when there isn't a check file path and XDG_CONFIG_HOME is not set",
+            )
+
 
 class UploadFileTestCase(
     BaseTestCase,
@@ -1148,9 +1177,10 @@ class CLITestCase(BaseTestCase):
         for testargs in [["-v"], ["--version"]]:
             with patch.object(sys, "argv", ["d3ploy"] + testargs):
                 std_out = io.StringIO()
-                with self.assertRaises(
-                    SystemExit
-                ) as exception, contextlib.redirect_stdout(std_out):
+                with (
+                    self.assertRaises(SystemExit) as exception,
+                    contextlib.redirect_stdout(std_out),
+                ):
                     d3ploy.cli()
                 self.assertEqual(
                     exception.exception.code,
@@ -1458,8 +1488,9 @@ class CLITestCase(BaseTestCase):
         config_file = relative_path("./files/deploy.json", convert=True)
         config_file.write_text("")
         std_err = io.StringIO()
-        with self.assertRaises(SystemExit) as exception, contextlib.redirect_stderr(
-            std_err
+        with (
+            self.assertRaises(SystemExit) as exception,
+            contextlib.redirect_stderr(std_err),
         ):
             d3ploy.cli()
         self.assertEqual(

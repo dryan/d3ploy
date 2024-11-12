@@ -8,20 +8,17 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup Python 3.7
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.7
-      - name: Install poetry
-        run: |
-          curl -sSL https://install.python-poetry.org/ | python -
-          sudo ln -s $HOME/.poetry/bin/poetry /usr/local/bin/poetry
-          poetry config virtualenvs.path ~/.poetry/environments
+          python-version: "3.12"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
       - name: Build & Publish
         run: |
-          poetry build
-          poetry publish -u $PYPI_USERNAME -p $PYPI_PASSWORD
+          uv build
+          uv publish -u $PYPI_USERNAME -p $PYPI_PASSWORD
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

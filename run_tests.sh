@@ -2,7 +2,7 @@
 
 set -e
 
-poetry run coverage erase
-poetry run coverage run --source='d3ploy' tests/test.py "$@"
-poetry run coverage html
-poetry run coverage report --fail-under=100 --skip-covered
+uv run coverage erase
+uv run coverage run --source='d3ploy' tests/test.py "$@"
+uv run coverage html
+uv run coverage report --fail-under=100 --skip-covered
