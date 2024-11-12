@@ -28,5 +28,5 @@ setup(
     download_url="https://github.com/dryan/d3ploy/archive/{}.tar.gz".format(VERSION),
     scripts=["bin/d3ploy"],
     install_requires=["boto3", "pathspec"],
-    python_requires=[">=3.8"],
+    python_requires=[">=3.9"],
 )
