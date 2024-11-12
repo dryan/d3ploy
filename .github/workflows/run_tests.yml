@@ -9,11 +9,11 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -26,41 +26,23 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install poetry
-        run: |
-          curl -sSL https://install.python-poetry.org/ | python -
-          sudo ln -s $HOME/.poetry/bin/poetry /usr/local/bin/poetry
-          poetry config virtualenvs.path ~/.poetry/environments
-      - name: Cache Python packages
-        uses: actions/cache@v4
-        id: poetry-cache
-        env:
-          cache-name: cache-poetry-packages
-        with:
-          path: ~/.poetry/environments
-          key:
-            ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name
-            }}-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-python-${{ matrix.python-version }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-python-${{ matrix.python-version }}-build-
-            ${{ runner.os }}-python-${{ matrix.python-version }}-
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
       - name: Install Python dependencies
         run: |
-          poetry install
-        if: steps.poetry-cache.outputs.cache-hit != 'true'
+          uv sync
       - name: Run Black Tests
-        run: poetry run black --check .
+        run: uv run black --check .
       - name: Run Flake8 Tests
-        run: poetry run flake8
+        run: uv run flake8
       - name: Run isort Tests
-        run: poetry run isort --recursive --check-only .
+        run: uv run isort --recursive --check-only .
       - name: Run Python Unit Tests
         run: |
-          poetry run coverage erase
-          poetry run coverage run --source='d3ploy' tests/test.py "$@"
-          poetry run coverage html
-          poetry run coverage report --fail-under=100 --skip-covered
+          uv run coverage erase
+          uv run coverage run --source='d3ploy' tests/test.py "$@"
+          uv run coverage html
+          uv run coverage report --fail-under=100 --skip-covered
       - name: Store Python coverage results
         uses: actions/upload-artifact@v4
         with:
