@@ -1,6 +1,6 @@
 [project]
 name = "d3ploy"
-version = "4.4.1"
+version = "4.4.2"
 description = "Easily deploy to S3 with multiple environment support."
 authors = [
     {name = "dryan", email = "dryan@users.noreply.github.com"},
@@ -31,19 +31,22 @@ repository = "https://github.com/dryan/d3ploy"
 documentation = "https://github.com/dryan/d3ploy#readme"
 
 [project.scripts]
-d3ploy = "d3ploy.cli"
+d3ploy = "d3ploy:cli"
 
 [tool.ruff.lint.isort]
 force-single-line = true
 
 [dependency-groups]
 dev = [
-    "black>=24.10.0",
-    "coverage>=7.6.4",
-    "flake8>=7.1.1",
     "ipython>=8.29.0",
-    "isort>=5.13.2",
+    "pytest-cov>=6.0.0",
     "ruff>=0.7.3",
-    "twine>=5.1.1",
 ]
 
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling",]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/test*.py"]
+addopts = ["--cov=d3ploy", "--cov-report=term-missing", "--cov-report=html", "--cov-fail-under=100"]

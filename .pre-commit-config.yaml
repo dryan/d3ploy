@@ -4,3 +4,10 @@ repos:
       - id: ruff-format
     repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.3
+  - hooks:
+      - entry: bash -c './check-versions-match.py'
+        id: check-versions-match
+        language: system
+        name: Check versions match
+        pass_filenames: false
+    repo: local
