@@ -8,11 +8,11 @@ import re
 import shutil
 import sys
 import time
-import typing
 import unittest
 import uuid
 import warnings
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
+from unittest.mock import patch
 
 import boto3
 import colorama
@@ -129,10 +129,8 @@ def s3_object_exists(bucket_name: str, key_name: str) -> bool:
     return d3ploy.key_exists(s3, bucket_name, key_name)
 
 
-def relative_path(p: str, convert=False) -> typing.Union[str, pathlib.Path]:
-    relpath = os.path.relpath(os.path.join(parent_dir, "tests", p))
-    if convert:
-        relpath = pathlib.Path(relpath)
+def relative_path(p: str) -> pathlib.Path:
+    relpath = pathlib.Path(parent_dir, "tests", p)
     return relpath
 
 
@@ -143,10 +141,8 @@ PREFIX_PATH = pathlib.Path(relative_path("./files"))
 # we need to remove .DS_Store files before testing on macOS to keep tests consistent on
 # other platforms
 def clean_ds_store():
-    for root, dir_names, file_names in os.walk(relative_path("./")):
-        for fn in file_names:
-            if fn == ".DS_Store":
-                os.unlink(os.path.join(root, fn))
+    for _path in pathlib.Path(relative_path("./")).rglob(".DS_Store"):
+        _path.unlink()
 
 
 class BaseTestCase(unittest.TestCase):
@@ -175,10 +171,10 @@ class S3BucketMixin(unittest.TestCase):
 class TestFileMixin(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.test_file_name = os.path.join(
-            relative_path("./files/txt"),
-            "test-{}.txt".format(uuid.uuid4().hex),
+        cls.test_file_name = (
+            relative_path("./files/txt") / f"test-{uuid.uuid4().hex}.txt"
         )
+
         cls.destroy_test_file()
         super().setUpClass()
 
@@ -203,8 +199,8 @@ class TestFileMixin(unittest.TestCase):
 
     @classmethod
     def destroy_test_file(cls):
-        if os.path.exists(cls.test_file_name):
-            os.remove(cls.test_file_name)
+        if cls.test_file_name.exists():
+            cls.test_file_name.unlink()
 
 
 class MockBuffer:
@@ -292,9 +288,10 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
             None,
             gitignore=False,
         )
+        files_list = [x.relative_to(parent_dir) for x in files_list]
         files_list.sort()
         self.assertListEqual(
-            files_list, [relative_path("./files/txt/.gitkeep", convert=True)]
+            files_list, [relative_path("./files/txt/.gitkeep").relative_to(parent_dir)]
         )
 
     def test_no_gitignore(self):
@@ -303,6 +300,7 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
             EXCLUDES,
             gitignore=False,
         )
+        files_list = [x.relative_to(parent_dir) for x in files_list]
         files_list.sort()
         self.assertListEqual(files_list, TEST_FILES_WITH_IGNORED_FILES)
 
@@ -312,6 +310,7 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
             EXCLUDES,
             gitignore=True,
         )
+        files_list = [x.relative_to(parent_dir) for x in files_list]
         files_list.sort()
         self.assertListEqual(files_list, TEST_FILES)
 
@@ -321,9 +320,10 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
             EXCLUDES,
             gitignore=False,
         )
+        files_list = [x.relative_to(parent_dir) for x in files_list]
         self.assertListEqual(
             files_list,
-            [relative_path("./files/test.ignore", convert=True)],
+            [relative_path("./files/test.ignore").relative_to(parent_dir)],
         )
 
     def test_single_file_path_with_gitignore(self):
@@ -342,6 +342,7 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
             relative_path("./files"),
             EXCLUDES + ["index.html"],
         )
+        files_list = [x.relative_to(parent_dir) for x in files_list]
         expected = [
             x for x in TEST_FILES_WITH_IGNORED_FILES if not x.match("*/index.html")
         ]
@@ -355,6 +356,16 @@ class DetermineFilesToSyncTestCase(BaseTestCase):
     def test_ignored_paths_string(self):
         files_list = d3ploy.determine_files_to_sync(
             relative_path("./files"),
+            "index.html",
+        )
+        self.assertNotIn(
+            relative_path("./files/html/index.html"),
+            files_list,
+        )
+
+    def test_ignored_paths_string_with_str_path(self):
+        files_list = d3ploy.determine_files_to_sync(
+            str(relative_path("./files")),
             "index.html",
         )
         self.assertNotIn(
@@ -383,6 +394,8 @@ class CheckForUpdatesTestCase(BaseTestCase, TestFileMixin):
         super().setUp()
 
     def test_no_existing_file(self):
+        if self.test_file_name.exists():
+            self.test_file_name.unlink()
         result = d3ploy.check_for_updates(self.test_file_name)
         self.assertFalse(
             result,
@@ -478,6 +491,25 @@ class UploadFileTestCase(
                 1,
                 msg="upload_file returns the correct status",
             )
+
+    def test_with_path_as_str(self):
+        result = d3ploy.upload_file(
+            str(relative_path("./files/css/sample.css")),
+            self.bucket.name,
+            self.s3,
+            "test",
+            PREFIX_PATH,
+        )
+        self.assertEqual(
+            result[0],
+            "test/css/sample.css",
+            msg="upload_file returns the correct path",
+        )
+        self.assertEqual(
+            result[1],
+            1,
+            msg="upload_file returns the correct status",
+        )
 
     def test_acls(self):
         for acl in d3ploy.VALID_ACLS:
@@ -662,7 +694,7 @@ class UploadFileTestCase(
     def test_mimetypes(self):
         for check in TEST_MIMETYPES:
             result = d3ploy.upload_file(
-                relative_path(os.path.join("./files", check[0])),
+                relative_path("./files") / check[0],
                 self.bucket.name,
                 self.s3,
                 "test-mimetypes",
@@ -689,7 +721,7 @@ class UploadFileTestCase(
         )
         self.assertTupleEqual(
             result,
-            ("tests/files/css/sample.css", 0),
+            (parent_dir / "tests/files/css/sample.css", 0),
             msg="delete_file returns 0 when killswitch.is_set is True",
         )
 
@@ -1013,7 +1045,7 @@ class SyncFilesTestCase(
 
     def test_deleting_files(self):
         self.create_test_file()
-        self.assertTrue(os.path.exists(self.test_file_name))
+        self.assertTrue(self.test_file_name.exists())
         uploaded_file = d3ploy.upload_file(
             self.test_file_name,
             self.bucket.name,
@@ -1022,7 +1054,7 @@ class SyncFilesTestCase(
             PREFIX_PATH,
         )
         self.destroy_test_file()
-        self.assertFalse(os.path.exists(self.test_file_name))
+        self.assertFalse(self.test_file_name.exists())
         self.assertTrue(s3_object_exists(self.bucket.name, uploaded_file[0]))
         d3ploy.sync_files(
             "test",
@@ -1038,7 +1070,7 @@ class SyncFilesTestCase(
 
     def test_deleting_files_single_process(self):
         self.create_test_file()
-        self.assertTrue(os.path.exists(self.test_file_name))
+        self.assertTrue(self.test_file_name.exists())
         uploaded_file = d3ploy.upload_file(
             self.test_file_name,
             self.bucket.name,
@@ -1047,7 +1079,7 @@ class SyncFilesTestCase(
             PREFIX_PATH,
         )
         self.destroy_test_file()
-        self.assertFalse(os.path.exists(self.test_file_name))
+        self.assertFalse(self.test_file_name.exists())
         self.assertTrue(s3_object_exists(self.bucket.name, uploaded_file[0]))
         outcome = d3ploy.sync_files(
             "test",
@@ -1068,7 +1100,7 @@ class SyncFilesTestCase(
     @patch("d3ploy.d3ploy.get_confirmation", return_value=True)
     def test_deleting_files_with_confirmation(self, *args):
         self.create_test_file()
-        self.assertTrue(os.path.exists(self.test_file_name))
+        self.assertTrue(self.test_file_name.exists())
         uploaded_file = d3ploy.upload_file(
             self.test_file_name,
             self.bucket.name,
@@ -1094,7 +1126,7 @@ class SyncFilesTestCase(
     @patch("d3ploy.d3ploy.get_confirmation", return_value=False)
     def test_deleting_files_with_confirmation_denied(self, *args):
         self.create_test_file()
-        self.assertTrue(os.path.exists(self.test_file_name))
+        self.assertTrue(self.test_file_name.exists())
         uploaded_file = d3ploy.upload_file(
             self.test_file_name,
             self.bucket.name,
@@ -1165,7 +1197,7 @@ class CLITestCase(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        os.chdir(relative_path("./files"))
+        os.chdir(relative_path("./files").resolve())
         self.patcher = patch("d3ploy.d3ploy.sync_files", new=MockSyncFiles())
         self.sync_files = self.patcher.start()
 
@@ -1485,7 +1517,7 @@ class CLITestCase(BaseTestCase):
         d3ploy.QUIET = False
 
     def test_old_config_check(self):
-        config_file = relative_path("./files/deploy.json", convert=True)
+        config_file = relative_path("./files/deploy.json")
         config_file.write_text("")
         std_err = io.StringIO()
         with (
