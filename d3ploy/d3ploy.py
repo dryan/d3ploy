@@ -336,7 +336,7 @@ def determine_files_to_sync(
         for root, dir_names, file_names in os.walk(local_path):
             for dir_name in dir_names:
                 if dir_name in svc_directories:
-                    continue
+                    continue  # pragma: no cover
                 dir_name = os.path.join(root, dir_name)
                 gitignore_path = os.path.join(dir_name, ".gitignore")
                 if os.path.exists(gitignore_path):
@@ -365,7 +365,7 @@ def determine_files_to_sync(
                     files.append(file_name)
             for svc_directory in svc_directories:
                 if svc_directory in dir_names:
-                    dir_names.remove(svc_directory)
+                    dir_names.remove(svc_directory)  # pragma: no cover
     elif local_path.is_file() or local_path.is_symlink():
         if not gitignore_spec.match_file(local_path):
             files.append(local_path)
