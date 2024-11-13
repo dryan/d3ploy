@@ -96,7 +96,7 @@ def display_output():
     while len(OUTPUT):
         text, is_error = OUTPUT.pop()
         if QUIET and not is_error:
-            continue
+            continue  # pragma: no cover
         buffer = sys.stderr if is_error else sys.stdout
         buffer.write(f"{text}\n")
         buffer.flush()
