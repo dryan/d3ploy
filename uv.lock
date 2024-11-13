@@ -269,7 +269,7 @@ wheels = [
 [[package]]
 name = "d3ploy"
 version = "4.4.2"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "boto3" },
     { name = "colorama" },

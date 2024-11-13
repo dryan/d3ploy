@@ -31,7 +31,7 @@ repository = "https://github.com/dryan/d3ploy"
 documentation = "https://github.com/dryan/d3ploy#readme"
 
 [project.scripts]
-d3ploy = "d3ploy.cli"
+d3ploy = "d3ploy:cli"
 
 [tool.ruff.lint.isort]
 force-single-line = true
