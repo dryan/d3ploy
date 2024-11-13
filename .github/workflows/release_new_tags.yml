@@ -20,4 +20,5 @@ jobs:
       - name: Build & Publish
         run: |
           uv build
-          uv publish
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
