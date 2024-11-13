@@ -1,6 +1,6 @@
 [project]
 name = "d3ploy"
-version = "4.4.1"
+version = "4.4.2"
 description = "Easily deploy to S3 with multiple environment support."
 authors = [
     {name = "dryan", email = "dryan@users.noreply.github.com"},
