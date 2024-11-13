@@ -7,6 +7,9 @@ jobs:
   pypi:
     name: Publish
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/d3ploy
     permissions:
       id-token: write
     steps:
@@ -20,4 +23,5 @@ jobs:
       - name: Build & Publish
         run: |
           uv build
-          uv publish
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
