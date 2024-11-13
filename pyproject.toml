@@ -1,6 +1,6 @@
 [project]
 name = "d3ploy"
-version = "4.4.0"
+version = "4.4.1"
 description = "Easily deploy to S3 with multiple environment support."
 authors = [
     {name = "dryan", email = "dryan@users.noreply.github.com"},
@@ -29,6 +29,9 @@ classifiers = [
 homepage = "https://github.com/dryan/d3ploy"
 repository = "https://github.com/dryan/d3ploy"
 documentation = "https://github.com/dryan/d3ploy#readme"
+
+[project.scripts]
+d3ploy = "d3ploy.cli"
 
 [tool.ruff.lint.isort]
 force-single-line = true
