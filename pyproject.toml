@@ -47,3 +47,6 @@ dev = [
     "twine>=5.1.1",
 ]
 
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling",]
