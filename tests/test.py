@@ -1266,7 +1266,7 @@ class CLITestCase(BaseTestCase):
             d3ploy.cli()
             self.assertEqual(
                 self.sync_files.bucket_name,
-                TEST_BUCKET,
+                "d3ploy-tests",
             )
 
     def test_local_path(self):
