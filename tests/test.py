@@ -1227,7 +1227,7 @@ class CLITestCase(BaseTestCase):
                     output,
                 )
 
-    def test_environment_argument(self):
+    def test_target_argument(self):
         with patch.object(sys, "argv", ["d3ploy", "test"]):
             d3ploy.cli()
             self.assertEqual(

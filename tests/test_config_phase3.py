@@ -45,7 +45,7 @@ class TestConfigPhase3(unittest.TestCase):
         self.assertEqual(merged["bucket_name"], "default-bucket")
 
     def test_load_config_d3ploy_json(self):
-        config_data = {"environments": {"default": {"bucket_name": "test"}}}
+        config_data = {"targets": {"default": {"bucket_name": "test"}}}
         with open("d3ploy.json", "w") as f:
             json.dump(config_data, f)
 
@@ -53,7 +53,7 @@ class TestConfigPhase3(unittest.TestCase):
         self.assertEqual(loaded, config_data)
 
     def test_load_config_dot_d3ploy_json(self):
-        config_data = {"environments": {"default": {"bucket_name": "test"}}}
+        config_data = {"targets": {"default": {"bucket_name": "test"}}}
         with open(".d3ploy.json", "w") as f:
             json.dump(config_data, f)
 
@@ -61,7 +61,7 @@ class TestConfigPhase3(unittest.TestCase):
         self.assertEqual(loaded, config_data)
 
     def test_load_config_explicit_path(self):
-        config_data = {"environments": {"default": {"bucket_name": "test"}}}
+        config_data = {"targets": {"default": {"bucket_name": "test"}}}
         with open("custom.json", "w") as f:
             json.dump(config_data, f)
 
@@ -69,7 +69,7 @@ class TestConfigPhase3(unittest.TestCase):
         self.assertEqual(loaded, config_data)
 
     def test_validate_config_valid(self):
-        config_data = {"environments": {"default": {}}}
+        config_data = {"targets": {"default": {}}}
         validated = validate_config(config_data)
         self.assertEqual(validated, config_data)
 
@@ -93,10 +93,10 @@ class TestConfigPhase3(unittest.TestCase):
         self.assertEqual(migrated, v1_config)
 
     def test_validate_config_recommended_caches(self):
-        config_data = {"environments": {"default": {"caches": "recommended"}}}
+        config_data = {"targets": {"default": {"caches": "recommended"}}}
         validated = validate_config(config_data)
-        self.assertIsInstance(validated["environments"]["default"]["caches"], dict)
-        self.assertEqual(validated["environments"]["default"]["caches"]["text/html"], 0)
+        self.assertIsInstance(validated["targets"]["default"]["caches"], dict)
+        self.assertEqual(validated["targets"]["default"]["caches"]["text/html"], 0)
 
     def test_load_env_vars(self):
         os.environ["D3PLOY_BUCKET_NAME"] = "env-bucket"

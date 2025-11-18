@@ -60,6 +60,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [x] Create config migration logic for old formats
 - [x] Add priority system: CLI flags > env vars > config file > defaults
 - [x] Add a new "recommended" option for caches that implements best practices for static file deployments
+- [x] Change nomenclature from "environments" to "targets" throughout
 
 ### 3.2 AWS Operations Module
 
@@ -108,7 +109,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 4.2 Textual TUI Application (Default Interactive Mode)
 
 - [x] Design Textual app structure with screens and widgets
-- [x] Create main dashboard/environment selection screen
+- [x] Create main dashboard/target selection screen
 - [x] Implement file sync screen with real-time progress
 - [x] Add configuration viewer/editor screen
 - [x] Create help/keyboard shortcuts screen
@@ -127,7 +128,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 4.4 TUI Features
 
 - [ ] Real-time sync progress with live updates
-- [ ] Interactive environment selection
+- [ ] Interactive target selection
 - [ ] File browsing and exclusion management
 - [ ] Configuration editing within TUI
 - [ ] Error handling with styled dialogs

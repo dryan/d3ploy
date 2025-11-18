@@ -25,13 +25,13 @@ def validate_config(data: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("Configuration must be a dictionary")
 
-    # Check for environments
-    if "environments" not in data:
-        # It's possible to have a config with just defaults, but usually we want environments.
-        raise ValueError("Configuration missing 'environments' key")
+    # Check for targets
+    if "targets" not in data:
+        # It's possible to have a config with just defaults, but usually we want targets.
+        raise ValueError("Configuration missing 'targets' key")
 
-    if not isinstance(data["environments"], dict):
-        raise ValueError("'environments' must be a dictionary")
+    if not isinstance(data["targets"], dict):
+        raise ValueError("'targets' must be a dictionary")
 
     # Check defaults if present
     if "defaults" in data:
@@ -39,11 +39,11 @@ def validate_config(data: Dict[str, Any]) -> Dict[str, Any]:
             raise ValueError("'defaults' must be a dictionary")
         _expand_caches(data["defaults"])
 
-    # Validate and expand environments
-    for env_name, env_config in data["environments"].items():
-        if not isinstance(env_config, dict):
-            raise ValueError(f"Environment '{env_name}' must be a dictionary")
-        _expand_caches(env_config)
+    # Validate and expand targets
+    for target_name, target_config in data["targets"].items():
+        if not isinstance(target_config, dict):
+            raise ValueError(f"Target '{target_name}' must be a dictionary")
+        _expand_caches(target_config)
 
     return data
 

@@ -257,8 +257,8 @@ def delete_orphans(
     return deleted
 
 
-def sync_environment(
-    env: str,
+def sync_target(
+    target: str,
     *,
     bucket_name: Optional[str] = None,
     local_path: Union[str, Path, None] = ".",
@@ -277,10 +277,10 @@ def sync_environment(
     quiet: bool = False,
 ) -> Dict[str, int]:
     """
-    Coordinate sync operation for an environment.
+    Coordinate sync operation for a target.
 
     Args:
-        env: Environment name.
+        target: Target name.
         bucket_name: S3 bucket name.
         local_path: Local directory to sync from.
         bucket_path: Remote directory to sync to.
@@ -300,7 +300,7 @@ def sync_environment(
     Returns:
         Dictionary with counts of uploaded, deleted, invalidated files.
     """
-    alert(f'Using settings for "{env}" environment', quiet=quiet)
+    alert(f'Using settings for "{target}" target', quiet=quiet)
 
     if cloudfront_id is None:
         cloudfront_id = []
@@ -313,7 +313,7 @@ def sync_environment(
 
     if not bucket_name:
         alert(
-            f'A bucket to upload to was not specified for "{env}" environment',
+            f'A bucket to upload to was not specified for "{target}" target',
             os.EX_NOINPUT,
             quiet=quiet,
         )
@@ -339,7 +339,7 @@ def sync_environment(
         charset=charset,
         caches=caches,
         processes=processes,
-        env=env,
+        env=target,
         quiet=quiet,
     )
 
@@ -357,7 +357,7 @@ def sync_environment(
             needs_confirmation=confirm,
             dry_run=dry_run,
             processes=processes,
-            env=env,
+            env=target,
             quiet=quiet,
         )
 

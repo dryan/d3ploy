@@ -18,15 +18,15 @@ Your AWS credentials can be set in a number of ways:
 
 ## Configuration options
 
-When you run `d3ploy`, it will look in the current directory for a ".d3ploy.json" file that defines the different deploy enviroments and their options. At a minimum, a "default" environment is required and is the environment used if you pass no arguments to `d3ploy`. Additionally, you may pass in a different path for you config file with the `-c` or `--config` options.
+When you run `d3ploy`, it will look in the current directory for a ".d3ploy.json" file that defines the different deploy targets and their options. At a minimum, a "default" target is required and is the target used if you pass no arguments to `d3ploy`. Additionally, you may pass in a different path for you config file with the `-c` or `--config` options.
 
 To supress all output, pass `-q` or `--quiet` to the command. Note that there is not a way to set the quiet option in the config file(s).
 
 To set the number of separate processes to use, pass `-p 10` or `--processess 10` where '10' is the number to use. If you do not want to use multiple processes, set this to '0'.
 
-You can add as many environments as needed. Deploy to an environment by passing in its key like `d3ploy staging`. As of version 3.0, environments no longer inherit settings from the default environment. Instead, a separate `defaults` object in the config file can be used to set options across all environments.
+You can add as many targets as needed. Deploy to a target by passing in its key like `d3ploy staging`. As of version 3.0, targets no longer inherit settings from the default target. Instead, a separate `defaults` object in the config file can be used to set options across all targets.
 
-The only required option for any environment is "bucket_name" for the S3 bucket to upload to. Additionally, you may define:
+The only required option for any target is "bucket_name" for the S3 bucket to upload to. Additionally, you may define:
 
 - "local_path" to upload only the contents of a directory under the current one; defaults to "." (current directory)
 - "bucket_path" to upload to a subfolder in the bucket; defaults to "/" (root)
@@ -42,7 +42,7 @@ The only required option for any environment is "bucket_name" for the S3 bucket 
 
 ```json
 {
-  "environments": {
+  "targets": {
     "default": {
       "bucket_name": "d3ploy-tests",
       "local_path": "./tests/files",

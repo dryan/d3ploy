@@ -51,8 +51,8 @@ def parse_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "environment",
-        help="Which environment to deploy to",
+        "target",
+        help="Which target to deploy to",
         nargs="*",
         type=str,
         default=["default"],
@@ -140,7 +140,7 @@ def parse_args():
     )
     parser.add_argument(
         "--all",
-        help="Upload to all environments",
+        help="Upload to all targets",
         action="store_true",
         default=False,
     )
@@ -201,14 +201,11 @@ def cli():
     # 1. Terminal is interactive (has ps1 prompt, more reliable than isatty)
     # 2. Not in quiet mode
     # 3. --no-tui flag not set
-    # 4. No environment specified (let user choose interactively)
+    # 4. No target specified (let user choose interactively)
     is_interactive = hasattr(sys, "ps1") or sys.stdin.isatty()
-    no_environment_specified = args.environment == ["default"] and not args.all
+    no_target_specified = args.target == ["default"] and not args.all
     should_use_tui = (
-        is_interactive
-        and not args.quiet
-        and not args.no_tui
-        and no_environment_specified
+        is_interactive and not args.quiet and not args.no_tui and no_target_specified
     )
 
     if should_use_tui:
@@ -218,11 +215,11 @@ def cli():
         return tui.run_tui(config_path=args.config)
 
     # CLI fallback mode - require all necessary parameters
-    # If we're in non-interactive mode and missing environment, error out
-    if not is_interactive and no_environment_specified:
+    # If we're in non-interactive mode and missing target, error out
+    if not is_interactive and no_target_specified:
         ui.output.display_error(
-            "Error: No environment specified. In non-interactive mode, "
-            "you must specify an environment or use --all.",
+            "Error: No target specified. In non-interactive mode, "
+            "you must specify a target or use --all.",
             exit_code=os.EX_USAGE,
         )
 
@@ -253,37 +250,37 @@ def cli():
             quiet=args.quiet,
         )
 
-    environments = [f"{item}" for item in config.get("environments", {}).keys()]
+    targets = [f"{item}" for item in config.get("targets", {}).keys()]
     defaults = config.get("defaults", {})
 
-    # Check if no environments are configured
-    if not environments:
+    # Check if no targets are configured
+    if not targets:
         operations.alert(
-            f"No environments found in config file: {args.config}",
+            f"No targets found in config file: {args.config}",
             error_code=os.EX_NOINPUT,
             quiet=args.quiet,
         )
 
     if args.all:
-        args.environment = environments
+        args.target = targets
 
-    # Check if environment actually exists in the config file
-    invalid_environments = []
-    for env in args.environment:
-        if env not in environments:
-            invalid_environments.append(env)
-    if invalid_environments:
+    # Check if target actually exists in the config file
+    invalid_targets = []
+    for target in args.target:
+        if target not in targets:
+            invalid_targets.append(target)
+    if invalid_targets:
         operations.alert(
             (
-                f"environment{'' if len(invalid_environments) == 1 else 's'} "
-                f"{', '.join(invalid_environments)} not found in config. "
-                f'Choose from "{", ".join(environments)}"'
+                f"target{'' if len(invalid_targets) == 1 else 's'} "
+                f"{', '.join(invalid_targets)} not found in config. "
+                f'Choose from "{", ".join(targets)}"'
             ),
             error_code=os.EX_NOINPUT,
             quiet=args.quiet,
         )
 
-    to_deploy = environments if args.all else args.environment
+    to_deploy = targets if args.all else args.target
 
     # Check for updates
     try:
@@ -292,17 +289,16 @@ def cli():
         if os.environ.get("D3PLOY_DEBUG") == "True":
             raise e
 
-    # Deploy to each environment
-    for environ in to_deploy:
+    # Deploy to each target
+    for target in to_deploy:
         operations.alert(
-            f"Uploading environment {to_deploy.index(environ) + 1:d} "
-            f"of {len(to_deploy):d}",
+            f"Uploading target {to_deploy.index(target) + 1:d} of {len(to_deploy):d}",
             quiet=args.quiet,
         )
-        environ_config = config["environments"][environ]
+        target_config = config["targets"][target]
 
-        if not environ_config.get("excludes", False):
-            environ_config["excludes"] = []
+        if not target_config.get("excludes", False):
+            target_config["excludes"] = []
         if not defaults.get("excludes", False):
             defaults["excludes"] = []
 
@@ -310,41 +306,39 @@ def cli():
         if args.exclude:
             excludes = args.exclude
         else:
-            excludes = environ_config.get("exclude", []) + defaults.get("exclude", [])
+            excludes = target_config.get("exclude", []) + defaults.get("exclude", [])
         excludes.append(args.config)
 
-        operations.sync_environment(
-            environ,
+        operations.sync_target(
+            target,
             bucket_name=args.bucket_name
-            or environ_config.get("bucket_name")
+            or target_config.get("bucket_name")
             or defaults.get("bucket_name"),
             local_path=args.local_path
-            or environ_config.get("local_path")
+            or target_config.get("local_path")
             or defaults.get("local_path")
             or ".",
             bucket_path=args.bucket_path
-            or environ_config.get("bucket_path")
+            or target_config.get("bucket_path")
             or defaults.get("bucket_path")
             or "/",
             excludes=excludes,
-            acl=args.acl or environ_config.get("acl") or defaults.get("acl"),
-            force=args.force or environ_config.get("force") or defaults.get("force"),
+            acl=args.acl or target_config.get("acl") or defaults.get("acl"),
+            force=args.force or target_config.get("force") or defaults.get("force"),
             dry_run=args.dry_run,
             charset=args.charset
-            or environ_config.get("charset")
+            or target_config.get("charset")
             or defaults.get("charset"),
             gitignore=args.gitignore
-            or environ_config.get("gitignore")
+            or target_config.get("gitignore")
             or defaults.get("gitignore"),
             processes=args.processes,
-            delete=args.delete
-            or environ_config.get("delete")
-            or defaults.get("delete"),
+            delete=args.delete or target_config.get("delete") or defaults.get("delete"),
             confirm=args.confirm,
             cloudfront_id=args.cloudfront_id
-            or environ_config.get("cloudfront_id")
+            or target_config.get("cloudfront_id")
             or defaults.get("cloudfront_id")
             or [],
-            caches=environ_config.get("caches", {}) or defaults.get("caches", {}),
+            caches=target_config.get("caches", {}) or defaults.get("caches", {}),
             quiet=args.quiet,
         )

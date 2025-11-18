@@ -20,11 +20,11 @@ from textual.widgets import Static
 from d3ploy import config as config_module
 
 
-class EnvironmentSelectionScreen(Screen):
+class TargetSelectionScreen(Screen):
     """
-    Main screen for selecting which environment to deploy.
+    Main screen for selecting which target to deploy.
 
-    Shows available environments from config and allows selection.
+    Shows available targets from config and allows selection.
     """
 
     BINDINGS = [
@@ -35,7 +35,7 @@ class EnvironmentSelectionScreen(Screen):
 
     def __init__(self, *, config_data: dict, config_path: Optional[str] = None):
         """
-        Initialize environment selection screen.
+        Initialize target selection screen.
 
         Args:
             config_data: Loaded configuration dictionary.
@@ -49,44 +49,44 @@ class EnvironmentSelectionScreen(Screen):
         """Create child widgets for the screen."""
         yield Header()
         yield Container(
-            Static("Select an environment to deploy:", classes="title"),
-            Container(*self._get_environment_buttons(), id="environment-list"),
+            Static("Select a target to deploy:", classes="title"),
+            Container(*self._get_target_buttons(), id="target-list"),
             id="main-container",
         )
         yield Footer()
 
-    def _get_environment_buttons(self) -> list:
-        """Create list of environment buttons."""
+    def _get_target_buttons(self) -> list:
+        """Create list of target buttons."""
         buttons = []
 
-        environments = self.config_data.get("environments", {})
-        if not environments:
-            return [Label("No environments configured")]
+        targets = self.config_data.get("targets", {})
+        if not targets:
+            return [Label("No targets configured")]
 
-        for env_name, env_config in environments.items():
-            bucket = env_config.get("bucket_name") or self.config_data.get(
+        for target_name, target_config in targets.items():
+            bucket = target_config.get("bucket_name") or self.config_data.get(
                 "defaults", {}
             ).get("bucket_name", "")
-            path = env_config.get("bucket_path", "/")
+            path = target_config.get("bucket_path", "/")
 
             button = Button(
-                f"{env_name}\n{bucket}{path}",
-                id=f"env-{env_name}",
-                classes="environment-button",
+                f"{target_name}\n{bucket}{path}",
+                id=f"target-{target_name}",
+                classes="target-button",
             )
-            button.env_name = env_name  # Store for later
+            button.target_name = target_name  # Store for later
             buttons.append(button)
 
         return buttons
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle environment button press."""
-        if hasattr(event.button, "env_name"):
-            env_name = event.button.env_name
-            # Navigate to sync screen with selected environment
+        """Handle target button press."""
+        if hasattr(event.button, "target_name"):
+            target_name = event.button.target_name
+            # Navigate to sync screen with selected target
             self.app.push_screen(
                 SyncProgressScreen(
-                    environment=env_name,
+                    target=target_name,
                     config_data=self.config_data,
                     args={},  # No CLI args in pure TUI mode
                 )
@@ -122,7 +122,7 @@ class SyncProgressScreen(Screen):
     def __init__(
         self,
         *,
-        environment: str,
+        target: str,
         config_data: dict,
         args: Optional[dict] = None,
     ):
@@ -130,12 +130,12 @@ class SyncProgressScreen(Screen):
         Initialize sync progress screen.
 
         Args:
-            environment: Name of environment being deployed.
+            target: Name of target being deployed.
             config_data: Configuration dictionary.
             args: Additional CLI arguments to pass through.
         """
         super().__init__()
-        self.environment = environment
+        self.target = target
         self.config_data = config_data
         self.args = args or {}
         self._sync_complete = False
@@ -144,7 +144,7 @@ class SyncProgressScreen(Screen):
         """Create child widgets for the screen."""
         yield Header()
         yield Container(
-            Static(f"Deploying to: {self.environment}", classes="title"),
+            Static(f"Deploying to: {self.target}", classes="title"),
             Static("Preparing to sync...", id="sync-status"),
             Container(id="progress-container"),
             id="main-container",
@@ -158,13 +158,13 @@ class SyncProgressScreen(Screen):
         status_widget = self.query_one("#sync-status", Static)
         status_widget.update("Starting deployment...")
 
-        # Get environment config
-        env_config = self.config_data["environments"][self.environment]
+        # Get target config
+        target_config = self.config_data["targets"][self.target]
         defaults = self.config_data.get("defaults", {})
 
         # Build excludes list
         excludes = (
-            env_config.get("exclude", [])
+            target_config.get("exclude", [])
             + defaults.get("exclude", [])
             + self.args.get("exclude", [])
         )
@@ -172,18 +172,18 @@ class SyncProgressScreen(Screen):
         # Prepare sync parameters
         bucket_name = (
             self.args.get("bucket_name")
-            or env_config.get("bucket_name")
+            or target_config.get("bucket_name")
             or defaults.get("bucket_name")
         )
         local_path = (
             self.args.get("local_path")
-            or env_config.get("local_path")
+            or target_config.get("local_path")
             or defaults.get("local_path")
             or "."
         )
         bucket_path = (
             self.args.get("bucket_path")
-            or env_config.get("bucket_path")
+            or target_config.get("bucket_path")
             or defaults.get("bucket_path")
             or "/"
         )
@@ -193,34 +193,34 @@ class SyncProgressScreen(Screen):
             # TODO: Make this async and show real-time progress
             status_widget.update(f"Syncing to {bucket_name}{bucket_path}...")
 
-            results = operations.sync_environment(
-                self.environment,
+            results = operations.sync_target(
+                self.target,
                 bucket_name=bucket_name,
                 local_path=local_path,
                 bucket_path=bucket_path,
                 excludes=excludes,
                 acl=self.args.get("acl")
-                or env_config.get("acl")
+                or target_config.get("acl")
                 or defaults.get("acl"),
                 force=self.args.get("force", False)
-                or env_config.get("force", False)
+                or target_config.get("force", False)
                 or defaults.get("force", False),
                 dry_run=self.args.get("dry_run", False),
                 charset=self.args.get("charset")
-                or env_config.get("charset")
+                or target_config.get("charset")
                 or defaults.get("charset"),
                 gitignore=self.args.get("gitignore", False)
-                or env_config.get("gitignore", False)
+                or target_config.get("gitignore", False)
                 or defaults.get("gitignore", False),
                 processes=self.args.get("processes", 10),
                 delete=self.args.get("delete", False)
-                or env_config.get("delete", False)
+                or target_config.get("delete", False)
                 or defaults.get("delete", False),
                 confirm=self.args.get("confirm", False),
                 cloudfront_id=self.args.get("cloudfront_id", [])
-                or env_config.get("cloudfront_id", [])
+                or target_config.get("cloudfront_id", [])
                 or defaults.get("cloudfront_id", []),
-                caches=env_config.get("caches", {}) or defaults.get("caches", {}),
+                caches=target_config.get("caches", {}) or defaults.get("caches", {}),
                 quiet=False,  # Don't suppress in TUI
             )
 
@@ -240,7 +240,7 @@ class SyncProgressScreen(Screen):
         self.app.exit()
 
     def action_back(self) -> None:
-        """Go back to environment selection."""
+        """Go back to target selection."""
         if self._sync_complete:
             self.app.pop_screen()
         else:
@@ -276,7 +276,7 @@ Arrow Keys - Navigate
 About d3ploy:
 -------------
 d3ploy syncs local files to AWS S3 with support for
-multiple environments, CloudFront invalidation, and
+multiple targets, CloudFront invalidation, and
 intelligent file change detection.
                 """,
                 id="help-content",
@@ -357,13 +357,13 @@ class D3ployTUI(App):
         margin-bottom: 1;
     }
 
-    #environment-list {
+    #target-list {
         layout: vertical;
         height: auto;
         margin-top: 1;
     }
 
-    .environment-button {
+    .target-button {
         width: 100%;
         margin: 1;
         min-height: 3;
@@ -404,9 +404,9 @@ class D3ployTUI(App):
             self.exit(message=f"Error loading config: {e}")
             return
 
-        # Push the environment selection screen
+        # Push the target selection screen
         self.push_screen(
-            EnvironmentSelectionScreen(
+            TargetSelectionScreen(
                 config_data=self.config_data,
                 config_path=self.config_path,
             )
