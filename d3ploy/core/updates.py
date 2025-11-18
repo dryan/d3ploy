@@ -11,7 +11,7 @@ import urllib.request
 from typing import Optional
 from typing import Union
 
-from ..compat import colorama
+from .. import ui
 
 
 def check_for_updates(
@@ -100,15 +100,15 @@ def display_update_notification(new_version: str):
     """
     message = (
         f"There has been an update for d3ploy. Version "
-        f"{new_version} is now available.\n"
+        f"{new_version} is now available.\\n"
         f"Please see https://github.com/dryan/d3ploy or run "
-        f"`pip install --upgrade d3ploy`.\n\n"
-        f"⚠️  IMPORTANT: A major update with breaking changes is coming soon! ⚠️\n"
-        f"The next major version will include significant improvements but may\n"
-        f"require config file updates. Please check the GitHub repository for\n"
+        f"`pip install --upgrade d3ploy`.\\n\\n"
+        f"⚠️  IMPORTANT: A major update with breaking changes is coming soon! ⚠️\\n"
+        f"The next major version will include significant improvements but may\\n"
+        f"require config file updates. Please check the GitHub repository for\\n"
         f"migration guidance before upgrading to version 5.0+."
     )
-    print(f"{colorama.Fore.YELLOW}{message}{colorama.Style.RESET_ALL}")
+    ui.output.display_message(message, level="warning")
 
 
 def get_last_check_time(

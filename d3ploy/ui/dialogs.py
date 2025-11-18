@@ -1,6 +1,9 @@
 """
-Interactive dialogs.
+Interactive dialogs using Rich prompts.
 """
+
+from rich.prompt import Confirm
+from rich.prompt import Prompt
 
 
 def confirm_delete(file: str) -> bool:
@@ -13,21 +16,31 @@ def confirm_delete(file: str) -> bool:
     Returns:
         True if user confirms deletion.
     """
-    # TODO: Implement in Phase 3.4
-    raise NotImplementedError("Confirmation dialogs will be implemented in Phase 3.4")
+    return Confirm.ask(f"Remove {file}?", default=False)
 
 
-def show_dialog(title: str, message: str, buttons: list) -> str:
+def show_dialog(
+    title: str,
+    message: str,
+    choices: list[str],
+    *,
+    default: str | None = None,
+) -> str:
     """
-    Show generic dialog with custom buttons.
+    Show dialog with custom choices.
 
     Args:
         title: Dialog title.
         message: Dialog message.
-        buttons: List of button labels.
+        choices: List of choice labels.
+        default: Default choice.
 
     Returns:
-        Label of button clicked.
+        Choice selected by user.
     """
-    # TODO: Implement in Phase 3.4
-    raise NotImplementedError("Generic dialogs will be implemented in Phase 3.4")
+    prompt_text = f"[bold]{title}[/bold]\n{message}"
+    return Prompt.ask(
+        prompt_text,
+        choices=choices,
+        default=default,
+    )

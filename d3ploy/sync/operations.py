@@ -16,8 +16,7 @@ from typing import Tuple
 from typing import Union
 
 from .. import aws
-from ..compat import colorama
-from ..compat import tqdm
+from .. import ui
 from . import discovery
 
 # Global killswitch for graceful shutdown
@@ -28,23 +27,32 @@ def get_progress_bar(
     *args,
     quiet: bool = False,
     **kwargs,
-) -> tqdm:
+) -> ui.ProgressDisplay:
     """
     Create a progress bar with standard settings.
 
     Args:
-        *args: Positional arguments for tqdm.
+        *args: Positional arguments (total, description).
         quiet: Whether to disable progress display.
-        **kwargs: Keyword arguments for tqdm.
+        **kwargs: Keyword arguments.
 
     Returns:
-        Configured tqdm progress bar.
+        Configured ProgressDisplay.
     """
+    # Extract positional args (if any)
+    total = args[0] if len(args) > 0 else kwargs.pop("total", None)
+    description = kwargs.pop("desc", kwargs.pop("description", ""))
+
     kwargs.setdefault("unit", "files")
-    kwargs.setdefault("colour", "GREEN")
-    if quiet:
-        kwargs["disable"] = True
-    return tqdm(*args, **kwargs)
+    colour = kwargs.pop("colour", "green")
+
+    return ui.ProgressDisplay(
+        total=total,
+        description=description,
+        disable=quiet,
+        colour=colour,
+        **kwargs,
+    )
 
 
 def alert(
@@ -60,20 +68,18 @@ def alert(
     Args:
         text: Message to display.
         error_code: Exit code (exits if not None).
-        color: Color for the message.
+        color: Deprecated - maintained for backward compatibility.
         quiet: Suppress non-error output.
     """
-    if color is None:
-        color = (
-            colorama.Fore.RED
-            if error_code and not error_code == os.EX_OK
-            else colorama.Style.RESET_ALL
-        )
+    # Determine level from error_code
+    if error_code is not None and error_code != os.EX_OK:
+        level = "error"
+    elif error_code == os.EX_OK:
+        level = "success"
+    else:
+        level = "info"
 
-    if not quiet or (error_code is not None and error_code != os.EX_OK):
-        buffer = sys.stderr if error_code not in [None, os.EX_OK] else sys.stdout
-        buffer.write(f"{color}{text}{colorama.Style.RESET_ALL}\n")
-        buffer.flush()
+    ui.output.display_message(text, level=level, quiet=quiet)
 
     if error_code is not None:
         sys.exit(error_code)
@@ -135,7 +141,7 @@ def upload_batch(
 
     key_names = []
     with get_progress_bar(
-        desc=f"{colorama.Fore.GREEN}Updating {env}{colorama.Style.RESET_ALL}",
+        desc=f"[green]Updating {env}[/green]",
         total=len(files),
         quiet=quiet,
     ) as bar:
@@ -211,9 +217,9 @@ def delete_orphans(
 
     deleted = 0
     with get_progress_bar(
-        desc=f"{colorama.Fore.RED}Cleaning {env}{colorama.Style.RESET_ALL}",
+        desc=f"[red]Cleaning {env}[/red]",
         total=len(to_remove),
-        colour="RED",
+        colour="red",
         quiet=quiet,
     ) as bar:
         with futures.ThreadPoolExecutor(max_workers=processes) as executor:
@@ -364,22 +370,22 @@ def sync_environment(
     }
 
     alert("", quiet=quiet)
-    alert(
+    ui.output.display_message(
         (
             f"{updated:d} file{'' if updated == 1 else 's'} "
             f"{'was' if verb == 'were' and updated == 1 else verb} updated"
         ),
-        color=colorama.Fore.GREEN,
+        level="success",
         quiet=quiet,
     )
 
     if delete:
-        alert(
+        ui.output.display_message(
             (
                 f"{deleted:d} file{'' if deleted == 1 else 's'} "
                 f"{'was' if verb == 'were' and deleted == 1 else verb} removed"
             ),
-            color=colorama.Fore.RED,
+            level="warning",
             quiet=quiet,
         )
 
@@ -395,18 +401,18 @@ def sync_environment(
             for cf_id in (
                 cloudfront_id if isinstance(cloudfront_id, list) else [cloudfront_id]
             ):
-                alert(
+                ui.output.display_message(
                     f"CloudFront distribution {cf_id} invalidation requested",
-                    color=colorama.Fore.GREEN,
+                    level="success",
                     quiet=quiet,
                 )
         else:
             for cf_id in (
                 cloudfront_id if isinstance(cloudfront_id, list) else [cloudfront_id]
             ):
-                alert(
+                ui.output.display_message(
                     f"CloudFront distribution {cf_id} invalidation would be requested",
-                    color=colorama.Fore.GREEN,
+                    level="success",
                     quiet=quiet,
                 )
     elif cloudfront_id:

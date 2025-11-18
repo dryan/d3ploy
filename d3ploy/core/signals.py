@@ -6,7 +6,7 @@ import os
 import signal
 import sys
 
-from ..compat import colorama
+from .. import ui
 from ..sync import operations
 
 
@@ -19,9 +19,7 @@ def bail(*args, **kwargs):
         **kwargs: Additional keyword arguments.
     """
     operations.killswitch.set()
-    buffer = sys.stdout
-    buffer.write(f"\n{colorama.Fore.RED}Exiting...{colorama.Style.RESET_ALL}\n")
-    buffer.flush()
+    ui.output.display_message("\nExiting...", level="error")
     sys.exit(os.EX_OK)
 
 

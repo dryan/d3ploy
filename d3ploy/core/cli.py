@@ -6,10 +6,11 @@ import argparse
 import json
 import os
 import pathlib
+import sys
 from typing import Union
 
 from .. import __version__
-from ..compat import colorama
+from .. import ui
 from ..sync import operations
 from . import signals
 from . import updates
@@ -182,12 +183,12 @@ def cli():
 
     # Handle version flag early
     if args.version:
-        operations.alert(
+        ui.output.display_message(
             f"d3ploy {__version__}",
-            error_code=os.EX_OK,
-            color=colorama.Fore.GREEN,
+            level="success",
             quiet=args.quiet,
         )
+        sys.exit(os.EX_OK)
 
     # Check for old deploy.json
     if pathlib.Path("deploy.json").exists():
