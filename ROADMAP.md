@@ -94,27 +94,44 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ## Phase 4: Textual Interface Implementation
 
-### 4.1 Basic UI Components
+**Note:** Two-mode approach - Textual TUI by default, Rich CLI fallback for non-interactive
 
-- [x] Create `d3ploy/ui/` module
-- [x] Design Textual application structure
-- [x] Implement progress bars to replace tqdm
-- [x] Create status display components
-- [x] Add colored output to replace colorama
+### 4.1 Rich CLI Components (Non-Interactive Fallback)
 
-### 4.2 Interactive Features
+- [x] Create `d3ploy/ui/` module with Rich components
+- [x] Implement progress bars using Rich (replaces tqdm)
+- [x] Create status display using Rich Console
+- [x] Add colored output using Rich (replaces colorama)
+- [x] Implement confirmation dialogs using Rich prompts
+- [x] Update all modules to use Rich UI components
 
-- [ ] Implement confirmation dialogs
-- [ ] Add real-time progress updates
-- [ ] Create error display components
-- [ ] Add update notification UI
+### 4.2 Textual TUI Application (Default Interactive Mode)
 
-### 4.3 CLI Integration
+- [x] Design Textual app structure with screens and widgets
+- [x] Create main dashboard/environment selection screen
+- [x] Implement file sync screen with real-time progress
+- [x] Add configuration viewer/editor screen
+- [x] Create help/keyboard shortcuts screen
+- [x] Add keyboard navigation and shortcuts
 
-- [ ] Maintain command-line argument compatibility
-- [ ] Integrate Textual with argparse
-- [ ] Implement quiet mode for automated usage
-- [ ] Add proper exit codes and error handling
+### 4.3 Mode Detection & Integration
+
+- [x] Auto-detect interactive vs non-interactive terminal
+- [x] Default to TUI when terminal is interactive
+- [x] Add `--no-tui` flag to force CLI mode
+- [ ] CLI mode requires all parameters or errors
+- [x] Share business logic between both modes
+- [ ] Implement quiet mode for CI/CD (disables all UI)
+- [ ] Ensure proper exit codes in both modes
+
+### 4.4 TUI Features
+
+- [ ] Real-time sync progress with live updates
+- [ ] Interactive environment selection
+- [ ] File browsing and exclusion management
+- [ ] Configuration editing within TUI
+- [ ] Error handling with styled dialogs
+- [ ] Help system and keyboard shortcuts screen
 
 ## Phase 5: Data Management & Standards
 
@@ -245,23 +262,19 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
   - CLI integration refactored
   - Code follows new style guidelines
   - All modules tested and working
+- ✅ Phase 4.1: Rich CLI components implemented
+  - Progress bars, colored output, dialogs using Rich
+  - Traditional CLI mode fully functional
 
 **Next Phase Options:**
 
-- **Phase 4**: Textual Interface Implementation
+- **Phase 4.2-4.4**: Textual TUI Implementation (interactive mode)
 - **Phase 5**: Data Management & Standards
 - **Phase 6**: Testing & Quality Assurance
 
-**Question for Project Owner:**
+**Current Focus:**
 
-Where should we begin next? The logical options are:
+Implementing Textual TUI as the default interface. This will provide:
 
-1. **Phase 4** - Implement Textual UI to replace colorama/tqdm
-2. **Phase 5** - Improve data management (app data directories, update system)
-3. **Phase 6** - Testing framework conversion (unittest → pytest) and type checking (add ty)
-
-**Notes:**
-
-- Phase 3 refactoring is complete and tested
-- All new code follows module import style and keyword-only argument guidelines
-- Ready to proceed with any of the next phases
+- **Interactive TUI (default)**: Full-screen app when terminal is interactive
+- **CLI fallback**: Rich-based non-interactive mode for CI/CD, requires all parameters

@@ -165,6 +165,12 @@ def parse_args():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--no-tui",
+        help="Disable TUI mode and use CLI fallback (requires all parameters).",
+        action="store_true",
+        default=False,
+    )
 
     return parser.parse_known_args()
 
@@ -189,6 +195,36 @@ def cli():
             quiet=args.quiet,
         )
         sys.exit(os.EX_OK)
+
+    # Detect if we should use TUI mode
+    # Use TUI if:
+    # 1. Terminal is interactive (has ps1 prompt, more reliable than isatty)
+    # 2. Not in quiet mode
+    # 3. --no-tui flag not set
+    # 4. No environment specified (let user choose interactively)
+    is_interactive = hasattr(sys, "ps1") or sys.stdin.isatty()
+    no_environment_specified = args.environment == ["default"] and not args.all
+    should_use_tui = (
+        is_interactive
+        and not args.quiet
+        and not args.no_tui
+        and no_environment_specified
+    )
+
+    if should_use_tui:
+        # Launch TUI mode
+        from ..ui import tui
+
+        return tui.run_tui(config_path=args.config)
+
+    # CLI fallback mode - require all necessary parameters
+    # If we're in non-interactive mode and missing environment, error out
+    if not is_interactive and no_environment_specified:
+        ui.output.display_error(
+            "Error: No environment specified. In non-interactive mode, "
+            "you must specify an environment or use --all.",
+            exit_code=os.EX_USAGE,
+        )
 
     # Check for old deploy.json
     if pathlib.Path("deploy.json").exists():

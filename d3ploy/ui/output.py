@@ -6,7 +6,6 @@ import sys
 
 from rich.console import Console
 
-
 # Create console instances for different output streams
 console = Console()
 error_console = Console(stderr=True)
@@ -38,7 +37,7 @@ def display_message(
 
     style = style_map.get(level, "white")
     target = error_console if level == "error" else console
-    
+
     target.print(text, style=style)
 
 
