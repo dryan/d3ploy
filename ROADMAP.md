@@ -45,9 +45,9 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 2.4 Project Structure Planning
 
-- [ ] Design new modular package structure
-- [ ] Plan module responsibilities and interfaces
-- [ ] Create placeholder modules and **init**.py files
+- [x] Design new modular package structure
+- [x] Plan module responsibilities and interfaces
+- [x] Create placeholder modules and **init**.py files
 
 ## Phase 3: Code Refactoring & Modularization
 
@@ -59,6 +59,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Implement environment variable support
 - [ ] Create config migration logic for old formats
 - [ ] Add priority system: CLI flags > env vars > config file > defaults
+- [ ] Add a new "recommended" option for caches that implements best practices for static file deployments
 
 ### 2.2 AWS Operations Module
 

@@ -3,7 +3,7 @@
 Entry point for d3ploy when run as a module or Briefcase app.
 """
 
-from .d3ploy import cli
+from .core import cli
 
 if __name__ == "__main__":
     cli()

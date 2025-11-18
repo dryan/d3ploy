@@ -109,7 +109,7 @@ Based on the responses above, here are the guidelines for this conversion:
 
 - **Semantic versioning**: Continue current approach
 - **Git workflow**: Create PR → merge to main → push git tag → GitHub Actions triggers release
-- **PyPI automation**: GitHub Actions handles PyPI publishing on tag push  
+- **PyPI automation**: GitHub Actions handles PyPI publishing on tag push
 - **Gitmoji**: Always use gitmoji for commit messages
 - **Signed tags**: Always sign git tags for releases
 - **Python versions**: Keep supported versions up-to-date with <https://devguide.python.org/versions/>
