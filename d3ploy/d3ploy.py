@@ -18,11 +18,13 @@ from concurrent import futures
 
 import boto3
 import botocore
-import colorama
 import pathspec
 from boto3.resources.base import ServiceResource as AWSServiceResource
-from colorama import init as colorama_init
-from tqdm import tqdm
+
+# Temporary compatibility imports during transition to Textual
+from .compat import colorama
+from .compat import init as colorama_init
+from .compat import tqdm
 
 VERSION = "4.4.3"
 
@@ -733,8 +735,8 @@ def cli():
     if invalid_environments:
         alert(
             (
-                f'environment{"" if len(invalid_environments) == 1 else "s"} '
-                f'{", ".join(invalid_environments)} not found in config. '
+                f"environment{'' if len(invalid_environments) == 1 else 's'} "
+                f"{', '.join(invalid_environments)} not found in config. "
                 f'Choose from "{", ".join(environments)}"'
             ),
             os.EX_NOINPUT,
