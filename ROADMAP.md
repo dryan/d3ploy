@@ -21,29 +21,36 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ## Phase 2: Project Setup & Foundation
 
-### 2.1 Briefcase Configuration
+### 2.1 Python Version Updates
+
+- [ ] Remove Python 3.9 support (no longer maintained per Python devguide)
+- [ ] Update supported versions in pyproject.toml classifiers
+- [ ] Update CI/CD testing matrix to remove 3.9
+- [ ] Update documentation with new minimum Python version
+
+### 2.2 Briefcase Configuration
 
 - [x] Create initial `briefcase.toml` configuration
 - [ ] Install Briefcase and verify setup
 - [ ] Test basic Briefcase build process
 - [ ] Configure platform-specific settings
 
-### 2.2 Dependencies & Environment
+### 2.3 Dependencies & Environment
 
 - [ ] Add Textual to dependencies
 - [ ] Update `pyproject.toml` with new dependency structure
 - [ ] Remove colorama and tqdm from requirements
 - [ ] Test dependency resolution
 
-### 2.3 Project Structure Planning
+### 2.4 Project Structure Planning
 
 - [ ] Design new modular package structure
 - [ ] Plan module responsibilities and interfaces
-- [ ] Create placeholder modules and **init**.py files
+- [ ] Create placeholder modules and __init__.py files
 
-## Phase 2: Code Refactoring & Modularization
+## Phase 3: Code Refactoring & Modularization
 
-### 2.1 Configuration System
+### 3.1 Configuration System
 
 - [ ] Create `d3ploy/config/` module
 - [ ] Implement config versioning system
@@ -201,17 +208,17 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ---
 
-## Current Status: Phase 1.1 - Breaking Change Warning Release
+## Current Status: Phase 2.1 - Python Version Updates
 
-**Next Steps:**
+__Next Steps:__
 
-1. Update update notification text with breaking change warning
-2. Test the warning message
-3. Release patch version 4.4.3 to PyPI
+1. Remove Python 3.9 support from pyproject.toml and testing
+2. Update version requirements to Python 3.10+ minimum
+3. Install Briefcase and verify setup
 
-**Blockers:** None currently identified
+__Blockers:__ None currently identified
 
-**Notes:**
+__Notes:__
 
 - Keep AGENTS.md updated with any preference changes
 - Each phase should be tested before moving to the next
