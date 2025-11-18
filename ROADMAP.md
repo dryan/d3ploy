@@ -37,10 +37,11 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 2.3 Dependencies & Environment
 
-- [ ] Add Textual to dependencies
-- [ ] Update `pyproject.toml` with new dependency structure
-- [ ] Remove colorama and tqdm from requirements
-- [ ] Test dependency resolution
+- [x] Add Textual to dependencies
+- [x] Update `pyproject.toml` with new dependency structure
+- [x] Remove colorama and tqdm from requirements
+- [x] Test dependency resolution
+- [x] Create temporary compatibility layer for transition
 
 ### 2.4 Project Structure Planning
 
