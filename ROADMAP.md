@@ -23,10 +23,10 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 2.1 Python Version Updates
 
-- [ ] Remove Python 3.9 support (no longer maintained per Python devguide)
-- [ ] Update supported versions in pyproject.toml classifiers
-- [ ] Update CI/CD testing matrix to remove 3.9
-- [ ] Update documentation with new minimum Python version
+- [x] Remove Python 3.9 support (no longer maintained per Python devguide)
+- [x] Update supported versions in pyproject.toml classifiers
+- [x] Update CI/CD testing matrix to remove 3.9
+- [x] Update documentation with new minimum Python version
 
 ### 2.2 Briefcase Configuration
 
@@ -46,7 +46,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 - [ ] Design new modular package structure
 - [ ] Plan module responsibilities and interfaces
-- [ ] Create placeholder modules and __init__.py files
+- [ ] Create placeholder modules and **init**.py files
 
 ## Phase 3: Code Refactoring & Modularization
 
@@ -210,15 +210,15 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ## Current Status: Phase 2.1 - Python Version Updates
 
-__Next Steps:__
+**Next Steps:**
 
 1. Remove Python 3.9 support from pyproject.toml and testing
 2. Update version requirements to Python 3.10+ minimum
 3. Install Briefcase and verify setup
 
-__Blockers:__ None currently identified
+**Blockers:** None currently identified
 
-__Notes:__
+**Notes:**
 
 - Keep AGENTS.md updated with any preference changes
 - Each phase should be tested before moving to the next
