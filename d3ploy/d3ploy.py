@@ -24,7 +24,7 @@ from boto3.resources.base import ServiceResource as AWSServiceResource
 from colorama import init as colorama_init
 from tqdm import tqdm
 
-VERSION = "4.4.2"
+VERSION = "4.4.3"
 
 VALID_ACLS = [
     "private",
@@ -183,7 +183,11 @@ def check_for_updates(
                             f"There has been an update for d3ploy. Version "
                             f"{pypi_version} is now available.\n"
                             f"Please see https://github.com/dryan/d3ploy or run "
-                            f"`pip install --upgrade d3ploy`."
+                            f"`pip install --upgrade d3ploy`.\n\n"
+                            f"⚠️  IMPORTANT: A major update with breaking changes is coming soon! ⚠️\n"
+                            f"The next major version will include significant improvements but may\n"
+                            f"require config file updates. Please check the GitHub repository for\n"
+                            f"migration guidance before upgrading to version 5.0+."
                         ),
                         color=colorama.Fore.YELLOW,
                     )
