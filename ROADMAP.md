@@ -58,8 +58,8 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Add support for both `d3ploy.json` and `.d3ploy.json`
 - [ ] Implement environment variable support
 - [ ] Create config migration logic for old formats
-- [ ] Add priority system: CLI flags > env vars > config file > defaults
-- [ ] Add a new "recommended" option for caches that implements best practices for static file deployments
+- [x] Add priority system: CLI flags > env vars > config file > defaults
+- [x] Add a new "recommended" option for caches that implements best practices for static file deployments
 
 ### 2.2 AWS Operations Module
 

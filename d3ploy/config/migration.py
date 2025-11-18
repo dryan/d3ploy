@@ -2,15 +2,18 @@
 Configuration migration for version upgrades.
 """
 
+from typing import Any
+from typing import Dict
 
-def migrate_config(old_config: dict, from_version: int, to_version: int) -> dict:
+CURRENT_VERSION = 1
+
+
+def migrate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Migrate configuration from old version to new version.
 
     Args:
-        old_config: Configuration in old format.
-        from_version: Source version number.
-        to_version: Target version number.
+        config: Configuration dictionary.
 
     Returns:
         Migrated configuration dictionary.
@@ -18,5 +21,23 @@ def migrate_config(old_config: dict, from_version: int, to_version: int) -> dict
     Raises:
         ValueError: If migration path is not supported.
     """
-    # TODO: Implement in Phase 3.1
-    raise NotImplementedError("Config migration will be implemented in Phase 3.1")
+    # Determine version
+    version = config.get("version", 0)
+
+    if version > CURRENT_VERSION:
+        raise ValueError(
+            f"Config version {version} is newer than supported version {CURRENT_VERSION}"
+        )
+
+    if version == CURRENT_VERSION:
+        return config
+
+    # Migration logic
+    migrated_config = config.copy()
+
+    # 0 -> 1: Add version field
+    if version == 0:
+        migrated_config["version"] = 1
+        version = 1
+
+    return migrated_config
