@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from d3ploy.config import load_config
@@ -8,6 +9,9 @@ from d3ploy.config import load_env_vars
 from d3ploy.config import merge_config
 from d3ploy.config import migrate_config
 from d3ploy.config import validate_config
+
+# Path to config fixtures
+FIXTURES_DIR = Path(__file__).parent / "fixtures" / "configs"
 
 
 class TestConfigPhase3(unittest.TestCase):
@@ -116,6 +120,48 @@ class TestConfigPhase3(unittest.TestCase):
 
         del os.environ["D3PLOY_BUCKET_NAME"]
         del os.environ["D3PLOY_PROCESSES"]
+
+    def test_migrate_v0_fixture(self):
+        """Test migration using v0 fixture file."""
+        v0_config = json.loads((FIXTURES_DIR / "v0-config.json").read_text())
+        migrated = migrate_config(v0_config)
+        
+        # Should be upgraded to v2
+        self.assertEqual(migrated["version"], 2)
+        # Should have targets, not environments
+        self.assertIn("targets", migrated)
+        self.assertNotIn("environments", migrated)
+        # Should preserve all target configs
+        self.assertIn("default", migrated["targets"])
+        self.assertIn("staging", migrated["targets"])
+        # Should preserve defaults
+        self.assertIn("defaults", migrated)
+        self.assertIn("caches", migrated["defaults"])
+
+    def test_migrate_v1_fixture(self):
+        """Test migration using v1 fixture file."""
+        v1_config = json.loads((FIXTURES_DIR / "v1-config.json").read_text())
+        migrated = migrate_config(v1_config)
+        
+        # Should be upgraded to v2
+        self.assertEqual(migrated["version"], 2)
+        # Should have targets, not environments
+        self.assertIn("targets", migrated)
+        self.assertNotIn("environments", migrated)
+        # Should preserve cloudfront_id
+        self.assertEqual(
+            migrated["targets"]["staging"]["cloudfront_id"],
+            "E1234567890ABC",
+        )
+
+    def test_v2_fixture_current(self):
+        """Test that v2 fixture is already current version."""
+        v2_config = json.loads((FIXTURES_DIR / "v2-config.json").read_text())
+        migrated = migrate_config(v2_config)
+        
+        # Should be unchanged
+        self.assertEqual(migrated, v2_config)
+        self.assertEqual(migrated["version"], 2)
 
 
 if __name__ == "__main__":

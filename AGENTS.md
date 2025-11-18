@@ -187,3 +187,52 @@ Based on the responses above, here are the guidelines for this conversion:
   - Always treat the cause, not the symptom
   - Fix the underlying issue rather than suppressing error messages
   - Never use workarounds that mask problems
+
+### Configuration Version Management
+
+**IMPORTANT**: When changing the configuration file structure:
+
+1. **Create Version Fixture**: Add a sample config to `tests/fixtures/configs/`
+   - Name it `vN-config.json` where N is the version number
+   - Include realistic, complete examples of all features
+   - Document what changed from the previous version
+
+2. **Update Migration Code**:
+   - Bump `CURRENT_VERSION` in `d3ploy/config/migration.py`
+   - Add migration logic for vN-1 → vN transformation
+   - Never modify configs without user permission (CLI shows command, TUI asks)
+
+3. **Update Tests**:
+   - Add migration tests in `tests/test_config_phase3.py`
+   - Test both vN-1 → vN and v0 → vN migrations
+   - Verify no-change case for current version
+
+4. **Update Documentation**:
+   - Update `tests/fixtures/configs/README.md` with new version info
+   - Update main `README.md` if user-facing config changes
+   - Document breaking changes clearly
+
+5. **Test Migration Flows**:
+   - Test CLI: Old config should exit with migration command
+   - Test `--migrate-config` flag shows changes before applying
+   - Test TUI: Dialog should prompt user with clear explanation
+   - Verify file is only modified after user confirms
+
+**Example Structure**:
+
+```text
+tests/fixtures/configs/
+├── README.md           # Version history and usage
+├── v0-config.json      # Original format
+├── v1-config.json      # Added version field
+└── v2-config.json      # Current version
+```
+
+**Why This Matters**:
+
+- Ensures backward compatibility testing
+- Documents config evolution over time
+- Provides reference examples for users upgrading
+- Prevents accidental breaking changes
+- Makes migration logic testable and verifiable
+
