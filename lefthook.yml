@@ -1,0 +1,20 @@
+pre-commit:
+  parallel: true
+  commands:
+    ruff-check:
+      run: uv run ruff check --fix {all_files}
+      glob: "*.py"
+    ruff-format:
+      run: uv run ruff format {all_files}
+      glob: "*.py"
+    check-versions-match:
+      run: ./check-versions-match.py
+      stage_fixed: true
+
+pre-push:
+  commands:
+    ruff-check:
+      run: uv run ruff check {all_files}
+      glob: "*.py"
+    check-versions-match:
+      run: ./check-versions-match.py
