@@ -34,6 +34,7 @@ force-single-line = true
 
 [dependency-groups]
 dev = [
+    "briefcase>=0.3.25",
     "ipython>=8.29.0",
     "pytest-cov>=6.0.0",
     "ruff>=0.7.3",
@@ -46,3 +47,64 @@ requires = ["hatchling",]
 [tool.pytest.ini_options]
 testpaths = ["tests/test*.py"]
 addopts = ["--cov=d3ploy", "--cov-report=term-missing", "--cov-report=html", "--cov-fail-under=100"]
+
+[tool.briefcase]
+project_name = "D3ploy"
+bundle = "com.dryan"
+version = "4.4.3"
+url = "https://github.com/dryan/d3ploy"
+license.file = "LICENSE"
+author = "dryan"
+author_email = "dryan@users.noreply.github.com"
+description = "Easily deploy to S3 with multiple environment support"
+
+[tool.briefcase.app.d3ploy]
+formal_name = "D3ploy"
+description = "Easily deploy to S3 with multiple environment support."
+long_description = """
+D3ploy is a command-line tool that makes it easy to deploy static sites and files 
+to Amazon S3 with support for multiple environments. It supports features like:
+
+- Multiple environment configurations
+- File exclusion patterns and .gitignore support
+- CloudFront invalidation
+- Cache control headers
+- Parallel uploads for speed
+- Dry-run mode
+- File deletion sync
+"""
+sources = ["d3ploy"]
+test_sources = ["tests"]
+
+requires = [
+    "boto3>=1.35.58",
+    "packaging>=24.2",
+    "pathspec>=0.12.1",
+    "textual>=1.0.0",
+]
+
+console_app = true
+
+[tool.briefcase.app.d3ploy.macOS]
+requires = [
+    "boto3>=1.35.58",
+    "packaging>=24.2",
+    "pathspec>=0.12.1",
+    "textual>=1.0.0",
+]
+
+[tool.briefcase.app.d3ploy.linux]
+requires = [
+    "boto3>=1.35.58",
+    "packaging>=24.2",
+    "pathspec>=0.12.1",
+    "textual>=1.0.0",
+]
+
+[tool.briefcase.app.d3ploy.windows]
+requires = [
+    "boto3>=1.35.58",
+    "packaging>=24.2",
+    "pathspec>=0.12.1",
+    "textual>=1.0.0",
+]

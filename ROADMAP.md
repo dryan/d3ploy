@@ -31,8 +31,8 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 2.2 Briefcase Configuration
 
 - [x] Create initial `briefcase.toml` configuration
-- [ ] Install Briefcase and verify setup
-- [ ] Test basic Briefcase build process
+- [x] Install Briefcase and verify setup
+- [x] Test basic Briefcase build process
 - [ ] Configure platform-specific settings
 
 ### 2.3 Dependencies & Environment
