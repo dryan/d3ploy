@@ -133,6 +133,12 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Configuration editing within TUI
 - [ ] Error handling with styled dialogs
 - [ ] Help system and keyboard shortcuts screen
+- [ ] Config-less operation: When no config file exists, TUI should prompt for required information
+  - Ask for bucket name
+  - Ask for local path (default to current directory)
+  - Optionally ask for bucket path, ACL, excludes, etc.
+  - Allow saving these settings to a new config file
+  - Provide option to run once without saving
 
 ## Phase 5: Data Management & Standards
 

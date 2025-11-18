@@ -125,7 +125,7 @@ class TestConfigPhase3(unittest.TestCase):
         """Test migration using v0 fixture file."""
         v0_config = json.loads((FIXTURES_DIR / "v0-config.json").read_text())
         migrated = migrate_config(v0_config)
-        
+
         # Should be upgraded to v2
         self.assertEqual(migrated["version"], 2)
         # Should have targets, not environments
@@ -142,7 +142,7 @@ class TestConfigPhase3(unittest.TestCase):
         """Test migration using v1 fixture file."""
         v1_config = json.loads((FIXTURES_DIR / "v1-config.json").read_text())
         migrated = migrate_config(v1_config)
-        
+
         # Should be upgraded to v2
         self.assertEqual(migrated["version"], 2)
         # Should have targets, not environments
@@ -158,7 +158,7 @@ class TestConfigPhase3(unittest.TestCase):
         """Test that v2 fixture is already current version."""
         v2_config = json.loads((FIXTURES_DIR / "v2-config.json").read_text())
         migrated = migrate_config(v2_config)
-        
+
         # Should be unchanged
         self.assertEqual(migrated, v2_config)
         self.assertEqual(migrated["version"], 2)

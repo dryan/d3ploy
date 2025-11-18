@@ -258,10 +258,17 @@ def cli():
     # 2. Not in quiet mode
     # 3. --no-tui flag not set
     # 4. No target specified (let user choose interactively)
+    # 5. Config file exists (TUI requires config)
     is_interactive = hasattr(sys, "ps1") or sys.stdin.isatty()
     no_target_specified = args.target == ["default"] and not args.all
+    config_path = pathlib.Path(args.config)
+    has_config = config_path.exists()
     should_use_tui = (
-        is_interactive and not args.quiet and not args.no_tui and no_target_specified
+        is_interactive
+        and not args.quiet
+        and not args.no_tui
+        and no_target_specified
+        and has_config
     )
 
     if should_use_tui:
@@ -291,10 +298,12 @@ def cli():
             quiet=args.quiet,
         )
 
-    # Load config file
+    # Load config file (if it exists)
     config = {}
     config_path = pathlib.Path(args.config)
-    if config_path.exists():
+    config_exists = config_path.exists()
+
+    if config_exists:
         config = json.loads(config_path.read_text())
 
         # Check if migration is needed
@@ -316,7 +325,14 @@ def cli():
                 quiet=False,
             )
             sys.exit(os.EX_CONFIG)
-    else:
+
+    targets = [f"{item}" for item in config.get("targets", {}).keys()]
+    defaults = config.get("defaults", {})
+
+    # Check if user provided enough information to proceed without config
+    has_required_args = args.bucket_name is not None
+
+    if not config_exists and not has_required_args:
         operations.alert(
             (
                 f"Config file is missing. Looked for {args.config}. "
@@ -326,35 +342,43 @@ def cli():
             quiet=args.quiet,
         )
 
-    targets = [f"{item}" for item in config.get("targets", {}).keys()]
-    defaults = config.get("defaults", {})
+    # If no config and user provided bucket_name, allow running without config
+    if not config_exists and has_required_args:
+        # Create a minimal synthetic target
+        targets = args.target if args.target != ["default"] else ["cli"]
+        args.target = targets  # Update args.target to match the synthetic targets
+        config = {"targets": {}, "defaults": {}}
+        for t in targets:
+            config["targets"][t] = {}
+        defaults = {}
+    elif config_exists:
+        # Check if no targets are configured
+        if not targets:
+            operations.alert(
+                f"No targets found in config file: {args.config}",
+                error_code=os.EX_NOINPUT,
+                quiet=args.quiet,
+            )
 
-    # Check if no targets are configured
-    if not targets:
-        operations.alert(
-            f"No targets found in config file: {args.config}",
-            error_code=os.EX_NOINPUT,
-            quiet=args.quiet,
-        )
+        if args.all:
+            args.target = targets
 
-    if args.all:
-        args.target = targets
-
-    # Check if target actually exists in the config file
-    invalid_targets = []
-    for target in args.target:
-        if target not in targets:
-            invalid_targets.append(target)
-    if invalid_targets:
-        operations.alert(
-            (
-                f"target{'' if len(invalid_targets) == 1 else 's'} "
-                f"{', '.join(invalid_targets)} not found in config. "
-                f'Choose from "{", ".join(targets)}"'
-            ),
-            error_code=os.EX_NOINPUT,
-            quiet=args.quiet,
-        )
+        # Check if target actually exists in the config file (only if not providing bucket_name)
+        if not has_required_args:
+            invalid_targets = []
+            for target in args.target:
+                if target not in targets:
+                    invalid_targets.append(target)
+            if invalid_targets:
+                operations.alert(
+                    (
+                        f"target{'' if len(invalid_targets) == 1 else 's'} "
+                        f"{', '.join(invalid_targets)} not found in config. "
+                        f'Choose from "{", ".join(targets)}"'
+                    ),
+                    error_code=os.EX_NOINPUT,
+                    quiet=args.quiet,
+                )
 
     to_deploy = targets if args.all else args.target
 
@@ -371,7 +395,7 @@ def cli():
             f"Uploading target {to_deploy.index(target) + 1:d} of {len(to_deploy):d}",
             quiet=args.quiet,
         )
-        target_config = config["targets"][target]
+        target_config = config.get("targets", {}).get(target, {})
 
         if not target_config.get("excludes", False):
             target_config["excludes"] = []
@@ -383,13 +407,17 @@ def cli():
             excludes = args.exclude
         else:
             excludes = target_config.get("exclude", []) + defaults.get("exclude", [])
-        excludes.append(args.config)
+        if config_exists:
+            excludes.append(args.config)
 
+        bucket_name = (
+            args.bucket_name
+            or target_config.get("bucket_name")
+            or defaults.get("bucket_name")
+        )
         operations.sync_target(
             target,
-            bucket_name=args.bucket_name
-            or target_config.get("bucket_name")
-            or defaults.get("bucket_name"),
+            bucket_name=bucket_name,
             local_path=args.local_path
             or target_config.get("local_path")
             or defaults.get("local_path")
@@ -417,4 +445,5 @@ def cli():
             or [],
             caches=target_config.get("caches", {}) or defaults.get("caches", {}),
             quiet=args.quiet,
+            using_config=config_exists,
         )

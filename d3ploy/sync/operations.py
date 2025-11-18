@@ -275,6 +275,7 @@ def sync_target(
     cloudfront_id: Union[Collection[str], str, None] = None,
     caches: Optional[Dict[str, int]] = None,
     quiet: bool = False,
+    using_config: bool = True,
 ) -> Dict[str, int]:
     """
     Coordinate sync operation for a target.
@@ -296,11 +297,15 @@ def sync_target(
         cloudfront_id: CloudFront distribution ID(s).
         caches: Cache control settings.
         quiet: Suppress output.
+        using_config: Whether using a config file target.
 
     Returns:
         Dictionary with counts of uploaded, deleted, invalidated files.
     """
-    alert(f'Using settings for "{target}" target', quiet=quiet)
+    if using_config:
+        alert(f'Using settings for "{target}" target', quiet=quiet)
+    else:
+        alert(f'Syncing to "{bucket_name}"', quiet=quiet)
 
     if cloudfront_id is None:
         cloudfront_id = []
