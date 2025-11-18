@@ -81,16 +81,24 @@ class TestConfigPhase3(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_config({"defaults": {}})
 
-    def test_migrate_config_v0_to_v1(self):
+    def test_migrate_config_v0_to_v2(self):
         v0_config = {"environments": {}}
         migrated = migrate_config(v0_config)
-        self.assertEqual(migrated["version"], 1)
-        self.assertEqual(migrated["environments"], {})
+        self.assertEqual(migrated["version"], 2)
+        self.assertEqual(migrated["targets"], {})
+        self.assertNotIn("environments", migrated)
 
-    def test_migrate_config_v1_no_change(self):
-        v1_config = {"version": 1, "environments": {}}
+    def test_migrate_config_v1_to_v2(self):
+        v1_config = {"version": 1, "environments": {"default": {}}}
         migrated = migrate_config(v1_config)
-        self.assertEqual(migrated, v1_config)
+        self.assertEqual(migrated["version"], 2)
+        self.assertEqual(migrated["targets"], {"default": {}})
+        self.assertNotIn("environments", migrated)
+
+    def test_migrate_config_v2_no_change(self):
+        v2_config = {"version": 2, "targets": {"default": {}}}
+        migrated = migrate_config(v2_config)
+        self.assertEqual(migrated, v2_config)
 
     def test_validate_config_recommended_caches(self):
         config_data = {"targets": {"default": {"caches": "recommended"}}}

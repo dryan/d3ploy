@@ -10,6 +10,7 @@ import sys
 from typing import Union
 
 from .. import __version__
+from .. import config as config_module
 from .. import ui
 from ..sync import operations
 from . import signals
@@ -171,6 +172,13 @@ def parse_args():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--migrate-config",
+        help="Migrate a config file to the latest version.",
+        metavar="PATH",
+        type=str,
+        default=None,
+    )
 
     return parser.parse_known_args()
 
@@ -195,6 +203,54 @@ def cli():
             quiet=args.quiet,
         )
         sys.exit(os.EX_OK)
+
+    # Handle config migration flag
+    if args.migrate_config:
+        config_path = pathlib.Path(args.migrate_config)
+        if not config_path.exists():
+            ui.output.display_error(
+                f"Config file not found: {args.migrate_config}",
+                exit_code=os.EX_NOINPUT,
+            )
+
+        try:
+            config = json.loads(config_path.read_text())
+            if not config_module.needs_migration(config):
+                ui.output.display_message(
+                    f"Config file {args.migrate_config} is already at version {config_module.CURRENT_VERSION}",
+                    level="success",
+                )
+                sys.exit(os.EX_OK)
+
+            # Show what will change
+            old_version = config.get("version", 0)
+            ui.output.display_message(
+                f"Migrating config from version {old_version} to {config_module.CURRENT_VERSION}...",
+                level="info",
+            )
+
+            # Perform migration
+            migrated = config_module.migrate_config(config)
+
+            # Show changes
+            if "environments" in config and "targets" in migrated:
+                ui.output.display_message(
+                    "  - Renamed 'environments' → 'targets'",
+                    level="info",
+                )
+
+            # Save migrated config
+            config_module.save_migrated_config(migrated, path=args.migrate_config)
+            ui.output.display_message(
+                f"✓ Config file {args.migrate_config} migrated successfully",
+                level="success",
+            )
+            sys.exit(os.EX_OK)
+        except Exception as e:
+            ui.output.display_error(
+                f"Error migrating config: {e}",
+                exit_code=os.EX_DATAERR,
+            )
 
     # Detect if we should use TUI mode
     # Use TUI if:
@@ -240,6 +296,26 @@ def cli():
     config_path = pathlib.Path(args.config)
     if config_path.exists():
         config = json.loads(config_path.read_text())
+
+        # Check if migration is needed
+        if config_module.needs_migration(config):
+            old_version = config.get("version", 0)
+            ui.output.display_message(
+                f"Your config file is version {old_version} but d3ploy now requires version {config_module.CURRENT_VERSION}.",
+                level="error",
+                quiet=False,
+            )
+            ui.output.display_message(
+                "\nTo migrate your config file, run:",
+                level="info",
+                quiet=False,
+            )
+            ui.output.display_message(
+                f"  {config_module.get_migration_command(args.config)}",
+                level="info",
+                quiet=False,
+            )
+            sys.exit(os.EX_CONFIG)
     else:
         operations.alert(
             (

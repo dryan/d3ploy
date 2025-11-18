@@ -2,10 +2,13 @@
 Configuration migration for version upgrades.
 """
 
+import json
+from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import Optional
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 
 def migrate_config(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -40,4 +43,53 @@ def migrate_config(config: Dict[str, Any]) -> Dict[str, Any]:
         migrated_config["version"] = 1
         version = 1
 
+    # 1 -> 2: Rename "environments" to "targets"
+    if version == 1:
+        if "environments" in migrated_config:
+            migrated_config["targets"] = migrated_config.pop("environments")
+        migrated_config["version"] = 2
+        version = 2
+
     return migrated_config
+
+
+def needs_migration(config: Dict[str, Any]) -> bool:
+    """
+    Check if config needs migration.
+
+    Args:
+        config: Configuration dictionary.
+
+    Returns:
+        True if migration is needed.
+    """
+    version = config.get("version", 0)
+    return version < CURRENT_VERSION
+
+
+def save_migrated_config(config: Dict[str, Any], *, path: str) -> None:
+    """
+    Save migrated config to disk.
+
+    Args:
+        config: Migrated configuration dictionary.
+        path: Path to config file.
+    """
+    config_path = Path(path)
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")  # Add trailing newline
+
+
+def get_migration_command(config_path: Optional[str] = None) -> str:
+    """
+    Get the command to run to migrate a config file.
+
+    Args:
+        config_path: Path to config file (default: .d3ploy.json).
+
+    Returns:
+        Command string to run.
+    """
+    path = config_path or ".d3ploy.json"
+    return f"d3ploy --migrate-config {path}"

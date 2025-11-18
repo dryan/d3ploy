@@ -20,6 +20,62 @@ from textual.widgets import Static
 from d3ploy import config as config_module
 
 
+class MigrationConfirmScreen(Screen):
+    """
+    Modal screen to confirm config migration.
+    """
+
+    def __init__(
+        self,
+        *,
+        config_path: str,
+        old_version: int,
+        new_version: int,
+    ):
+        """
+        Initialize migration confirmation screen.
+
+        Args:
+            config_path: Path to config file.
+            old_version: Current config version.
+            new_version: Target config version.
+        """
+        super().__init__()
+        self.config_path = config_path
+        self.old_version = old_version
+        self.new_version = new_version
+
+    def compose(self) -> ComposeResult:
+        """Create child widgets for the screen."""
+        yield Container(
+            Static("Config Migration Required", classes="title"),
+            Static(
+                f"Your config file is version {self.old_version} but d3ploy "
+                f"now requires version {self.new_version}.\n\n"
+                f"This will update your config file:\n"
+                f"  {self.config_path}\n\n"
+                "Changes:\n"
+                "  • Rename 'environments' → 'targets'\n"
+                "  • Update version number\n\n"
+                "Do you want to migrate your config file now?",
+                id="migration-message",
+            ),
+            Container(
+                Button("Yes, Migrate", id="migrate-yes", variant="primary"),
+                Button("No, Exit", id="migrate-no", variant="error"),
+                id="migration-buttons",
+            ),
+            id="migration-dialog",
+        )
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button press."""
+        if event.button.id == "migrate-yes":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
+
+
 class TargetSelectionScreen(Screen):
     """
     Main screen for selecting which target to deploy.
@@ -373,6 +429,30 @@ class D3ployTUI(App):
         padding: 1;
         margin-top: 1;
     }
+
+    /* Migration dialog styles */
+    #migration-dialog {
+        width: 60;
+        height: auto;
+        padding: 2;
+        border: solid $warning;
+        background: $surface;
+    }
+
+    #migration-message {
+        padding: 1;
+        margin-bottom: 1;
+    }
+
+    #migration-buttons {
+        layout: horizontal;
+        height: auto;
+        align: center middle;
+    }
+
+    #migration-buttons Button {
+        margin: 0 1;
+    }
     """
 
     TITLE = "d3ploy - AWS S3 Deployment Tool"
@@ -397,6 +477,51 @@ class D3ployTUI(App):
         # Load configuration
         try:
             self.config_data = config_module.load_config(self.config_path)
+
+            # Check if migration is needed
+            if config_module.needs_migration(self.config_data):
+                old_version = self.config_data.get("version", 0)
+
+                async def handle_migration_response(migrate: bool) -> None:
+                    """Handle user's migration decision."""
+                    if not migrate:
+                        self.exit(message="Config migration declined. Exiting.")
+                        return
+
+                    try:
+                        # Perform migration
+                        migrated = config_module.migrate_config(self.config_data)
+
+                        # Save to disk
+                        config_module.save_migrated_config(
+                            migrated,
+                            path=self.config_path or ".d3ploy.json",
+                        )
+
+                        # Use migrated config
+                        self.config_data = migrated
+
+                        # Continue to target selection
+                        self.push_screen(
+                            TargetSelectionScreen(
+                                config_data=self.config_data,
+                                config_path=self.config_path,
+                            )
+                        )
+                    except Exception as e:
+                        self.exit(message=f"Error migrating config: {e}")
+
+                # Show migration confirmation dialog
+                self.push_screen(
+                    MigrationConfirmScreen(
+                        config_path=self.config_path or ".d3ploy.json",
+                        old_version=old_version,
+                        new_version=config_module.CURRENT_VERSION,
+                    ),
+                    handle_migration_response,
+                )
+                return
+
         except FileNotFoundError as e:
             self.exit(message=f"Error: {e}")
             return
