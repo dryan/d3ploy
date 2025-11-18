@@ -4,9 +4,10 @@ Configuration constants.
 
 RECOMMENDED_CACHES = {
     "text/html": 0,
-    "application/json": 0,
-    "application/xml": 0,
-    "text/xml": 0,
-    "image/x-icon": 86400,  # 1 day
-    "default": 31536000,  # 1 year for everything else (assuming hashed filenames)
+    "text/css": 31536000,
+    "text/javascript": 31536000,
+    "application/json": 31536000,
+    "application/manifest+json": 86400,
+    "image/*": 31536000,
+    "font/*": 31536000,
 }
