@@ -155,13 +155,16 @@ class TargetSelectionScreen(Screen):
 
     def action_help(self) -> None:
         """Show help screen."""
-        # TODO: Implement help screen
-        self.app.bell()
+        self.app.push_screen(HelpScreen())
 
     def action_settings(self) -> None:
         """Show settings screen."""
-        # TODO: Implement settings screen
-        self.app.bell()
+        self.app.push_screen(
+            SettingsScreen(
+                config_data=self.config_data,
+                config_path=self.config_path,
+            )
+        )
 
 
 class SyncProgressScreen(Screen):

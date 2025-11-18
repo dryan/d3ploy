@@ -128,11 +128,11 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 4.4 TUI Features
 
 - [ ] Real-time sync progress with live updates
-- [ ] Interactive target selection
+- [x] Interactive target selection
 - [ ] File browsing and exclusion management
-- [ ] Configuration editing within TUI
+- [x] Configuration editing within TUI (basic viewer implemented)
 - [ ] Error handling with styled dialogs
-- [ ] Help system and keyboard shortcuts screen
+- [x] Help system and keyboard shortcuts screen
 - [ ] Config-less operation: When no config file exists, TUI should prompt for required information
   - Ask for bucket name
   - Ask for local path (default to current directory)
