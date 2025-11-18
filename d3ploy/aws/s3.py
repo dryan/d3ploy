@@ -2,29 +2,41 @@
 S3 operations.
 """
 
+import hashlib
+import mimetypes
+import os
+import sys
 from pathlib import Path
+from typing import Dict
 from typing import Optional
+from typing import Tuple
+
+import boto3
+import botocore
+from boto3.resources.base import ServiceResource as AWSServiceResource
 
 
-def get_s3_resource():
+def get_s3_resource() -> AWSServiceResource:
     """
     Initialize and return boto3 S3 resource.
 
     Returns:
         boto3 S3 ServiceResource instance.
     """
-    # TODO: Implement in Phase 3.2
-    raise NotImplementedError(
-        "S3 resource initialization will be implemented in Phase 3.2"
-    )
+    return boto3.resource("s3")
 
 
-def test_bucket_connection(bucket_name: str) -> bool:
+def test_bucket_connection(
+    bucket_name: str,
+    *,
+    s3: Optional[AWSServiceResource] = None,
+) -> bool:
     """
     Test connection to S3 bucket.
 
     Args:
         bucket_name: Name of the S3 bucket.
+        s3: Optional S3 resource. If None, creates a new one.
 
     Returns:
         True if connection successful.
@@ -32,68 +44,161 @@ def test_bucket_connection(bucket_name: str) -> bool:
     Raises:
         ClientError: If connection fails.
     """
-    # TODO: Implement in Phase 3.2
-    raise NotImplementedError(
-        "Bucket connection testing will be implemented in Phase 3.2"
-    )
+    if s3 is None:
+        s3 = get_s3_resource()
+
+    try:
+        s3.meta.client.head_bucket(Bucket=bucket_name)
+        return True
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "403":
+            access_key = boto3.Session().get_credentials().access_key
+            print(
+                f'Bucket "{bucket_name}" could not be retrieved with the specified '
+                f"credentials. Tried Access Key ID {access_key}",
+                file=sys.stderr,
+            )
+            sys.exit(os.EX_NOUSER)
+        else:
+            raise e
 
 
-def key_exists(bucket_name: str, key: str) -> bool:
+def key_exists(
+    s3: AWSServiceResource,
+    bucket_name: str,
+    key_name: str,
+) -> bool:
     """
     Check if a key exists in S3 bucket.
 
+    Inspired by https://www.peterbe.com/plog/fastest-way-to-find-out-if-a-file-exists-in-s3
+
     Args:
+        s3: S3 resource.
         bucket_name: Name of the S3 bucket.
-        key: S3 key to check.
+        key_name: S3 key to check.
 
     Returns:
         True if key exists.
     """
-    # TODO: Implement in Phase 3.2
-    raise NotImplementedError("Key existence check will be implemented in Phase 3.2")
+    bucket = s3.Bucket(bucket_name)
+    for obj in bucket.objects.filter(Prefix=key_name):
+        if obj.key == key_name:
+            return True
+    return False
 
 
 def upload_file(
-    file: Path,
+    file_name: Path,
     bucket_name: str,
-    key: str,
+    s3: AWSServiceResource,
+    bucket_path: str,
+    prefix: Path,
+    *,
     acl: Optional[str] = None,
-    content_type: Optional[str] = None,
-    charset: Optional[str] = None,
     force: bool = False,
     dry_run: bool = False,
-) -> bool:
+    charset: Optional[str] = None,
+    caches: Optional[Dict[str, int]] = None,
+) -> Tuple[str, int]:
     """
     Upload file to S3.
 
     Args:
-        file: Local file path.
+        file_name: Local file path.
         bucket_name: Target S3 bucket.
-        key: Target S3 key.
+        s3: S3 resource instance.
+        bucket_path: Remote path prefix in bucket.
+        prefix: Local path prefix to strip from file names.
         acl: Access control list setting.
-        content_type: MIME type for the file.
-        charset: Character set for text files.
         force: Force upload even if file unchanged.
         dry_run: Simulate upload without actually uploading.
+        charset: Character set for text files.
+        caches: Dictionary of MIME type patterns to cache timeouts.
 
     Returns:
-        True if file was uploaded (or would be in dry-run mode).
+        Tuple of (key_name, updated_count) where updated_count is 1 if uploaded, 0 if skipped.
     """
-    # TODO: Implement in Phase 3.2
-    raise NotImplementedError("File upload will be implemented in Phase 3.2")
+    if caches is None:
+        caches = {}
+    updated = 0
+
+    if not isinstance(file_name, Path):
+        file_name = Path(file_name)
+
+    key_name = "/".join(
+        [bucket_path.rstrip("/"), str(file_name.relative_to(prefix)).lstrip("/")]
+    ).lstrip("/")
+
+    if key_exists(s3, bucket_name, key_name):
+        s3_obj = s3.Object(bucket_name, key_name)
+    else:
+        s3_obj = None
+
+    local_md5 = hashlib.md5()
+    with open(file_name, "rb") as local_file:
+        for chunk in iter(lambda: local_file.read(4096), b""):
+            local_md5.update(chunk)
+    local_md5 = local_md5.hexdigest()
+
+    mimetype = mimetypes.guess_type(file_name)
+
+    if s3_obj is None or force or not s3_obj.metadata.get("d3ploy-hash") == local_md5:
+        with open(file_name, "rb") as local_file:
+            updated += 1
+            if dry_run:
+                return (key_name.lstrip("/"), updated)
+
+            extra_args = {
+                "Metadata": {"d3ploy-hash": local_md5},
+            }
+            if acl is not None:
+                extra_args["ACL"] = acl
+            if charset and mimetype[0] and mimetype[0].split("/")[0] == "text":
+                extra_args["ContentType"] = f"{mimetype[0]};charset={charset}"
+            elif mimetype[0]:
+                extra_args["ContentType"] = mimetype[0]
+
+            cache_timeout = None
+            if mimetype[0] in caches.keys():
+                cache_timeout = caches.get(mimetype[0])
+            elif mimetype[0] and f"{mimetype[0].split('/')[0]}/*" in caches.keys():
+                cache_timeout = caches.get(f"{mimetype[0].split('/')[0]}/*")
+            if cache_timeout is not None:
+                if cache_timeout == 0:
+                    extra_args["CacheControl"] = f"max-age={cache_timeout}, private"
+                else:
+                    extra_args["CacheControl"] = f"max-age={cache_timeout}, public"
+
+            s3.meta.client.upload_fileobj(
+                local_file,
+                bucket_name,
+                key_name,
+                ExtraArgs=extra_args,
+            )
+
+    return (key_name.lstrip("/"), updated)
 
 
-def delete_file(bucket_name: str, key: str, dry_run: bool = False) -> bool:
+def delete_file(
+    key_name: str,
+    bucket_name: str,
+    s3: AWSServiceResource,
+    *,
+    dry_run: bool = False,
+) -> int:
     """
     Delete file from S3.
 
     Args:
+        key_name: S3 key to delete.
         bucket_name: S3 bucket name.
-        key: S3 key to delete.
+        s3: S3 resource instance.
         dry_run: Simulate deletion without actually deleting.
 
     Returns:
-        True if file was deleted (or would be in dry-run mode).
+        1 if file was deleted (or would be in dry-run mode), 0 otherwise.
     """
-    # TODO: Implement in Phase 3.2
-    raise NotImplementedError("File deletion will be implemented in Phase 3.2")
+    if not dry_run:
+        s3.Object(bucket_name, key_name).delete()
+    return 1

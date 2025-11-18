@@ -53,39 +53,46 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 3.1 Configuration System
 
-- [ ] Create `d3ploy/config/` module
-- [ ] Implement config versioning system
-- [ ] Add support for both `d3ploy.json` and `.d3ploy.json`
-- [ ] Implement environment variable support
-- [ ] Create config migration logic for old formats
+- [x] Create `d3ploy/config/` module
+- [x] Implement config versioning system
+- [x] Add support for both `d3ploy.json` and `.d3ploy.json`
+- [x] Implement environment variable support
+- [x] Create config migration logic for old formats
 - [x] Add priority system: CLI flags > env vars > config file > defaults
 - [x] Add a new "recommended" option for caches that implements best practices for static file deployments
 
-### 2.2 AWS Operations Module
+### 3.2 AWS Operations Module
 
-- [ ] Create `d3ploy/aws/` module
-- [ ] Extract S3 operations from main file
-- [ ] Extract CloudFront operations from main file
-- [ ] Maintain boto3 compatibility
-- [ ] Add proper error handling and retries
+- [x] Create `d3ploy/aws/` module
+- [x] Extract S3 operations from main file
+- [x] Extract CloudFront operations from main file
+- [x] Maintain boto3 compatibility
+- [x] Add proper error handling and retries
 
-### 2.3 File Synchronization Module
+### 3.3 File Synchronization Module
 
-- [ ] Create `d3ploy/sync/` module
-- [ ] Extract file discovery logic
-- [ ] Extract upload/download logic
-- [ ] Extract deletion logic
-- [ ] Implement pathspec-based filtering
-- [ ] Add gitignore support
+- [x] Create `d3ploy/sync/` module
+- [x] Extract file discovery logic
+- [x] Extract upload/download logic
+- [x] Extract deletion logic
+- [x] Implement pathspec-based filtering
+- [x] Add gitignore support
 
-### 2.4 Core Application Logic
+### 3.4 Core Application Logic
 
-- [ ] Create `d3ploy/core/` module
-- [ ] Extract main application coordination logic
-- [ ] Implement proper signal handling
-- [ ] Add graceful shutdown mechanisms
+- [x] Create `d3ploy/core/` module
+- [x] Extract main application coordination logic
+- [x] Implement proper signal handling
+- [x] Add graceful shutdown mechanisms
 
-## Phase 3: Textual Interface Implementation
+### 3.5 CLI Integration
+
+- [x] Refactor cli() function to use new modules
+- [x] Update `__init__.py` to export from new modules
+- [x] Make d3ploy.py a thin compatibility wrapper
+- [x] Test basic CLI functionality with uv run
+
+## Phase 4: Textual Interface Implementation
 
 ### 3.1 Basic UI Components
 
@@ -128,7 +135,24 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ## Phase 5: Testing & Quality Assurance
 
-### 5.1 Unit Testing
+### 5.1 Testing Framework Conversion
+
+- [ ] Convert from unittest to pytest
+- [ ] Update test file structure and naming conventions
+- [ ] Migrate existing test cases to pytest style
+- [ ] Configure pytest in pyproject.toml
+- [ ] Update CI/CD to use pytest
+
+### 5.2 Type Checking Implementation
+
+- [ ] Add ty (pyright CLI wrapper) to dev dependencies
+- [ ] Configure ty in pyproject.toml
+- [ ] Add type hints to all modules
+- [ ] Fix all type checking errors
+- [ ] Add ty check to Lefthook pre-commit hooks
+- [ ] Update CI/CD to run ty checks
+
+### 5.3 Unit Testing
 
 - [ ] Create tests for config module
 - [ ] Create tests for AWS operations module
@@ -137,7 +161,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Create tests for UI components (where applicable)
 - [ ] Ensure 100% test coverage maintenance
 
-### 5.2 Integration Testing
+### 5.4 Integration Testing
 
 - [ ] Test Briefcase build process
 - [ ] Test cross-platform compatibility
@@ -145,7 +169,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Test environment variable handling
 - [ ] Test real AWS operations (with mocking)
 
-### 5.3 Performance Testing
+### 5.5 Performance Testing
 
 - [ ] Benchmark new vs old performance
 - [ ] Test memory usage of bundled app

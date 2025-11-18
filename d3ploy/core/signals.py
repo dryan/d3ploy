@@ -2,6 +2,28 @@
 Signal handling for graceful shutdown.
 """
 
+import os
+import signal
+import sys
+
+from ..compat import colorama
+from ..sync import operations
+
+
+def bail(*args, **kwargs):
+    """
+    Handle shutdown signal.
+
+    Args:
+        *args: Signal arguments (signum, frame).
+        **kwargs: Additional keyword arguments.
+    """
+    operations.killswitch.set()
+    buffer = sys.stdout
+    buffer.write(f"\n{colorama.Fore.RED}Exiting...{colorama.Style.RESET_ALL}\n")
+    buffer.flush()
+    sys.exit(os.EX_OK)
+
 
 def setup_signal_handlers():
     """
@@ -9,20 +31,7 @@ def setup_signal_handlers():
 
     Enables graceful shutdown when receiving interrupt signals.
     """
-    # TODO: Implement in Phase 3.5
-    raise NotImplementedError("Signal handling will be implemented in Phase 3.5")
-
-
-def handle_shutdown(signum, frame):
-    """
-    Handle shutdown signal.
-
-    Args:
-        signum: Signal number.
-        frame: Current stack frame.
-    """
-    # TODO: Implement in Phase 3.5
-    raise NotImplementedError("Shutdown handler will be implemented in Phase 3.5")
+    signal.signal(signal.SIGINT, bail)
 
 
 def shutdown_requested() -> bool:
@@ -32,5 +41,4 @@ def shutdown_requested() -> bool:
     Returns:
         True if shutdown signal received.
     """
-    # TODO: Implement in Phase 3.5
-    raise NotImplementedError("Shutdown check will be implemented in Phase 3.5")
+    return operations.killswitch.is_set()
