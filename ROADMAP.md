@@ -8,7 +8,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 - [x] Update update notification text to warn about upcoming major changes
 - [x] Test warning message displays correctly
-- [ ] Release patch version (4.4.3) to PyPI
+- [x] Release patch version (4.4.3) to PyPI
 - [ ] Monitor user feedback and questions
 - [ ] Document migration timeline and what's changing
 
