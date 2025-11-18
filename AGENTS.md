@@ -108,6 +108,8 @@ Based on the responses above, here are the guidelines for this conversion:
 ### Release Process
 
 - **Semantic versioning**: Continue current approach
+- **Git workflow**: Create PR → merge to main → push git tag → GitHub Actions triggers release
+- **PyPI automation**: GitHub Actions handles PyPI publishing on tag push  
 - **Warning release**: Issue patch with breaking change notification
 - **Config migration**: Ensure smooth transition for existing users
 - **Testing**: Platform-specific testing for binary distributions
