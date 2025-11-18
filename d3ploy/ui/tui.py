@@ -4,6 +4,7 @@ Textual TUI application for d3ploy.
 This is the default interface when running d3ploy in an interactive terminal.
 """
 
+import os
 from typing import Optional
 
 from textual.app import App
@@ -471,6 +472,25 @@ class D3ployTUI(App):
         super().__init__()
         self.config_path = config_path
         self.config_data = None
+        self._exit_code = os.EX_OK
+
+    def exit(
+        self,
+        result: object = None,
+        *,
+        return_code: int = os.EX_OK,
+        message: str | None = None,
+    ) -> None:
+        """
+        Exit the application with optional return code and message.
+
+        Args:
+            result: Result to return from run().
+            return_code: Exit code (default: 0).
+            message: Optional message to display.
+        """
+        self._exit_code = return_code
+        super().exit(result=message if message else result)
 
     def on_mount(self) -> None:
         """Handle application mount event."""
@@ -485,7 +505,10 @@ class D3ployTUI(App):
                 async def handle_migration_response(migrate: bool) -> None:
                     """Handle user's migration decision."""
                     if not migrate:
-                        self.exit(message="Config migration declined. Exiting.")
+                        self.exit(
+                            return_code=os.EX_CONFIG,
+                            message="Config migration declined. Exiting.",
+                        )
                         return
 
                     try:
@@ -509,7 +532,10 @@ class D3ployTUI(App):
                             )
                         )
                     except Exception as e:
-                        self.exit(message=f"Error migrating config: {e}")
+                        self.exit(
+                            return_code=os.EX_CONFIG,
+                            message=f"Error migrating config: {e}",
+                        )
 
                 # Show migration confirmation dialog
                 self.push_screen(
@@ -523,10 +549,10 @@ class D3ployTUI(App):
                 return
 
         except FileNotFoundError as e:
-            self.exit(message=f"Error: {e}")
+            self.exit(return_code=os.EX_NOINPUT, message=f"Error: {e}")
             return
         except Exception as e:
-            self.exit(message=f"Error loading config: {e}")
+            self.exit(return_code=os.EX_CONFIG, message=f"Error loading config: {e}")
             return
 
         # Push the target selection screen
@@ -554,13 +580,15 @@ def run_tui(*, config_path: Optional[str] = None) -> int:
         config_path: Optional path to config file.
 
     Returns:
-        Exit code (0 for success).
+        Exit code (0 for success, non-zero for errors).
     """
     app = D3ployTUI(config_path=config_path)
     result = app.run()
 
-    # Handle exit messages
+    # Handle exit messages and return codes
     if result and isinstance(result, str):
         print(result)
+        # If there was an error message, assume non-zero exit
+        return getattr(app, "_exit_code", os.EX_SOFTWARE)
 
-    return 0
+    return getattr(app, "_exit_code", os.EX_OK)

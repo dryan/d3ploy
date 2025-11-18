@@ -120,10 +120,10 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [x] Auto-detect interactive vs non-interactive terminal
 - [x] Default to TUI when terminal is interactive
 - [x] Add `--no-tui` flag to force CLI mode
-- [ ] CLI mode requires all parameters or errors
+- [x] CLI mode requires all parameters or errors
 - [x] Share business logic between both modes
-- [ ] Implement quiet mode for CI/CD (disables all UI)
-- [ ] Ensure proper exit codes in both modes
+- [x] Implement quiet mode for CI/CD (disables all UI)
+- [x] Ensure proper exit codes in both modes
 
 ### 4.4 TUI Features
 
