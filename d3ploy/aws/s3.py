@@ -7,16 +7,21 @@ import mimetypes
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Dict
 from typing import Optional
 from typing import Tuple
 
 import boto3
-import botocore
-from boto3.resources.base import ServiceResource as AWSServiceResource
+import botocore.exceptions
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3.service_resource import S3ServiceResource
+else:
+    S3ServiceResource = object
 
 
-def get_s3_resource() -> AWSServiceResource:
+def get_s3_resource() -> "S3ServiceResource":
     """
     Initialize and return boto3 S3 resource.
 
@@ -44,7 +49,7 @@ def list_buckets() -> list[str]:
 def test_bucket_connection(
     bucket_name: str,
     *,
-    s3: Optional[AWSServiceResource] = None,
+    s3: Optional["S3ServiceResource"] = None,
 ) -> bool:
     """
     Test connection to S3 bucket.
@@ -67,7 +72,8 @@ def test_bucket_connection(
         return True
     except botocore.exceptions.ClientError as e:
         if e.response["Error"]["Code"] == "403":
-            access_key = boto3.Session().get_credentials().access_key
+            credentials = boto3.Session().get_credentials()
+            access_key = credentials.access_key if credentials else "unknown"
             print(
                 f'Bucket "{bucket_name}" could not be retrieved with the specified '
                 f"credentials. Tried Access Key ID {access_key}",
@@ -79,7 +85,7 @@ def test_bucket_connection(
 
 
 def key_exists(
-    s3: AWSServiceResource,
+    s3: "S3ServiceResource",
     bucket_name: str,
     key_name: str,
 ) -> bool:
@@ -106,7 +112,7 @@ def key_exists(
 def upload_file(
     file_name: Path,
     bucket_name: str,
-    s3: AWSServiceResource,
+    s3: "S3ServiceResource",
     bucket_path: str,
     prefix: Path,
     *,
@@ -198,7 +204,7 @@ def upload_file(
 def delete_file(
     key_name: str,
     bucket_name: str,
-    s3: AWSServiceResource,
+    s3: "S3ServiceResource",
     *,
     dry_run: bool = False,
     needs_confirmation: bool = False,
