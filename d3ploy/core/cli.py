@@ -293,7 +293,17 @@ def sync(
         if is_interactive and not quiet:
             from ..ui import prompts
 
-            bucket_config = prompts.prompt_for_bucket_config()
+            # Show which paths were checked
+            checked_paths = [config]
+            if config == "d3ploy.json":
+                checked_paths.append(".d3ploy.json")
+            elif config == ".d3ploy.json":
+                checked_paths.insert(0, "d3ploy.json")
+
+            bucket_config = prompts.prompt_for_bucket_config(
+                checked_paths=checked_paths,
+                ask_confirmation=True,
+            )
             if bucket_config is None:
                 # User cancelled
                 raise typer.Exit()
@@ -310,15 +320,20 @@ def sync(
             # If user wants to save config, create it
             if bucket_config["save_config"]:
                 target_name = targets[0] if targets != ["default"] else "default"
+                target_config = {
+                    "bucket_name": bucket_name,
+                    "local_path": local_path,
+                    "bucket_path": bucket_path,
+                    "acl": acl,
+                }
+                # Add caches if specified
+                if "caches" in bucket_config:
+                    target_config["caches"] = bucket_config["caches"]
+
                 new_config = {
                     "version": config_module.CURRENT_VERSION,
                     "targets": {
-                        target_name: {
-                            "bucket_name": bucket_name,
-                            "local_path": local_path,
-                            "bucket_path": bucket_path,
-                            "acl": acl,
-                        },
+                        target_name: target_config,
                     },
                 }
                 config_path.write_text(json.dumps(new_config, indent=2))
@@ -578,6 +593,110 @@ def show_config(
         raise typer.Exit(code=os.EX_IOERR)
 
 
+@app.command(name="create-config")
+def create_config(
+    config: Annotated[
+        str,
+        typer.Option(
+            "--config",
+            "-c",
+            help="Path to config file.",
+        ),
+    ] = "d3ploy.json",
+    *,
+    target: Annotated[
+        Optional[str],
+        typer.Option(
+            "--target",
+            "-t",
+            help="Target name for the new configuration.",
+        ),
+    ] = None,
+) -> None:
+    """
+    Interactively create or update a configuration file.
+
+    Runs the interactive config builder to create a new target.
+    If a config file exists, merges the new target into it.
+    """
+    from ..ui import prompts
+
+    config_path = pathlib.Path(config)
+    alternate_path = pathlib.Path(
+        ".d3ploy.json" if config == "d3ploy.json" else "d3ploy.json"
+    )
+
+    # Check if config exists
+    existing_config = None
+    config_exists = config_path.exists()
+    if not config_exists and alternate_path.exists():
+        config_path = alternate_path
+        config_exists = True
+
+    if config_exists:
+        try:
+            existing_config = json.loads(config_path.read_text())
+            console.print()
+            console.print(f"[cyan]Found existing config:[/cyan] {config_path}")
+            console.print("[dim]New target will be merged into existing config[/dim]")
+            console.print()
+        except json.JSONDecodeError:
+            console.print("[red]Error:[/red] Existing config file is not valid JSON")
+            raise typer.Exit(code=os.EX_DATAERR)
+    else:
+        console.print()
+        console.print("[yellow]No configuration file found.[/yellow]")
+        console.print("[dim]A new config file will be created[/dim]")
+        console.print()
+
+    # Run interactive config builder
+    bucket_config = prompts.prompt_for_bucket_config(
+        checked_paths=None,
+        ask_confirmation=False,
+        skip_no_config_message=True,
+    )
+
+    if bucket_config is None:
+        console.print("[yellow]Configuration cancelled.[/yellow]")
+        raise typer.Exit()
+
+    # Build target config
+    target_name = target or "default"
+    target_config = {
+        "bucket_name": bucket_config["bucket_name"],
+        "local_path": bucket_config["local_path"],
+        "bucket_path": bucket_config["bucket_path"],
+        "acl": bucket_config["acl"],
+    }
+    if "caches" in bucket_config:
+        target_config["caches"] = bucket_config["caches"]
+
+    # Merge or create config
+    if existing_config:
+        existing_config["targets"][target_name] = target_config
+        new_config = existing_config
+        action = "merged"
+    else:
+        new_config = {
+            "version": config_module.CURRENT_VERSION,
+            "targets": {
+                target_name: target_config,
+            },
+        }
+        action = "created"
+
+    # Save or display config
+    console.print()
+    if bucket_config["save_config"]:
+        config_path.write_text(json.dumps(new_config, indent=2))
+        console.print(f"[green]✓[/green] Config {action} at {config_path}")
+    else:
+        console.print("[cyan]Preview:[/cyan]")
+        console.print(json.dumps(new_config, indent=2))
+        console.print()
+        console.print("[yellow]Configuration not saved.[/yellow]")
+
+
 def cli() -> None:
     """
     Main CLI entry point.
@@ -588,7 +707,8 @@ def cli() -> None:
     # If no subcommand provided, default to 'sync'
     if len(sys.argv) == 1 or (
         len(sys.argv) > 1
-        and sys.argv[1] not in ["sync", "migrate-config", "show-config"]
+        and sys.argv[1]
+        not in ["sync", "migrate-config", "show-config", "create-config"]
         and not sys.argv[1].startswith("-")
     ):
         # Insert 'sync' as the command

@@ -117,11 +117,21 @@ def confirm_config_migration(
     )
 
 
-def prompt_for_bucket_config() -> Optional[dict]:
+def prompt_for_bucket_config(
+    *,
+    checked_paths: Optional[list[str]] = None,
+    ask_confirmation: bool = False,
+    skip_no_config_message: bool = False,
+) -> Optional[dict]:
     """
     Interactively prompt for basic bucket configuration.
 
     Used when no config file exists and user wants to deploy.
+
+    Args:
+        checked_paths: Optional list of config file paths that were checked.
+        ask_confirmation: If True, ask user to confirm before starting config builder.
+        skip_no_config_message: If True, skip displaying the "No configuration file found" message.
 
     Returns:
         Dictionary with bucket configuration, or None if user cancels.
@@ -130,8 +140,27 @@ def prompt_for_bucket_config() -> Optional[dict]:
 
     console = Console()
 
-    console.print()
-    console.print("[cyan]No configuration file found.[/cyan]")
+    if not skip_no_config_message:
+        console.print()
+        if checked_paths:
+            console.print("[yellow]No configuration file found.[/yellow]")
+            console.print("Checked locations:")
+            for path in checked_paths:
+                console.print(f"  • {path}")
+            console.print()
+        else:
+            console.print("[cyan]No configuration file found.[/cyan]")
+
+    if ask_confirmation:
+        console.print()
+        should_create = Confirm.ask(
+            "Would you like to create a configuration interactively?",
+            default=True,
+        )
+        if not should_create:
+            return None
+        console.print()
+
     console.print("Let's set up your deployment configuration.")
     console.print()
 
@@ -218,6 +247,28 @@ def prompt_for_bucket_config() -> Optional[dict]:
         default="public-read",
     ).ask()
 
+    # Ask about cache settings
+    console.print()
+    console.print("[cyan]Cache Settings:[/cyan]")
+    console.print()
+    console.print(
+        "Recommended cache settings apply aggressive browser caching for static assets."
+    )
+    console.print("They set 1-year cache for most files and no-cache for HTML files.")
+    console.print()
+    console.print(
+        "[yellow]⚠ Warning:[/yellow] Only use this if your assets have versioned filenames"
+    )
+    console.print(
+        "  (e.g., style.abc123.css, bundle.xyz789.js) to ensure updates are seen."
+    )
+    console.print()
+
+    use_recommended_cache = Confirm.ask(
+        "Use recommended cache settings?",
+        default=False,
+    )
+
     # Ask if they want to save config
     console.print()
     save_config = Confirm.ask(
@@ -225,13 +276,18 @@ def prompt_for_bucket_config() -> Optional[dict]:
         default=True,
     )
 
-    return {
+    config = {
         "bucket_name": bucket_name,
         "local_path": local_path,
         "bucket_path": bucket_path,
         "acl": acl,
         "save_config": save_config,
     }
+
+    if use_recommended_cache:
+        config["caches"] = "recommended"
+
+    return config
 
 
 def confirm_destructive_operation(

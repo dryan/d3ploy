@@ -5,12 +5,26 @@
     },
     "test": {
       "bucket_path": "/test/",
-      "exclude": [".gitignore", ".gitkeep", ".hidden"]
+      "exclude": [
+        ".gitignore",
+        ".gitkeep",
+        ".hidden"
+      ]
+    },
+    "default": {
+      "bucket_name": "foo",
+      "local_path": ".",
+      "bucket_path": "",
+      "acl": "public-read",
+      "caches": "recommended"
     }
   },
   "defaults": {
     "bucket_name": "d3ploy-tests",
     "local_path": ".",
-    "exclude": [".gitignore", ".gitkeep"]
+    "exclude": [
+      ".gitignore",
+      ".gitkeep"
+    ]
   }
 }
