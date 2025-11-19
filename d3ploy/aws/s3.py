@@ -26,6 +26,21 @@ def get_s3_resource() -> AWSServiceResource:
     return boto3.resource("s3")
 
 
+def list_buckets() -> list[str]:
+    """
+    List all S3 buckets accessible to the current credentials.
+
+    Returns:
+        List of bucket names.
+    """
+    s3 = boto3.client("s3")
+    try:
+        response = s3.list_buckets()
+        return [bucket["Name"] for bucket in response.get("Buckets", [])]
+    except botocore.exceptions.ClientError:
+        return []
+
+
 def test_bucket_connection(
     bucket_name: str,
     *,

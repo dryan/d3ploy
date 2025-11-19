@@ -126,6 +126,8 @@ def prompt_for_bucket_config() -> Optional[dict]:
     Returns:
         Dictionary with bucket configuration, or None if user cancels.
     """
+    from d3ploy import aws
+
     console = Console()
 
     console.print()
@@ -133,7 +135,57 @@ def prompt_for_bucket_config() -> Optional[dict]:
     console.print("Let's set up your deployment configuration.")
     console.print()
 
-    bucket_name = Prompt.ask("S3 Bucket name")
+    # Ask if they want to use existing bucket or create new one
+    bucket_choice = questionary.select(
+        "Would you like to use an existing S3 bucket or create a new one?",
+        choices=[
+            questionary.Choice("Use an existing bucket", "existing"),
+            questionary.Choice("Create a new bucket (I'll create it myself)", "new"),
+        ],
+    ).ask()
+
+    if bucket_choice is None:
+        return None
+
+    bucket_name = None
+    if bucket_choice == "existing":
+        # List available buckets
+        console.print()
+        console.print("[cyan]Fetching your S3 buckets...[/cyan]")
+        buckets = aws.s3.list_buckets()
+
+        if not buckets:
+            console.print(
+                "[yellow]No buckets found or unable to list buckets.[/yellow]"
+            )
+            console.print("You can enter a bucket name manually instead.")
+            bucket_name = Prompt.ask("S3 Bucket name")
+        else:
+            # Add option to enter manually
+            bucket_choices = [questionary.Choice(bucket, bucket) for bucket in buckets]
+            bucket_choices.append(
+                questionary.Choice("Enter a different bucket name", "manual")
+            )
+
+            selected = questionary.select(
+                "Select a bucket:",
+                choices=bucket_choices,
+            ).ask()
+
+            if selected == "manual":
+                bucket_name = Prompt.ask("S3 Bucket name")
+            else:
+                bucket_name = selected
+    else:
+        # New bucket - just ask for name
+        console.print()
+        console.print(
+            "[yellow]Note:[/yellow] d3ploy will not create the bucket for you."
+        )
+        console.print("Please create it manually in the AWS Console or using AWS CLI.")
+        console.print()
+        bucket_name = Prompt.ask("S3 Bucket name (to be created)")
+
     if not bucket_name:
         return None
 
