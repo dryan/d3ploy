@@ -7,6 +7,9 @@ pre-commit:
     ruff-format:
       run: uv run ruff format {all_files}
       glob: "*.py"
+    ty-check:
+      run: uv run ty check d3ploy/ tests/
+      glob: "*.py"
     check-versions-match:
       run: ./check-versions-match.py
       stage_fixed: true
@@ -15,6 +18,9 @@ pre-push:
   commands:
     ruff-check:
       run: uv run ruff check {all_files}
+      glob: "*.py"
+    ty-check:
+      run: uv run ty check d3ploy/ tests/
       glob: "*.py"
     check-versions-match:
       run: ./check-versions-match.py

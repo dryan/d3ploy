@@ -33,6 +33,8 @@ jobs:
           uv sync
       - name: Run ruff tests
         run: uv run ruff check d3ploy
+      - name: Run ty type checking
+        run: uv run ty check d3ploy/ tests/
       - name: Run Python Unit Tests
         run: |
           uv run pytest

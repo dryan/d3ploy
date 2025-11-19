@@ -80,6 +80,10 @@ description = "Easily deploy to S3 with multiple environment support"
 # Type checking configuration for ty (pyright CLI wrapper)
 # See: https://github.com/astral-sh/ty
 
+[tool.pyright]
+# Pyright configuration (used by ty)
+include = ["d3ploy", "tests"]
+
 [tool.briefcase.app.d3ploy]
 formal_name = "D3ploy"
 description = "Easily deploy to S3 with multiple environment support."
