@@ -158,11 +158,11 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 6.1 Testing Framework Conversion
 
-- [ ] Convert from unittest to pytest
-- [ ] Update test file structure and naming conventions
-- [ ] Migrate existing test cases to pytest style
+- [x] Convert from unittest to pytest
+- [x] Update test file structure and naming conventions
+- [x] Migrate existing test cases to pytest style
 - [ ] Ensure all old tests are included in the new system
-- [ ] Configure pytest in pyproject.toml
+- [x] Configure pytest in pyproject.toml
 - [ ] Update CI/CD to use pytest
 
 ### 6.2 Type Checking Implementation
