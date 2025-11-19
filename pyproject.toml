@@ -12,6 +12,7 @@ dependencies = [
     "packaging>=24.2",
     "pathspec>=0.12.1",
     "rich[extras]>=14.2.0",
+    "typer>=0.20.0",
 ]
 classifiers = [
     "Intended Audience :: Developers",

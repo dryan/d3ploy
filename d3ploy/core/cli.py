@@ -1,13 +1,18 @@
 """
-CLI argument parsing and main entry point.
+Typer-based CLI for d3ploy.
+
+Modern CLI with better help, type safety, and automatic documentation.
 """
 
-import argparse
 import json
 import os
 import pathlib
 import sys
-from typing import Union
+from typing import Annotated
+from typing import Optional
+
+import typer
+from rich.console import Console
 
 from .. import __version__
 from .. import config as config_module
@@ -16,263 +21,221 @@ from ..sync import operations
 from . import signals
 from . import updates
 
-VALID_ACLS = [
-    "private",
-    "public-read",
-    "public-read-write",
-    "authenticated-read",
-]
+app = typer.Typer(
+    name="d3ploy",
+    help="Deploy static sites to S3 with multiple environment support.",
+    add_completion=False,
+    rich_markup_mode="rich",
+)
+
+console = Console()
+
+VALID_ACLS = ["private", "public-read", "public-read-write", "authenticated-read"]
 
 
-def processes_int(x: Union[str, int, float]) -> int:
-    """
-    Validate and convert processes argument.
-
-    Args:
-        x: Value to convert.
-
-    Returns:
-        Integer between 1 and 50.
-
-    Raises:
-        argparse.ArgumentTypeError: If value out of range.
-    """
-    x = int(x)
-    if x < 1 or x > 50:
-        raise argparse.ArgumentTypeError("An integer between 1 and 50 is required")
-    return x
+def version_callback(*, value: bool) -> None:
+    """Show version and exit."""
+    if value:
+        console.print(f"d3ploy {__version__}", style="green")
+        raise typer.Exit()
 
 
-def parse_args():
-    """
-    Parse command-line arguments.
-
-    Returns:
-        Tuple of (argparse.Namespace, list of unknown args).
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "target",
-        help="Which target to deploy to",
-        nargs="*",
-        type=str,
-        default=["default"],
-    )
-    parser.add_argument(
-        "--bucket-name",
-        help="The bucket to upload files to",
-        type=str,
-    )
-    parser.add_argument(
-        "--local-path",
-        help="The local folder to upload files from",
-        type=str,
-    )
-    parser.add_argument(
-        "--bucket-path",
-        help="The remote folder to upload files to",
-        type=str,
-    )
-    parser.add_argument(
-        "--exclude",
-        help="A filename or pattern to ignore. Can be set multiple times.",
-        action="append",
-        default=[],
-    )
-    parser.add_argument(
-        "--acl",
-        help="The ACL to apply to uploaded files.",
-        type=str,
-        default=None,
-        choices=VALID_ACLS,
-    )
-    parser.add_argument(
-        "-f",
-        "--force",
-        help="Upload all files whether they are currently up to date on S3 or not",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "-n",
-        "--dry-run",
-        help="Show which files would be updated without uploading to S3",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--charset",
-        help="The charset header to add to text files",
-        default=None,
-    )
-    parser.add_argument(
-        "--gitignore",
-        help="Add .gitignore rules to the exclude list",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "-p",
-        "--processes",
-        help="The number of concurrent processes to use for uploading/deleting.",
-        type=processes_int,
-        default=10,
-    )
-    parser.add_argument(
-        "--delete",
-        help="Remove orphaned files from S3",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--confirm",
-        help="Confirm each file before deleting. Only works when --delete is set.",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--cloudfront-id",
-        help=(
-            "Specify one or more CloudFront distribution IDs to invalidate "
-            "after updating."
+@app.callback()
+def main(
+    *,
+    version: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--version",
+            "-v",
+            help="Print the script version and exit.",
+            callback=version_callback,
+            is_eager=True,
         ),
-        action="append",
-        default=[],
-    )
-    parser.add_argument(
-        "--all",
-        help="Upload to all targets",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "-v",
-        "--version",
-        help="Print the script version and exit",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "-c",
-        "--config",
-        help="path to config file. Defaults to .d3ploy.json in current directory.",
-        type=str,
-        default=".d3ploy.json",
-    )
-    parser.add_argument(
-        "-q",
-        "--quiet",
-        help="Suppress all output. Useful for automated usage.",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--migrate-config",
-        help="Migrate a config file to the latest version.",
-        metavar="PATH",
-        type=str,
-        default=None,
-    )
-
-    return parser.parse_known_args()
-
-
-def cli():
+    ] = None,
+) -> None:
     """
-    Main CLI entry point.
+    Deploy static sites to S3 with multiple environment support.
+    """
+    pass
 
-    This is called from __main__.py for Briefcase execution.
+
+@app.command()
+def sync(
+    targets: Annotated[
+        Optional[list[str]],
+        typer.Argument(
+            help="Which target(s) to deploy to. Defaults to 'default'.",
+            show_default=False,
+        ),
+    ] = None,
+    *,
+    bucket_name: Annotated[
+        Optional[str],
+        typer.Option(
+            "--bucket-name",
+            help="The bucket to upload files to.",
+        ),
+    ] = None,
+    local_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--local-path",
+            help="The local folder to upload files from.",
+        ),
+    ] = None,
+    bucket_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--bucket-path",
+            help="The remote folder to upload files to.",
+        ),
+    ] = None,
+    exclude: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            "--exclude",
+            help="A filename or pattern to ignore. Can be set multiple times.",
+        ),
+    ] = None,
+    acl: Annotated[
+        Optional[str],
+        typer.Option(
+            "--acl",
+            help="The ACL to apply to uploaded files.",
+            case_sensitive=False,
+        ),
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            "-f",
+            help="Upload all files whether they are currently up to date on S3 or not.",
+        ),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run",
+            "-n",
+            help="Show which files would be updated without uploading to S3.",
+        ),
+    ] = False,
+    charset: Annotated[
+        Optional[str],
+        typer.Option(
+            "--charset",
+            help="The charset header to add to text files.",
+        ),
+    ] = None,
+    gitignore: Annotated[
+        bool,
+        typer.Option(
+            "--gitignore",
+            help="Add .gitignore rules to the exclude list.",
+        ),
+    ] = False,
+    processes: Annotated[
+        int,
+        typer.Option(
+            "--processes",
+            "-p",
+            help="The number of concurrent processes to use for uploading/deleting.",
+            min=1,
+            max=50,
+        ),
+    ] = 10,
+    delete: Annotated[
+        bool,
+        typer.Option(
+            "--delete",
+            help="Remove orphaned files from S3.",
+        ),
+    ] = False,
+    confirm: Annotated[
+        bool,
+        typer.Option(
+            "--confirm",
+            help="Confirm each file before deleting. Only works when --delete is set.",
+        ),
+    ] = False,
+    cloudfront_id: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            "--cloudfront-id",
+            help="Specify one or more CloudFront distribution IDs to invalidate after updating.",
+        ),
+    ] = None,
+    all_targets: Annotated[
+        bool,
+        typer.Option(
+            "--all",
+            help="Upload to all targets.",
+        ),
+    ] = False,
+    config: Annotated[
+        str,
+        typer.Option(
+            "--config",
+            "-c",
+            help="Path to config file.",
+        ),
+    ] = ".d3ploy.json",
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            "--quiet",
+            "-q",
+            help="Suppress all output. Useful for automated usage.",
+        ),
+    ] = False,
+) -> None:
+    """
+    Deploy static sites to Amazon S3 with multiple environment support.
+
+    Supports features like file exclusion patterns, .gitignore support,
+    CloudFront invalidation, cache control headers, parallel uploads,
+    dry-run mode, and file deletion sync.
     """
     # Set up signal handlers
     signals.setup_signal_handlers()
 
-    # Parse arguments
-    args, unknown = parse_args()
-
-    # Handle version flag early
-    if args.version:
-        ui.output.display_message(
-            f"d3ploy {__version__}",
-            level="success",
-            quiet=args.quiet,
+    # Validate ACL if provided
+    if acl and acl not in VALID_ACLS:
+        console.print(
+            f"[red]Invalid ACL:[/red] {acl}. Must be one of: {', '.join(VALID_ACLS)}",
         )
-        sys.exit(os.EX_OK)
+        raise typer.Exit(code=os.EX_USAGE)
 
-    # Handle config migration flag
-    if args.migrate_config:
-        config_path = pathlib.Path(args.migrate_config)
-        if not config_path.exists():
-            ui.output.display_error(
-                f"Config file not found: {args.migrate_config}",
-                exit_code=os.EX_NOINPUT,
-            )
+    # Normalize exclude and cloudfront_id to lists
+    exclude = exclude or []
+    cloudfront_id = cloudfront_id or []
 
-        try:
-            config = json.loads(config_path.read_text())
-            if not config_module.needs_migration(config):
-                ui.output.display_message(
-                    f"Config file {args.migrate_config} is already at version {config_module.CURRENT_VERSION}",
-                    level="success",
-                )
-                sys.exit(os.EX_OK)
-
-            # Show what will change
-            old_version = config.get("version", 0)
-            ui.output.display_message(
-                f"Migrating config from version {old_version} to {config_module.CURRENT_VERSION}...",
-                level="info",
-            )
-
-            # Perform migration
-            migrated = config_module.migrate_config(config)
-
-            # Show changes
-            if "environments" in config and "targets" in migrated:
-                ui.output.display_message(
-                    "  - Renamed 'environments' → 'targets'",
-                    level="info",
-                )
-
-            # Save migrated config
-            config_module.save_migrated_config(migrated, path=args.migrate_config)
-            ui.output.display_message(
-                f"✓ Config file {args.migrate_config} migrated successfully",
-                level="success",
-            )
-            sys.exit(os.EX_OK)
-        except Exception as e:
-            ui.output.display_error(
-                f"Error migrating config: {e}",
-                exit_code=os.EX_DATAERR,
-            )
+    # Normalize targets
+    if targets is None:
+        targets = ["default"]
 
     # Detect if we should prompt interactively for target selection
-    # Use interactive prompt if:
-    # 1. Terminal is interactive
-    # 2. Not in quiet mode
-    # 3. No target specified (let user choose interactively)
-    # 4. Config file exists
     is_interactive = hasattr(sys, "ps1") or sys.stdin.isatty()
-    no_target_specified = args.target == ["default"] and not args.all
-    config_path = pathlib.Path(args.config)
+    no_target_specified = targets == ["default"] and not all_targets
+    config_path = pathlib.Path(config)
     has_config = config_path.exists()
     should_prompt_for_target = (
-        is_interactive and not args.quiet and no_target_specified and has_config
+        is_interactive and not quiet and no_target_specified and has_config
     )
 
     if should_prompt_for_target:
         # Show interactive target selection
         from ..ui import prompts
 
-        selected_target = prompts.select_target(config_path=args.config)
+        selected_target = prompts.select_target(config_path=config)
         if selected_target is None:
             # User cancelled
-            sys.exit(os.EX_OK)
-        # Update args to use selected target
-        args.target = [selected_target]
+            raise typer.Exit()
+        targets = [selected_target]
 
     # CLI mode - require all necessary parameters
-    # If we're in non-interactive mode and missing target, error out
     if not is_interactive and no_target_specified:
         ui.output.display_error(
             "Error: No target specified. In non-interactive mode, "
@@ -289,20 +252,19 @@ def cli():
                 "on upgrading."
             ),
             error_code=os.EX_CONFIG,
-            quiet=args.quiet,
+            quiet=quiet,
         )
 
     # Load config file (if it exists)
-    config = {}
-    config_path = pathlib.Path(args.config)
+    config_data = {}
     config_exists = config_path.exists()
 
     if config_exists:
-        config = json.loads(config_path.read_text())
+        config_data = json.loads(config_path.read_text())
 
         # Check if migration is needed
-        if config_module.needs_migration(config):
-            old_version = config.get("version", 0)
+        if config_module.needs_migration(config_data):
+            old_version = config_data.get("version", 0)
             ui.output.display_message(
                 f"Your config file is version {old_version} but d3ploy now requires version {config_module.CURRENT_VERSION}.",
                 level="error",
@@ -314,67 +276,67 @@ def cli():
                 quiet=False,
             )
             ui.output.display_message(
-                f"  {config_module.get_migration_command(args.config)}",
+                f"  {config_module.get_migration_command(config)}",
                 level="info",
                 quiet=False,
             )
-            sys.exit(os.EX_CONFIG)
+            raise typer.Exit(code=os.EX_CONFIG)
 
-    targets = [f"{item}" for item in config.get("targets", {}).keys()]
-    defaults = config.get("defaults", {})
+    target_list = [f"{item}" for item in config_data.get("targets", {}).keys()]
+    defaults = config_data.get("defaults", {})
 
     # Check if user provided enough information to proceed without config
-    has_required_args = args.bucket_name is not None
+    has_required_args = bucket_name is not None
 
     if not config_exists and not has_required_args:
         operations.alert(
             (
-                f"Config file is missing. Looked for {args.config}. "
+                f"Config file is missing. Looked for {config}. "
                 f"See http://dryan.github.io/d3ploy for more information."
             ),
             error_code=os.EX_NOINPUT,
-            quiet=args.quiet,
+            quiet=quiet,
         )
 
     # If no config and user provided bucket_name, allow running without config
     if not config_exists and has_required_args:
         # Create a minimal synthetic target
-        targets = args.target if args.target != ["default"] else ["cli"]
-        args.target = targets  # Update args.target to match the synthetic targets
-        config = {"targets": {}, "defaults": {}}
-        for t in targets:
-            config["targets"][t] = {}
+        target_list = targets if targets != ["default"] else ["cli"]
+        targets = target_list  # Update targets to match the synthetic targets
+        config_data = {"targets": {}, "defaults": {}}
+        for t in target_list:
+            config_data["targets"][t] = {}
         defaults = {}
     elif config_exists:
         # Check if no targets are configured
-        if not targets:
+        if not target_list:
             operations.alert(
-                f"No targets found in config file: {args.config}",
+                f"No targets found in config file: {config}",
                 error_code=os.EX_NOINPUT,
-                quiet=args.quiet,
+                quiet=quiet,
             )
 
-        if args.all:
-            args.target = targets
+        if all_targets:
+            targets = target_list
 
-        # Check if target actually exists in the config file (only if not providing bucket_name)
+        # Check if target actually exists in the config file
         if not has_required_args:
             invalid_targets = []
-            for target in args.target:
-                if target not in targets:
+            for target in targets:
+                if target not in target_list:
                     invalid_targets.append(target)
             if invalid_targets:
                 operations.alert(
                     (
                         f"target{'' if len(invalid_targets) == 1 else 's'} "
                         f"{', '.join(invalid_targets)} not found in config. "
-                        f'Choose from "{", ".join(targets)}"'
+                        f'Choose from "{", ".join(target_list)}"'
                     ),
                     error_code=os.EX_NOINPUT,
-                    quiet=args.quiet,
+                    quiet=quiet,
                 )
 
-    to_deploy = targets if args.all else args.target
+    to_deploy = target_list if all_targets else targets
 
     # Check for updates
     try:
@@ -387,9 +349,9 @@ def cli():
     for target in to_deploy:
         operations.alert(
             f"Uploading target {to_deploy.index(target) + 1:d} of {len(to_deploy):d}",
-            quiet=args.quiet,
+            quiet=quiet,
         )
-        target_config = config.get("targets", {}).get(target, {})
+        target_config = config_data.get("targets", {}).get(target, {})
 
         if not target_config.get("excludes", False):
             target_config["excludes"] = []
@@ -397,47 +359,115 @@ def cli():
             defaults["excludes"] = []
 
         excludes = []
-        if args.exclude:
-            excludes = args.exclude
+        if exclude:
+            excludes = exclude
         else:
             excludes = target_config.get("exclude", []) + defaults.get("exclude", [])
         if config_exists:
-            excludes.append(args.config)
+            excludes.append(config)
 
-        bucket_name = (
-            args.bucket_name
+        bucket = (
+            bucket_name
             or target_config.get("bucket_name")
             or defaults.get("bucket_name")
         )
         operations.sync_target(
             target,
-            bucket_name=bucket_name,
-            local_path=args.local_path
+            bucket_name=bucket,
+            local_path=local_path
             or target_config.get("local_path")
             or defaults.get("local_path")
             or ".",
-            bucket_path=args.bucket_path
+            bucket_path=bucket_path
             or target_config.get("bucket_path")
             or defaults.get("bucket_path")
             or "/",
             excludes=excludes,
-            acl=args.acl or target_config.get("acl") or defaults.get("acl"),
-            force=args.force or target_config.get("force") or defaults.get("force"),
-            dry_run=args.dry_run,
-            charset=args.charset
-            or target_config.get("charset")
-            or defaults.get("charset"),
-            gitignore=args.gitignore
+            acl=acl or target_config.get("acl") or defaults.get("acl"),
+            force=force or target_config.get("force") or defaults.get("force"),
+            dry_run=dry_run,
+            charset=charset or target_config.get("charset") or defaults.get("charset"),
+            gitignore=gitignore
             or target_config.get("gitignore")
             or defaults.get("gitignore"),
-            processes=args.processes,
-            delete=args.delete or target_config.get("delete") or defaults.get("delete"),
-            confirm=args.confirm,
-            cloudfront_id=args.cloudfront_id
+            processes=processes,
+            delete=delete or target_config.get("delete") or defaults.get("delete"),
+            confirm=confirm,
+            cloudfront_id=cloudfront_id
             or target_config.get("cloudfront_id")
             or defaults.get("cloudfront_id")
             or [],
             caches=target_config.get("caches", {}) or defaults.get("caches", {}),
-            quiet=args.quiet,
+            quiet=quiet,
             using_config=config_exists,
         )
+
+
+@app.command()
+def migrate_config(
+    config_path: Annotated[
+        str,
+        typer.Argument(
+            help="Path to config file to migrate.",
+        ),
+    ],
+) -> None:
+    """
+    Migrate a config file to the latest version.
+
+    This command will update your configuration file to the current version,
+    making a backup of the original file first.
+    """
+    path = pathlib.Path(config_path)
+    if not path.exists():
+        console.print(f"[red]Config file not found:[/red] {config_path}")
+        raise typer.Exit(code=os.EX_NOINPUT)
+
+    try:
+        config = json.loads(path.read_text())
+        if not config_module.needs_migration(config):
+            console.print(
+                f"[green]✓[/green] Config file {config_path} is already at version {config_module.CURRENT_VERSION}",
+            )
+            raise typer.Exit()
+
+        # Show what will change
+        old_version = config.get("version", 0)
+        console.print(
+            f"[yellow]Migrating config from version {old_version} to {config_module.CURRENT_VERSION}...[/yellow]",
+        )
+
+        # Perform migration
+        migrated = config_module.migrate_config(config)
+
+        # Show changes
+        if "environments" in config and "targets" in migrated:
+            console.print("  [cyan]•[/cyan] Renamed 'environments' → 'targets'")
+
+        # Save migrated config
+        config_module.save_migrated_config(migrated, path=config_path)
+        console.print(
+            f"[green]✓ Config file {config_path} migrated successfully[/green]",
+        )
+    except Exception as e:
+        console.print(f"[red]Error migrating config:[/red] {e}")
+        raise typer.Exit(code=os.EX_DATAERR)
+
+
+def cli() -> None:
+    """
+    Main CLI entry point.
+
+    This is called from __main__.py for Briefcase execution.
+    Implements default command behavior for backward compatibility.
+    """
+    # If no subcommand provided, default to 'sync'
+    if len(sys.argv) == 1 or (
+        len(sys.argv) > 1
+        and sys.argv[1] not in ["sync", "migrate-config"]
+        and not sys.argv[1].startswith("-")
+    ):
+        # Insert 'sync' as the command
+        sys.argv.insert(1, "sync")
+
+    app()
