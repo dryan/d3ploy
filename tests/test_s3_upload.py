@@ -291,23 +291,26 @@ def test_upload_file_mimetypes(
         )
 
 
-@pytest.mark.skip(reason="killswitch check not yet implemented in upload_file")
 def test_upload_file_with_killswitch_flipped(
     clean_s3_bucket, s3_resource, files_dir, prefix_path, test_bucket_name
 ):
-    """upload_file returns 0 when killswitch is set."""
+    """upload_file raises UserCancelled when signal received during operation."""
+    from d3ploy.core.signals import UserCancelled
+    from d3ploy.sync import operations
+
     test_file = files_dir / "css" / "sample.css"
 
-    with patch("d3ploy.sync.operations.killswitch.is_set", return_value=True):
-        # Note: The actual upload_file function doesn't check killswitch yet
-        # This test documents expected behavior for future implementation
-        result = s3.upload_file(
-            test_file,
-            test_bucket_name,
-            s3_resource,
-            "test-upload-killswitch",
-            prefix_path,
-        )
+    # Simulate signal being triggered during file read
+    def raise_cancelled(*args, **kwargs):
+        operations.killswitch.set()
+        raise UserCancelled("Operation cancelled")
 
-        # When killswitch support is added, this should be:
-        assert result == (test_file, 0)
+    with patch("builtins.open", side_effect=raise_cancelled):
+        with pytest.raises(UserCancelled):
+            s3.upload_file(
+                test_file,
+                test_bucket_name,
+                s3_resource,
+                "test-upload-killswitch",
+                prefix_path,
+            )

@@ -2,12 +2,15 @@
 Signal handling for graceful shutdown.
 """
 
-import os
 import signal
-import sys
 
-from .. import ui
 from ..sync import operations
+
+
+class UserCancelled(Exception):
+    """Exception raised when user cancels operation (Ctrl+C)."""
+
+    pass
 
 
 def bail(*args, **kwargs):
@@ -17,10 +20,12 @@ def bail(*args, **kwargs):
     Args:
         *args: Signal arguments (signum, frame).
         **kwargs: Additional keyword arguments.
+
+    Raises:
+        UserCancelled: Always raised to trigger clean exit.
     """
     operations.killswitch.set()
-    ui.output.display_message("\nExiting...", level="error")
-    sys.exit(os.EX_OK)
+    raise UserCancelled("Operation cancelled by user")
 
 
 def setup_signal_handlers():

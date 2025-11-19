@@ -33,7 +33,7 @@ def select_target(*, config_path: str) -> Optional[str]:
 
     # Load config
     try:
-        config_data = config_module.loader.load_config(config_path=config_path)
+        config_data = config_module.loader.load_config(path=config_path)
     except Exception as e:
         console.print(f"[red]Error loading config:[/red] {e}")
         return None

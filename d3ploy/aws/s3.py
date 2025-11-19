@@ -201,6 +201,7 @@ def delete_file(
     s3: AWSServiceResource,
     *,
     dry_run: bool = False,
+    needs_confirmation: bool = False,
 ) -> int:
     """
     Delete file from S3.
@@ -210,10 +211,18 @@ def delete_file(
         bucket_name: S3 bucket name.
         s3: S3 resource instance.
         dry_run: Simulate deletion without actually deleting.
+        needs_confirmation: Prompt user for confirmation before deleting.
 
     Returns:
         1 if file was deleted (or would be in dry-run mode), 0 otherwise.
     """
+    # Check for confirmation if needed
+    if needs_confirmation:
+        from .. import ui
+
+        if not ui.dialogs.confirm_delete(key_name):
+            return 0
+
     if not dry_run:
         s3.Object(bucket_name, key_name).delete()
     return 1

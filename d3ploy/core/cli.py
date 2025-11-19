@@ -714,4 +714,9 @@ def cli() -> None:
         # Insert 'sync' as the command
         sys.argv.insert(1, "sync")
 
-    app()
+    try:
+        app()
+    except signals.UserCancelled:
+        # User pressed Ctrl+C - exit cleanly without traceback
+        console.print("\n[yellow]Operation cancelled by user[/yellow]")
+        sys.exit(os.EX_OK)

@@ -74,12 +74,11 @@ def test_delete_file_deletion(uploaded_test_file, s3_resource, test_bucket_name)
     )
 
 
-@pytest.mark.skip(reason="needs_confirmation parameter not yet implemented")
 def test_delete_file_confirmation_affirmative(
     uploaded_test_file, s3_resource, test_bucket_name
 ):
     """delete_file with confirmation=True deletes when confirmed."""
-    with patch("d3ploy.ui.dialogs.get_confirmation", return_value=True):
+    with patch("d3ploy.ui.dialogs.confirm_delete", return_value=True):
         result = s3.delete_file(
             uploaded_test_file,
             test_bucket_name,
@@ -93,12 +92,11 @@ def test_delete_file_confirmation_affirmative(
         )
 
 
-@pytest.mark.skip(reason="needs_confirmation parameter not yet implemented")
 def test_delete_file_confirmation_negative(
     uploaded_test_file, s3_resource, test_bucket_name
 ):
     """delete_file with confirmation=True skips deletion when not confirmed."""
-    with patch("d3ploy.ui.dialogs.get_confirmation", return_value=False):
+    with patch("d3ploy.ui.dialogs.confirm_delete", return_value=False):
         result = s3.delete_file(
             uploaded_test_file,
             test_bucket_name,
@@ -112,17 +110,28 @@ def test_delete_file_confirmation_negative(
         )
 
 
-@pytest.mark.skip(reason="killswitch check not yet implemented in delete_file")
 def test_delete_file_with_killswitch_flipped(
     uploaded_test_file, s3_resource, test_bucket_name
 ):
-    """delete_file returns 0 when killswitch is set."""
-    with patch("d3ploy.sync.operations.killswitch.is_set", return_value=True):
-        result = s3.delete_file(
-            uploaded_test_file,
-            test_bucket_name,
-            s3_resource,
-        )
+    """delete_file raises UserCancelled when signal received during operation."""
+    from unittest.mock import MagicMock
 
-        # When killswitch support is added, this should be:
-        assert result == 0, "Should return 0 when killswitch is set"
+    from d3ploy.core.signals import UserCancelled
+    from d3ploy.sync import operations
+
+    # Simulate signal being triggered during deletion
+    def raise_cancelled(*args, **kwargs):
+        operations.killswitch.set()
+        raise UserCancelled("Operation cancelled")
+
+    # Mock the Object().delete() call to raise UserCancelled
+    mock_obj = MagicMock()
+    mock_obj.delete.side_effect = raise_cancelled
+
+    with patch.object(s3_resource, "Object", return_value=mock_obj):
+        with pytest.raises(UserCancelled):
+            s3.delete_file(
+                uploaded_test_file,
+                test_bucket_name,
+                s3_resource,
+            )
