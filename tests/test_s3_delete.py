@@ -30,9 +30,9 @@ def uploaded_test_file(
 
     # Verify upload succeeded
     assert result[1] == 1, "Test file upload failed"
-    assert s3.key_exists(s3_resource, test_bucket_name, result[0]), (
-        "Test file not found in S3"
-    )
+    assert s3.key_exists(
+        s3_resource, test_bucket_name, result[0]
+    ), "Test file not found in S3"
 
     key_name = result[0]
     yield key_name
@@ -55,9 +55,9 @@ def test_delete_file_dry_run(uploaded_test_file, s3_resource, test_bucket_name):
     )
 
     assert result == 1, "dry_run should return 1"
-    assert s3.key_exists(s3_resource, test_bucket_name, uploaded_test_file), (
-        "File should still exist after dry_run"
-    )
+    assert s3.key_exists(
+        s3_resource, test_bucket_name, uploaded_test_file
+    ), "File should still exist after dry_run"
 
 
 def test_delete_file_deletion(uploaded_test_file, s3_resource, test_bucket_name):
@@ -69,9 +69,9 @@ def test_delete_file_deletion(uploaded_test_file, s3_resource, test_bucket_name)
     )
 
     assert result == 1, "Deletion should return 1"
-    assert not s3.key_exists(s3_resource, test_bucket_name, uploaded_test_file), (
-        "File should be deleted"
-    )
+    assert not s3.key_exists(
+        s3_resource, test_bucket_name, uploaded_test_file
+    ), "File should be deleted"
 
 
 def test_delete_file_confirmation_affirmative(
@@ -87,9 +87,9 @@ def test_delete_file_confirmation_affirmative(
         )
 
         assert result == 1, "Should return 1 when confirmed"
-        assert not s3.key_exists(s3_resource, test_bucket_name, uploaded_test_file), (
-            "File should be deleted when confirmed"
-        )
+        assert not s3.key_exists(
+            s3_resource, test_bucket_name, uploaded_test_file
+        ), "File should be deleted when confirmed"
 
 
 def test_delete_file_confirmation_negative(
@@ -105,9 +105,9 @@ def test_delete_file_confirmation_negative(
         )
 
         assert result == 0, "Should return 0 when not confirmed"
-        assert s3.key_exists(s3_resource, test_bucket_name, uploaded_test_file), (
-            "File should not be deleted when not confirmed"
-        )
+        assert s3.key_exists(
+            s3_resource, test_bucket_name, uploaded_test_file
+        ), "File should not be deleted when not confirmed"
 
 
 def test_delete_file_with_killswitch_flipped(

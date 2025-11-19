@@ -214,9 +214,9 @@ def test_upload_file_dry_run(
     )
 
     assert result[1] == 1  # Would have uploaded
-    assert not s3.key_exists(s3_resource, test_bucket_name, result[0]), (
-        "File should not exist in S3"
-    )
+    assert not s3.key_exists(
+        s3_resource, test_bucket_name, result[0]
+    ), "File should not exist in S3"
 
 
 def test_upload_file_charset(
@@ -260,13 +260,13 @@ def test_upload_file_caches(
 
         s3_obj = s3_resource.Object(test_bucket_name, result[0])
         if expiration == 0:
-            assert s3_obj.cache_control == f"max-age={expiration}, private", (
-                f"Cache control should be private for max-age={expiration}"
-            )
+            assert (
+                s3_obj.cache_control == f"max-age={expiration}, private"
+            ), f"Cache control should be private for max-age={expiration}"
         else:
-            assert s3_obj.cache_control == f"max-age={expiration}, public", (
-                f"Cache control should be public for max-age={expiration}"
-            )
+            assert (
+                s3_obj.cache_control == f"max-age={expiration}, public"
+            ), f"Cache control should be public for max-age={expiration}"
 
 
 def test_upload_file_mimetypes(
@@ -286,9 +286,9 @@ def test_upload_file_mimetypes(
 
         assert s3.key_exists(s3_resource, test_bucket_name, result[0])
         s3_obj = s3_resource.Object(test_bucket_name, result[0])
-        assert s3_obj.content_type == expected_mimetype, (
-            f"MIME type for {file_path} should be {expected_mimetype}"
-        )
+        assert (
+            s3_obj.content_type == expected_mimetype
+        ), f"MIME type for {file_path} should be {expected_mimetype}"
 
 
 def test_upload_file_with_killswitch_flipped(

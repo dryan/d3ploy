@@ -39,12 +39,14 @@ force-single-line = true
 
 [dependency-groups]
 dev = [
+    "boto3-stubs[cloudfront,s3]>=1.40.76",
     "briefcase>=0.3.25",
     "ipython>=8.29.0",
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.15.1",
     "ruff>=0.7.3",
+    "ty>=0.0.1a27",
 ]
 
 [build-system]
@@ -73,6 +75,10 @@ license.file = "LICENSE"
 author = "dryan"
 author_email = "dryan@users.noreply.github.com"
 description = "Easily deploy to S3 with multiple environment support"
+
+[tool.ty]
+# Type checking configuration for ty (pyright CLI wrapper)
+# See: https://github.com/astral-sh/ty
 
 [tool.briefcase.app.d3ploy]
 formal_name = "D3ploy"
