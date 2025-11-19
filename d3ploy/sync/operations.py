@@ -272,7 +272,7 @@ def sync_target(
     processes: int = 1,
     delete: bool = False,
     confirm: bool = False,
-    cloudfront_id: Union[Collection[str], str, None] = None,
+    cloudfront_id: Union[List[str], str, None] = None,
     caches: Optional[Dict[str, int]] = None,
     quiet: bool = False,
     using_config: bool = True,
@@ -319,9 +319,14 @@ def sync_target(
     if not bucket_name:
         alert(
             f'A bucket to upload to was not specified for "{target}" target',
-            os.EX_NOINPUT,
+            error_code=os.EX_NOINPUT,
             quiet=quiet,
         )
+
+    # Type checker: bucket_name is guaranteed non-None after the check above
+    # (alert with error_code calls sys.exit, so we won't reach here if bucket_name is None)
+    assert bucket_name is not None
+    assert bucket_path is not None
 
     s3_resource = aws.s3.get_s3_resource()
 

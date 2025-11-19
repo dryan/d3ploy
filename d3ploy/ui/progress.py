@@ -213,10 +213,14 @@ class LiveProgressDisplay:
             description: New description (optional).
         """
         if not self.disable and name in self.tasks:
-            kwargs = {"advance": advance}
             if description:
-                kwargs["description"] = description
-            self.progress.update(self.tasks[name], **kwargs)
+                self.progress.update(
+                    self.tasks[name],
+                    advance=advance,
+                    description=description,
+                )
+            else:
+                self.progress.update(self.tasks[name], advance=advance)
             self._update_display()
 
     def add_file_operation(

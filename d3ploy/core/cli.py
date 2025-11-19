@@ -453,14 +453,18 @@ def sync(
             or "/",
             excludes=excludes,
             acl=acl or target_config.get("acl") or defaults.get("acl"),
-            force=force or target_config.get("force") or defaults.get("force"),
+            force=force
+            or target_config.get("force", False)
+            or defaults.get("force", False),
             dry_run=dry_run,
             charset=charset or target_config.get("charset") or defaults.get("charset"),
             gitignore=gitignore
-            or target_config.get("gitignore")
-            or defaults.get("gitignore"),
+            or target_config.get("gitignore", False)
+            or defaults.get("gitignore", False),
             processes=processes,
-            delete=delete or target_config.get("delete") or defaults.get("delete"),
+            delete=delete
+            or target_config.get("delete", False)
+            or defaults.get("delete", False),
             confirm=confirm,
             cloudfront_id=cloudfront_id
             or target_config.get("cloudfront_id")

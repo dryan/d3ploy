@@ -89,7 +89,7 @@ def test_validate_config_valid():
 def test_validate_config_invalid_type():
     """Test that invalid config type raises error."""
     with pytest.raises(ValueError):
-        validate_config([])
+        validate_config({"invalid": "structure"})
 
 
 def test_validate_config_missing_environments():

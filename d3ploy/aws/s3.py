@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from typing import Dict
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 import boto3
 import botocore.exceptions
@@ -110,7 +111,7 @@ def key_exists(
 
 
 def upload_file(
-    file_name: Path,
+    file_name: Union[str, Path],
     bucket_name: str,
     s3: "S3ServiceResource",
     bucket_path: str,

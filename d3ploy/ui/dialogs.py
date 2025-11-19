@@ -39,8 +39,11 @@ def show_dialog(
         Choice selected by user.
     """
     prompt_text = f"[bold]{title}[/bold]\n{message}"
-    return Prompt.ask(
+    result = Prompt.ask(
         prompt_text,
         choices=choices,
         default=default,
     )
+    # When choices are provided, Prompt.ask will always return a string (reprompts if invalid)
+    assert result is not None
+    return result

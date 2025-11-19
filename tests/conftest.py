@@ -9,6 +9,7 @@ import os
 import pathlib
 import uuid
 from typing import Any
+from typing import Generator
 
 import boto3
 import pytest
@@ -151,7 +152,7 @@ def clean_s3_bucket(s3_bucket):
 
 
 @pytest.fixture
-def test_file_path(files_dir) -> pathlib.Path:
+def test_file_path(files_dir) -> Generator[pathlib.Path, None, None]:
     """Create a unique test file path."""
     test_file = files_dir / "txt" / f"test-{uuid.uuid4().hex}.txt"
     yield test_file
