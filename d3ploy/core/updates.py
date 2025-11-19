@@ -11,7 +11,7 @@ import urllib.request
 from typing import Optional
 from typing import Union
 
-from .. import ui
+from .. import utils
 
 
 def check_for_updates(
@@ -25,22 +25,19 @@ def check_for_updates(
     Args:
         current_version: Current version string.
         check_file_path: Optional path to file tracking last check time.
+                        If None, uses platform-specific app data directory.
 
     Returns:
         True if update available, False if up to date, None if check failed.
     """
     if check_file_path is None:
-        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
-        if xdg_config_home:
-            check_file_path = (
-                pathlib.Path(xdg_config_home) / "d3ploy" / "last_check.txt"
-            )
-        else:
-            check_file_path = pathlib.Path("~/.config/d3ploy/last_check.txt")
-        check_file_path = check_file_path.expanduser()
-        if not check_file_path.exists():
-            check_file_path.parent.mkdir(parents=True, exist_ok=True)
-            check_file_path.touch()
+        check_file_path = utils.get_update_check_file()
+    else:
+        check_file_path = pathlib.Path(check_file_path).expanduser()
+
+    if not check_file_path.exists():
+        check_file_path.parent.mkdir(parents=True, exist_ok=True)
+        check_file_path.touch()
 
     update_available = None
 
@@ -75,7 +72,10 @@ def check_for_updates(
                 pypi_data = json.load(pypi_response)
                 pypi_version = parse_version(pypi_data.get("info", {}).get("version"))
                 if pypi_version > parse_version(current_version):
-                    display_update_notification(str(pypi_version))
+                    display_update_notification(
+                        str(pypi_version),
+                        current_version=current_version,
+                    )
                     update_available = True
                 else:
                     update_available = False
@@ -91,24 +91,58 @@ def check_for_updates(
     return update_available
 
 
-def display_update_notification(new_version: str):
+def display_update_notification(new_version: str, *, current_version: str = ""):
     """
-    Display update available notification.
+    Display update available notification using Rich styling.
 
     Args:
         new_version: Version string of available update.
+        current_version: Current version string for comparison.
     """
-    message = (
-        f"There has been an update for d3ploy. Version "
-        f"{new_version} is now available.\\n"
-        f"Please see https://github.com/dryan/d3ploy or run "
-        f"`pip install --upgrade d3ploy`.\\n\\n"
-        f"⚠️  IMPORTANT: A major update with breaking changes is coming soon! ⚠️\\n"
-        f"The next major version will include significant improvements but may\\n"
-        f"require config file updates. Please check the GitHub repository for\\n"
-        f"migration guidance before upgrading to version 5.0+."
+    from rich.console import Console
+    from rich.panel import Panel
+
+    console = Console()
+
+    message_lines = [
+        f"[cyan]A new version of d3ploy is available:[/cyan] [green bold]{new_version}[/green bold]",
+        "",
+        "Update with: [yellow]pip install --upgrade d3ploy[/yellow]",
+        "Or see: [blue]https://github.com/dryan/d3ploy[/blue]",
+    ]
+
+    # Check if this is a major version update
+    is_major_update = False
+    if current_version:
+        try:
+            from packaging.version import parse as parse_version
+
+            current_major = parse_version(current_version).major
+            new_major = parse_version(new_version).major
+            is_major_update = new_major > current_major
+        except Exception:
+            pass
+
+    if is_major_update:
+        message_lines.extend(
+            [
+                "",
+                "[yellow]⚠️  IMPORTANT:[/yellow] This is a major version update!",
+                "[dim]Major updates may include breaking changes. Please review the",
+                "changelog and migration guide at the GitHub repository before upgrading.[/dim]",
+            ]
+        )
+
+    panel = Panel(
+        "\n".join(message_lines),
+        title="🎉 Update Available",
+        border_style="yellow" if is_major_update else "cyan",
+        padding=(1, 2),
     )
-    ui.output.display_message(message, level="warning")
+
+    console.print()
+    console.print(panel)
+    console.print()
 
 
 def get_last_check_time(
@@ -120,27 +154,21 @@ def get_last_check_time(
 
     Args:
         check_file_path: Optional path to check file.
+                        If None, uses platform-specific app data directory.
 
     Returns:
         Unix timestamp of last check, or 0 if never checked.
     """
     if check_file_path is None:
-        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
-        if xdg_config_home:
-            check_file_path = (
-                pathlib.Path(xdg_config_home) / "d3ploy" / "last_check.txt"
-            )
-        else:
-            check_file_path = pathlib.Path("~/.config/d3ploy/last_check.txt")
-        check_file_path = check_file_path.expanduser()
+        check_file_path = utils.get_update_check_file()
+    else:
+        check_file_path = pathlib.Path(check_file_path).expanduser()
 
-    CHECK_FILE = pathlib.Path(check_file_path).expanduser()
-
-    if not CHECK_FILE.exists():
+    if not check_file_path.exists():
         return 0
 
     try:
-        return int(CHECK_FILE.read_text().strip())
+        return int(check_file_path.read_text().strip())
     except ValueError:
         return 0
 
@@ -156,21 +184,15 @@ def save_check_time(
     Args:
         timestamp: Unix timestamp to save.
         check_file_path: Optional path to check file.
+                        If None, uses platform-specific app data directory.
     """
     if check_file_path is None:
-        xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
-        if xdg_config_home:
-            check_file_path = (
-                pathlib.Path(xdg_config_home) / "d3ploy" / "last_check.txt"
-            )
-        else:
-            check_file_path = pathlib.Path("~/.config/d3ploy/last_check.txt")
-        check_file_path = check_file_path.expanduser()
+        check_file_path = utils.get_update_check_file()
+    else:
+        check_file_path = pathlib.Path(check_file_path).expanduser()
 
-    CHECK_FILE = pathlib.Path(check_file_path).expanduser()
+    if not check_file_path.exists():
+        check_file_path.parent.mkdir(parents=True, exist_ok=True)
+        check_file_path.touch()
 
-    if not CHECK_FILE.exists():
-        CHECK_FILE.parent.mkdir(parents=True, exist_ok=True)
-        CHECK_FILE.touch()
-
-    CHECK_FILE.write_text(str(timestamp))
+    check_file_path.write_text(str(timestamp))
