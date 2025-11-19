@@ -255,6 +255,33 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Explore Debian package distribution (.deb files)
 - [ ] Explore Homebrew formula distribution (brew install d3ploy)
 - [ ] Document lessons learned
+- [ ] Async parallel uploading
+  - Convert sync operations to use asyncio
+  - Replace multiprocessing with async/await pattern
+  - Improve performance with concurrent async uploads
+  - Better resource management and error handling
+  - Integrate with Rich progress bars for async operations
+- [ ] Support for S3 Bucket redirect rules
+  - Allow configuring website redirect rules in config
+  - Apply redirect rules during deployment
+  - Validate redirect rule syntax
+- [ ] Support for S3-API-compatible hosts other than S3
+  - Add endpoint_url configuration option
+  - Support providers like Backblaze B2, DigitalOcean Spaces, etc.
+  - Test compatibility with various S3-compatible services
+  - Document provider-specific configuration
+- [ ] Support for additional custom metadata
+  - Extend the caches system pattern to custom metadata
+  - Allow per-file or per-pattern metadata rules
+  - Support custom HTTP headers beyond cache-control
+  - Examples: content-disposition, custom x-headers
+- [ ] Permissions checker subcommand
+  - Detect current AWS user/role permissions
+  - Verify all required S3 and CloudFront permissions
+  - Display missing permissions in a clear table
+  - Generate AWS CLI command to update IAM policy
+  - Support both inline policies and managed policy ARNs
+  - Provide minimum required permissions template
 
 ---
 
