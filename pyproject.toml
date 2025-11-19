@@ -1,6 +1,6 @@
 [project]
 name = "d3ploy"
-version = "4.4.3"
+version = "4.4.4"
 description = "Easily deploy to S3 with multiple environment support."
 authors = [
     {name = "dryan", email = "dryan@users.noreply.github.com"},
@@ -56,7 +56,7 @@ addopts = ["--cov=d3ploy", "--cov-report=term-missing", "--cov-report=html", "--
 [tool.briefcase]
 project_name = "D3ploy"
 bundle = "com.dryan"
-version = "4.4.3"
+version = "4.4.4"
 url = "https://github.com/dryan/d3ploy"
 license.file = "LICENSE"
 author = "dryan"

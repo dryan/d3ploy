@@ -338,7 +338,7 @@ toml = [
 
 [[package]]
 name = "d3ploy"
-version = "4.4.3"
+version = "4.4.4"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },

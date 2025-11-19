@@ -494,18 +494,88 @@ def migrate_config(
         # Perform migration
         migrated = config_module.migrate_config(config)
 
-        # Show changes
+        # Show changes using panels
+        ui.display_panel(
+            config,
+            title=f"Original (v{old_version})",
+            border_style="yellow",
+        )
+        console.print()
+        ui.display_panel(
+            migrated,
+            title=f"Migrated (v{config_module.CURRENT_VERSION})",
+            border_style="green",
+        )
+
         if "environments" in config and "targets" in migrated:
-            console.print("  [cyan]•[/cyan] Renamed 'environments' → 'targets'")
+            console.print("\n  [cyan]•[/cyan] Renamed 'environments' → 'targets'")
 
         # Save migrated config
         config_module.save_migrated_config(migrated, path=config_path)
         console.print(
-            f"[green]✓ Config file {config_path} migrated successfully[/green]",
+            f"\n[green]✓ Config file {config_path} migrated successfully[/green]",
         )
     except Exception as e:
         console.print(f"[red]Error migrating config:[/red] {e}")
         raise typer.Exit(code=os.EX_DATAERR)
+
+
+@app.command()
+def show_config(
+    config: Annotated[
+        str,
+        typer.Option(
+            "--config",
+            "-c",
+            help="Path to config file.",
+        ),
+    ] = "d3ploy.json",
+    *,
+    json_format: Annotated[
+        bool,
+        typer.Option(
+            "--json",
+            help="Display as JSON with syntax highlighting.",
+        ),
+    ] = False,
+) -> None:
+    """
+    Display the current configuration.
+
+    Shows the configuration file contents in a beautiful, formatted display.
+    """
+    config_path = pathlib.Path(config)
+
+    # Try alternate config locations
+    if not config_path.exists():
+        config_path = pathlib.Path(".d3ploy.json")
+
+    if not config_path.exists():
+        console.print(f"[red]Config file not found:[/red] {config}")
+        console.print("Looked for: d3ploy.json and .d3ploy.json")
+        raise typer.Exit(code=os.EX_NOINPUT)
+
+    try:
+        config_data = json.loads(config_path.read_text())
+
+        if json_format:
+            # Display as syntax-highlighted JSON
+            ui.display_json(
+                config_data,
+                title=f"Configuration: {config_path.name}",
+            )
+        else:
+            # Display in tree-like format with merged defaults
+            ui.display_config_tree(
+                config_data,
+                title=f"Configuration: {config_path.name}",
+            )
+    except json.JSONDecodeError as e:
+        console.print(f"[red]Invalid JSON in config file:[/red] {e}")
+        raise typer.Exit(code=os.EX_DATAERR)
+    except Exception as e:
+        console.print(f"[red]Error reading config:[/red] {e}")
+        raise typer.Exit(code=os.EX_IOERR)
 
 
 def cli() -> None:
@@ -518,7 +588,7 @@ def cli() -> None:
     # If no subcommand provided, default to 'sync'
     if len(sys.argv) == 1 or (
         len(sys.argv) > 1
-        and sys.argv[1] not in ["sync", "migrate-config"]
+        and sys.argv[1] not in ["sync", "migrate-config", "show-config"]
         and not sys.argv[1].startswith("-")
     ):
         # Insert 'sync' as the command
