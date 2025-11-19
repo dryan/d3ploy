@@ -14,6 +14,9 @@ from rich.table import Table
 
 from d3ploy import config as config_module
 
+# Valid ACL options for S3
+VALID_ACLS = ["private", "public-read", "public-read-write", "authenticated-read"]
+
 
 def select_target(*, config_path: str) -> Optional[str]:
     """
@@ -150,7 +153,7 @@ def prompt_for_bucket_config() -> Optional[dict]:
     acl = Prompt.ask(
         "ACL (access control)",
         default="public-read",
-        choices=["private", "public-read", "public-read-write", "authenticated-read"],
+        choices=VALID_ACLS,
     )
 
     # Ask if they want to save config
@@ -167,3 +170,87 @@ def prompt_for_bucket_config() -> Optional[dict]:
         "acl": acl,
         "save_config": save_config,
     }
+
+
+def confirm_destructive_operation(
+    *,
+    operation: str,
+    file_count: int | None = None,
+) -> bool:
+    """
+    Ask user to confirm a destructive operation.
+
+    Args:
+        operation: Description of the operation (e.g., "delete files").
+        file_count: Optional number of files that will be affected.
+
+    Returns:
+        True if user confirms, False otherwise.
+    """
+    console = Console()
+
+    console.print()
+    console.print("[yellow]⚠ Warning: Destructive Operation[/yellow]")
+    console.print()
+
+    if file_count is not None:
+        console.print(
+            f"This will {operation} affecting [red]{file_count}[/red] file(s)."
+        )
+    else:
+        console.print(f"This will {operation}.")
+
+    console.print()
+
+    return Confirm.ask(
+        "Do you want to proceed?",
+        default=False,
+    )
+
+
+def prompt_for_acl() -> str:
+    """
+    Prompt user to select an ACL.
+
+    Returns:
+        Selected ACL value.
+    """
+    console = Console()
+
+    console.print()
+    console.print(
+        "[cyan]Select an ACL (Access Control List) for uploaded files:[/cyan]"
+    )
+    console.print()
+
+    # Show options
+    acl_descriptions = {
+        "private": "Private - Only owner has access",
+        "public-read": "Public Read - Anyone can read, owner can write",
+        "public-read-write": "Public Read/Write - Anyone can read and write",
+        "authenticated-read": "Authenticated Read - AWS users can read",
+    }
+
+    for idx, (acl, description) in enumerate(acl_descriptions.items(), 1):
+        console.print(f"  [cyan]{idx}.[/cyan] {acl:20s} - {description}")
+
+    console.print()
+
+    while True:
+        choice = Prompt.ask(
+            "Select ACL by number or name",
+            default="2",
+        )
+
+        # Try as number first
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(VALID_ACLS):
+                return VALID_ACLS[idx]
+        except ValueError:
+            # Try as ACL name
+            if choice in VALID_ACLS:
+                return choice
+
+        console.print("[red]Invalid choice. Please try again.[/red]")
+        console.print()

@@ -289,14 +289,55 @@ def sync(
     has_required_args = bucket_name is not None
 
     if not config_exists and not has_required_args:
-        operations.alert(
-            (
-                f"Config file is missing. Looked for {config}. "
-                f"See http://dryan.github.io/d3ploy for more information."
-            ),
-            error_code=os.EX_NOINPUT,
-            quiet=quiet,
-        )
+        # In interactive mode, prompt for bucket configuration
+        if is_interactive and not quiet:
+            from ..ui import prompts
+
+            bucket_config = prompts.prompt_for_bucket_config()
+            if bucket_config is None:
+                # User cancelled
+                raise typer.Exit()
+
+            # Extract values from prompt
+            bucket_name = bucket_config["bucket_name"]
+            if local_path is None:
+                local_path = bucket_config["local_path"]
+            if bucket_path is None:
+                bucket_path = bucket_config["bucket_path"]
+            if acl is None:
+                acl = bucket_config["acl"]
+
+            # If user wants to save config, create it
+            if bucket_config["save_config"]:
+                target_name = targets[0] if targets != ["default"] else "default"
+                new_config = {
+                    "version": config_module.CURRENT_VERSION,
+                    "targets": {
+                        target_name: {
+                            "bucket_name": bucket_name,
+                            "local_path": local_path,
+                            "bucket_path": bucket_path,
+                            "acl": acl,
+                        },
+                    },
+                }
+                config_path.write_text(json.dumps(new_config, indent=2))
+                ui.output.display_message(
+                    f"[green]✓[/green] Config saved to {config}",
+                    quiet=False,
+                )
+
+            has_required_args = True
+        else:
+            # Non-interactive mode: require config or command-line args
+            operations.alert(
+                (
+                    f"Config file is missing. Looked for {config}. "
+                    f"See http://dryan.github.io/d3ploy for more information."
+                ),
+                error_code=os.EX_NOINPUT,
+                quiet=quiet,
+            )
 
     # If no config and user provided bucket_name, allow running without config
     if not config_exists and has_required_args:
@@ -344,6 +385,19 @@ def sync(
     except Exception as e:
         if os.environ.get("D3PLOY_DEBUG") == "True":
             raise e
+
+    # Interactive prompts for missing options (only if not in quiet mode and interactive)
+    if is_interactive and not quiet:
+        from ..ui import prompts
+
+        # If ACL not provided and not in config, prompt for it
+        if acl is None and not defaults.get("acl"):
+            # Check if any target has an ACL defined
+            has_acl_in_targets = any(
+                config_data.get("targets", {}).get(t, {}).get("acl") for t in to_deploy
+            )
+            if not has_acl_in_targets:
+                acl = prompts.prompt_for_acl()
 
     # Deploy to each target
     for target in to_deploy:
