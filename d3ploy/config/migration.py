@@ -76,6 +76,7 @@ def save_migrated_config(config: Dict[str, Any], *, path: str) -> None:
         path: Path to config file.
     """
     config_path = Path(path)
+    config_path.parent.mkdir(parents=True, exist_ok=True)
     with open(config_path, "w") as f:
         json.dump(config, f, indent=2)
         f.write("\n")  # Add trailing newline
