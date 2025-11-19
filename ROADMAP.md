@@ -169,12 +169,13 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 6.2 Type Checking Implementation
 
-- [ ] Add ty (pyright CLI wrapper) to dev dependencies
-- [ ] Configure ty in pyproject.toml
-- [ ] Add type hints to all modules
-- [ ] Fix all type checking errors
-- [ ] Add ty check to Lefthook pre-commit hooks
-- [ ] Update CI/CD to run ty checks
+- [x] Add ty (pyright CLI wrapper) to dev dependencies
+- [x] Configure ty in pyproject.toml
+- [x] Add type hints to all modules
+- [x] Fix all type checking errors (30 → 0 diagnostics)
+- [x] Add ty check to Lefthook pre-commit hooks
+- [x] Update CI/CD to run ty checks
+- [x] Configure pyright to only check d3ploy/ and tests/ directories
 
 ### 6.3 Unit Testing
 
