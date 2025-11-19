@@ -29,12 +29,14 @@ def test_validate_config_not_dict():
     """Raise ValueError for non-dict config."""
     with pytest.raises(ValueError, match="must be a dictionary"):
         validator.validate_config([])  # ty: ignore[invalid-argument-type]
-    
+
     with pytest.raises(ValueError, match="must be a dictionary"):
         validator.validate_config("string")  # ty: ignore[invalid-argument-type]
-    
+
     with pytest.raises(ValueError, match="must be a dictionary"):
         validator.validate_config(42)  # ty: ignore[invalid-argument-type]
+
+
 def test_validate_config_missing_targets():
     """Raise ValueError when targets key is missing."""
     with pytest.raises(ValueError, match="missing 'targets' key"):
