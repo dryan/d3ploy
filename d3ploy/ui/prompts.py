@@ -7,6 +7,7 @@ for terminal environments that support it.
 
 from typing import Optional
 
+import questionary
 from rich.console import Console
 from rich.prompt import Confirm
 from rich.prompt import Prompt
@@ -59,29 +60,24 @@ def select_target(*, config_path: str) -> Optional[str]:
     console.print(table)
     console.print()
 
-    # Prompt for selection
-    while True:
-        choice = Prompt.ask(
-            "Select a target by number (or 'q' to quit)",
-            default="1",
+    # Use questionary for arrow-key navigation
+    target_choices = [
+        questionary.Choice(
+            f"{name} → {config.get('bucket_name', '')} ({config.get('local_path', '.')})",
+            name,
         )
+        for name, config in target_list
+    ]
 
-        if choice.lower() in ("q", "quit", "exit"):
-            return None
+    result = questionary.select(
+        "Select a target:",
+        choices=target_choices,
+    ).ask()
 
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(target_list):
-                selected_target = target_list[idx][0]
-                console.print(f"[green]✓[/green] Selected: {selected_target}")
-                return selected_target
-            console.print(
-                f"[red]Invalid choice. Please enter a number between 1 and {len(target_list)}[/red]",  # noqa: E501
-            )
-        except ValueError:
-            console.print(
-                "[red]Invalid input. Please enter a number or 'q' to quit[/red]"
-            )
+    if result:
+        console.print(f"[green]✓[/green] Selected: {result}")
+
+    return result
 
 
 def confirm_config_migration(
@@ -147,14 +143,28 @@ def prompt_for_bucket_config() -> Optional[dict]:
 
     # Ask about optional settings
     console.print()
-    console.print("Optional settings (press Enter to skip):")
+    console.print("Optional settings:")
     console.print()
 
-    acl = Prompt.ask(
-        "ACL (access control)",
+    # Use questionary for arrow-key navigation
+    acl_choices = [
+        questionary.Choice(
+            "public-read (Anyone can read, owner can write)", "public-read"
+        ),
+        questionary.Choice("private (Only owner has access)", "private"),
+        questionary.Choice(
+            "public-read-write (Anyone can read and write)", "public-read-write"
+        ),
+        questionary.Choice(
+            "authenticated-read (AWS users can read)", "authenticated-read"
+        ),
+    ]
+
+    acl = questionary.select(
+        "ACL (access control):",
+        choices=acl_choices,
         default="public-read",
-        choices=VALID_ACLS,
-    )
+    ).ask()
 
     # Ask if they want to save config
     console.print()
@@ -210,7 +220,7 @@ def confirm_destructive_operation(
 
 def prompt_for_acl() -> str:
     """
-    Prompt user to select an ACL.
+    Prompt user to select an ACL using arrow keys.
 
     Returns:
         Selected ACL value.
@@ -221,36 +231,25 @@ def prompt_for_acl() -> str:
     console.print(
         "[cyan]Select an ACL (Access Control List) for uploaded files:[/cyan]"
     )
-    console.print()
 
-    # Show options
-    acl_descriptions = {
-        "private": "Private - Only owner has access",
-        "public-read": "Public Read - Anyone can read, owner can write",
-        "public-read-write": "Public Read/Write - Anyone can read and write",
-        "authenticated-read": "Authenticated Read - AWS users can read",
-    }
+    # Use questionary for arrow-key navigation
+    acl_choices = [
+        questionary.Choice(
+            "public-read (Anyone can read, owner can write)", "public-read"
+        ),
+        questionary.Choice("private (Only owner has access)", "private"),
+        questionary.Choice(
+            "public-read-write (Anyone can read and write)", "public-read-write"
+        ),
+        questionary.Choice(
+            "authenticated-read (AWS users can read)", "authenticated-read"
+        ),
+    ]
 
-    for idx, (acl, description) in enumerate(acl_descriptions.items(), 1):
-        console.print(f"  [cyan]{idx}.[/cyan] {acl:20s} - {description}")
+    result = questionary.select(
+        "",
+        choices=acl_choices,
+        default="public-read",
+    ).ask()
 
-    console.print()
-
-    while True:
-        choice = Prompt.ask(
-            "Select ACL by number or name",
-            default="2",
-        )
-
-        # Try as number first
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(VALID_ACLS):
-                return VALID_ACLS[idx]
-        except ValueError:
-            # Try as ACL name
-            if choice in VALID_ACLS:
-                return choice
-
-        console.print("[red]Invalid choice. Please try again.[/red]")
-        console.print()
+    return result if result else "public-read"
