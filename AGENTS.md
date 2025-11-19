@@ -7,7 +7,7 @@ This file captures preferences and guidelines for AI agents working on the d3plo
 ## Project Context
 
 - **Current State**: Python CLI tool that syncs files to AWS S3 with multiple environment support
-- **Goal**: Convert to standalone Briefcase console app for distribution without dependency management
+- **Goal**: Modernize with Rich UI and add Briefcase installer distribution alongside PyPI
 - **Repository**: <https://github.com/dryan/d3ploy>
 
 ## Questions for Project Owner
@@ -17,8 +17,9 @@ Please answer the following questions to help guide the development process:
 ### 1. **Target Platforms & Distribution**
 
 - ✅ **Platforms**: All three (macOS, Windows, Linux)
-- ✅ **Distribution**: GitHub releases + PyPI distribution
-- ✅ **Architecture requirements**: support intel and ARM as separate builds
+- ✅ **Distribution**: PyPI packages (traditional) + Briefcase installers via GitHub releases
+- ✅ **Architecture requirements**: Support Intel and ARM as separate installer builds
+- ✅ **Future distribution**: Explore Debian packages and Homebrew formulae
 
 ### 2. **User Experience & Interface**
 
@@ -42,9 +43,10 @@ Please answer the following questions to help guide the development process:
 
 ### 5. **Development & Testing**
 
-- ✅ **Unified approach**: Pip package distributes Briefcase binary (like ruff/uv)
-- ✅ **Single codebase**: One version, different packaging approach
-- ✅ **Distribution**: PyPI wheels with binaries + GitHub releases
+- ✅ **Dual distribution**: PyPI packages (traditional Python) + Briefcase installers (standalone)
+- ✅ **Single codebase**: One version, two distribution methods
+- ✅ **Distribution**: PyPI wheels (standard Python install) + GitHub releases (Briefcase installers)
+- ✅ **Testing matrix**: Test against all currently supported Python versions (3.10-3.14)
 
 ### 6. **Maintenance & Updates**
 
@@ -110,9 +112,10 @@ Based on the responses above, here are the guidelines for this conversion:
 
 ### Distribution & Updates
 
-- **Unified approach**: Single codebase, PyPI distributes Briefcase binaries
-- **Platform support**: macOS, Windows, Linux binaries
-- **GitHub releases**: Direct binary downloads as alternative to PyPI
+- **Dual distribution**: Single codebase with two distribution methods
+  - **PyPI**: Traditional Python package installation (pip/uv/pipx)
+  - **Briefcase installers**: Platform-specific installers via GitHub releases
+- **Platform support**: macOS, Windows, Linux installers (Intel and ARM where applicable)
 - **Update checking**: Continue using PyPI as source of truth
 - **Breaking change warning**: Release patch version before major changes
 
@@ -121,13 +124,17 @@ Based on the responses above, here are the guidelines for this conversion:
 - **Semantic versioning**: Continue current approach
 - **Git workflow**: Create PR → merge to main → push git tag → GitHub Actions triggers release
 - **PyPI automation**: GitHub Actions handles PyPI publishing on tag push
+- **Briefcase automation**: GitHub Actions builds installers for all platforms and architectures
 - **Gitmoji**: Always use gitmoji for commit messages
 - **Signed tags**: Always sign git tags for releases
 - **Python versions**: Keep supported versions up-to-date with <https://devguide.python.org/versions/>
+  - **Current support**: Python 3.10, 3.11, 3.12, 3.13, 3.14
+  - **Testing matrix**: Test against all supported versions in CI/CD
 - **Warning release**: Issue patch with breaking change notification
 - **Config migration**: Ensure smooth transition for existing users
-- **Testing**: Platform-specific testing for binary distributions
-- **CI/CD**: Build binaries for all platforms in automated pipeline
+- **Testing**: Platform-specific testing for installer distributions
+- **CI/CD**: Build installers for all platforms in automated pipeline
+- **Future distribution**: Explore Debian packages and Homebrew formulae
 
 ### Code Style Guidelines
 

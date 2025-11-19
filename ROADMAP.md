@@ -24,9 +24,9 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 2.1 Python Version Updates
 
 - [x] Remove Python 3.9 support (no longer maintained per Python devguide)
-- [x] Update supported versions in pyproject.toml classifiers
-- [x] Update CI/CD testing matrix to remove 3.9
-- [x] Update documentation with new minimum Python version
+- [x] Update supported versions in pyproject.toml classifiers (3.10-3.14)
+- [x] Update CI/CD testing matrix to test all supported versions
+- [x] Update documentation with supported Python versions
 
 ### 2.2 Briefcase Configuration
 
@@ -208,10 +208,11 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 7.2 Distribution Setup
 
-- [ ] Configure GitHub Actions for automated builds
-- [ ] Set up PyPI wheel distribution with binaries
-- [ ] Configure GitHub releases for direct downloads
-- [ ] Test installation from both sources
+- [ ] Configure GitHub Actions for automated Briefcase installer builds
+- [ ] Continue PyPI wheel distribution (traditional Python package)
+- [ ] Configure GitHub releases for Briefcase installer downloads
+- [ ] Test installation from both sources (pip and installers)
+- [ ] Document installation methods for both distribution channels
 
 ### 7.3 Documentation Updates
 
@@ -251,6 +252,8 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [ ] Plan custom AWS library to replace boto3
 - [ ] Evaluate additional Rich features to implement
 - [ ] Consider new features for next release
+- [ ] Explore Debian package distribution (.deb files)
+- [ ] Explore Homebrew formula distribution (brew install d3ploy)
 - [ ] Document lessons learned
 
 ---
