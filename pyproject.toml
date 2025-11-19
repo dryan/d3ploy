@@ -11,7 +11,7 @@ dependencies = [
     "boto3>=1.35.58",
     "packaging>=24.2",
     "pathspec>=0.12.1",
-    "textual>=1.0.0",
+    "rich[extras]>=14.2.0",
 ]
 classifiers = [
     "Intended Audience :: Developers",
@@ -79,7 +79,7 @@ requires = [
     "boto3>=1.35.58",
     "packaging>=24.2",
     "pathspec>=0.12.1",
-    "textual>=1.0.0",
+    "rich>=13.9.4",
 ]
 
 console_app = true
@@ -89,7 +89,7 @@ requires = [
     "boto3>=1.35.58",
     "packaging>=24.2",
     "pathspec>=0.12.1",
-    "textual>=1.0.0",
+    "rich>=13.9.4",
 ]
 
 [tool.briefcase.app.d3ploy.linux]
@@ -97,7 +97,7 @@ requires = [
     "boto3>=1.35.58",
     "packaging>=24.2",
     "pathspec>=0.12.1",
-    "textual>=1.0.0",
+    "rich>=13.9.4",
 ]
 
 [tool.briefcase.app.d3ploy.windows]
@@ -105,5 +105,5 @@ requires = [
     "boto3>=1.35.58",
     "packaging>=24.2",
     "pathspec>=0.12.1",
-    "textual>=1.0.0",
+    "rich>=13.9.4",
 ]

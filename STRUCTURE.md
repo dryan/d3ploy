@@ -27,9 +27,9 @@ d3ploy/
 │   ├── discovery.py    # Find files to sync
 │   ├── filters.py      # Exclude patterns, gitignore support
 │   └── operations.py   # Upload/delete coordination
-├── ui/                  # User interface (Textual)
+├── ui/                  # User interface (Rich)
 │   ├── __init__.py
-│   ├── app.py          # Main Textual application
+│   ├── app.py          # Application state and coordination
 │   ├── progress.py     # Progress bars and indicators
 │   ├── output.py       # Output formatting and display
 │   └── dialogs.py      # Confirmation dialogs

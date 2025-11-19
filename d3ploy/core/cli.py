@@ -167,12 +167,6 @@ def parse_args():
         default=False,
     )
     parser.add_argument(
-        "--no-tui",
-        help="Disable TUI mode and use CLI fallback (requires all parameters).",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
         "--migrate-config",
         help="Migrate a config file to the latest version.",
         metavar="PATH",
@@ -252,32 +246,32 @@ def cli():
                 exit_code=os.EX_DATAERR,
             )
 
-    # Detect if we should use TUI mode
-    # Use TUI if:
-    # 1. Terminal is interactive (has ps1 prompt, more reliable than isatty)
+    # Detect if we should prompt interactively for target selection
+    # Use interactive prompt if:
+    # 1. Terminal is interactive
     # 2. Not in quiet mode
-    # 3. --no-tui flag not set
-    # 4. No target specified (let user choose interactively)
-    # 5. Config file exists (TUI requires config)
+    # 3. No target specified (let user choose interactively)
+    # 4. Config file exists
     is_interactive = hasattr(sys, "ps1") or sys.stdin.isatty()
     no_target_specified = args.target == ["default"] and not args.all
     config_path = pathlib.Path(args.config)
     has_config = config_path.exists()
-    should_use_tui = (
-        is_interactive
-        and not args.quiet
-        and not args.no_tui
-        and no_target_specified
-        and has_config
+    should_prompt_for_target = (
+        is_interactive and not args.quiet and no_target_specified and has_config
     )
 
-    if should_use_tui:
-        # Launch TUI mode
-        from ..ui import tui
+    if should_prompt_for_target:
+        # Show interactive target selection
+        from ..ui import prompts
 
-        return tui.run_tui(config_path=args.config)
+        selected_target = prompts.select_target(config_path=args.config)
+        if selected_target is None:
+            # User cancelled
+            sys.exit(os.EX_OK)
+        # Update args to use selected target
+        args.target = [selected_target]
 
-    # CLI fallback mode - require all necessary parameters
+    # CLI mode - require all necessary parameters
     # If we're in non-interactive mode and missing target, error out
     if not is_interactive and no_target_specified:
         ui.output.display_error(

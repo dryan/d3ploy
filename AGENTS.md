@@ -35,9 +35,10 @@ Please answer the following questions to help guide the development process:
 ### 4. **Dependencies & Bundling**
 
 - ✅ **Minimize dependencies**: Replace colorama with first-party code
-- ✅ **Use Textual**: Use <https://textual.textualize.io/> instead of colorama + tqdm
+- ✅ **Use Rich**: Use <https://rich.readthedocs.io/> instead of colorama + tqdm for beautiful CLI
+- ✅ **Interactive selection**: Use Rich prompts for keyboard-selectable options in interactive terminals
 - ✅ **boto3**: Keep for now, replace with custom AWS library in future
-- ✅ **Final bundle preference**: Textual for modern TUI experience
+- ✅ **Final bundle preference**: Rich for modern CLI experience with interactive capabilities
 
 ### 5. **Development & Testing**
 
@@ -48,7 +49,7 @@ Please answer the following questions to help guide the development process:
 ### 6. **Maintenance & Updates**
 
 - ✅ **Update source**: Continue using PyPI as version source of truth
-- ✅ **Update notifications**: Follow Textual interface patterns
+- ✅ **Update notifications**: Use Rich-styled notifications in CLI
 - ✅ **Breaking changes**: Release patch version warning about upcoming changes
 - ✅ **Config migration**: Auto-detect and migrate old config versions
 - ✅ **Config versioning**: Add version property to new config structure
@@ -58,7 +59,7 @@ Please answer the following questions to help guide the development process:
 - ✅ **Refactoring allowed**: Yes, prioritize maintainability and testability
 - ✅ **Modular structure**: Break apart large d3ploy.py into focused modules
 - ✅ **Separation of concerns**: UI, AWS ops, config, file operations in separate modules
-- ✅ **Briefcase compatibility**: Structure code to work well with Briefcase and Textual
+- ✅ **Briefcase compatibility**: Structure code to work well with Briefcase packaging
 
 ---
 
@@ -71,7 +72,7 @@ Based on the responses above, here are the guidelines for this conversion:
 - **Modular design**: Refactor the monolithic `d3ploy.py` into focused modules:
   - `config/` - Configuration loading, validation, and migration
   - `aws/` - S3 and CloudFront operations (keeping boto3 for now)
-  - `ui/` - Textual-based interface components
+  - `ui/` - Rich-based interface components (console, progress, prompts)
   - `sync/` - File synchronization logic
   - `core/` - Main application logic and coordination
 - **Testability**: Design for easy unit testing of individual components
@@ -79,10 +80,11 @@ Based on the responses above, here are the guidelines for this conversion:
 
 ### User Interface & Experience
 
-- **Textual integration**: Replace colorama + tqdm with Textual for modern TUI experience
+- **Rich integration**: Replace colorama + tqdm with Rich for beautiful, modern CLI output
+- **Interactive selection**: Use Rich prompts for keyboard-selectable menus in interactive terminals
 - **Breaking changes**: Document and implement sensible improvements to CLI
-- **Error handling**: Improve error messages and user feedback with Textual's capabilities
-- **Progress indication**: Use Textual's rich progress components
+- **Error handling**: Improve error messages and user feedback with Rich's styling capabilities
+- **Progress indication**: Use Rich's progress bars and live displays
 
 ### Configuration & Data Management
 
@@ -94,11 +96,17 @@ Based on the responses above, here are the guidelines for this conversion:
 
 ### Dependencies & Bundling
 
-- **Textual**: Primary UI framework replacing colorama and tqdm
+- **Rich**: Primary UI framework replacing colorama and tqdm
+- **Rich prompts**: For interactive selection and confirmation dialogs
 - **boto3**: Keep for now, plan future replacement with custom AWS library
 - **Minimize deps**: Replace other dependencies where practical
 - **Bundle size**: Optimize for reasonable size while maintaining functionality
 - **Dependency management**: Use `uv` for all dependency and virtual environment management
+- **IMPORTANT**: Always use `uv` commands to manage dependencies, never edit `pyproject.toml` directly
+  - Add dependencies: `uv add <package>`
+  - Remove dependencies: `uv remove <package>`
+  - Update dependencies: `uv lock --upgrade-package <package>`
+  - Sync environment: `uv sync`
 
 ### Distribution & Updates
 
@@ -193,30 +201,24 @@ Based on the responses above, here are the guidelines for this conversion:
 **IMPORTANT**: When changing the configuration file structure:
 
 1. **Create Version Fixture**: Add a sample config to `tests/fixtures/configs/`
+
    - Name it `vN-config.json` where N is the version number
    - Include realistic, complete examples of all features
    - Document what changed from the previous version
 
 2. **Update Migration Code**:
+
    - Bump `CURRENT_VERSION` in `d3ploy/config/migration.py`
    - Add migration logic for vN-1 → vN transformation
-   - Never modify configs without user permission (CLI shows command, TUI asks)
+   - Never modify configs without user permission (CLI shows command and asks for confirmation)
 
 3. **Update Tests**:
+
    - Add migration tests in `tests/test_config_phase3.py`
    - Test both vN-1 → vN and v0 → vN migrations
    - Verify no-change case for current version
 
 4. **Update Documentation**:
-   - Update `tests/fixtures/configs/README.md` with new version info
-   - Update main `README.md` if user-facing config changes
-   - Document breaking changes clearly
-
-5. **Test Migration Flows**:
-   - Test CLI: Old config should exit with migration command
-   - Test `--migrate-config` flag shows changes before applying
-   - Test TUI: Dialog should prompt user with clear explanation
-   - Verify file is only modified after user confirms
 
 **Example Structure**:
 
@@ -235,4 +237,3 @@ tests/fixtures/configs/
 - Provides reference examples for users upgrading
 - Prevents accidental breaking changes
 - Makes migration logic testable and verifiable
-

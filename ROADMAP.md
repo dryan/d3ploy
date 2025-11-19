@@ -1,6 +1,6 @@
 # D3ploy Briefcase Conversion Roadmap
 
-This roadmap outlines the complete conversion of d3ploy from a traditional Python package to a Briefcase console application with Textual interface.
+This roadmap outlines the complete conversion of d3ploy from a traditional Python package to a Briefcase console application with Rich-based interactive CLI.
 
 ## Phase 1: Breaking Change Warning Release
 
@@ -37,7 +37,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 
 ### 2.3 Dependencies & Environment
 
-- [x] Add Textual to dependencies
+- [x] Add Rich to dependencies
 - [x] Update `pyproject.toml` with new dependency structure
 - [x] Remove colorama and tqdm from requirements
 - [x] Test dependency resolution
@@ -93,11 +93,11 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [x] Make d3ploy.py a thin compatibility wrapper
 - [x] Test basic CLI functionality with uv run
 
-## Phase 4: Textual Interface Implementation
+## Phase 4: Rich CLI Interface Implementation
 
-**Note:** Two-mode approach - Textual TUI by default, Rich CLI fallback for non-interactive
+**Note:** Single unified approach using Rich for beautiful, interactive CLI experience
 
-### 4.1 Rich CLI Components (Non-Interactive Fallback)
+### 4.1 Rich CLI Components
 
 - [x] Create `d3ploy/ui/` module with Rich components
 - [x] Implement progress bars using Rich (replaces tqdm)
@@ -106,34 +106,31 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [x] Implement confirmation dialogs using Rich prompts
 - [x] Update all modules to use Rich UI components
 
-### 4.2 Textual TUI Application (Default Interactive Mode)
+### 4.2 Interactive Selection & Prompts
 
-- [x] Design Textual app structure with screens and widgets
-- [x] Create main dashboard/target selection screen
-- [x] Implement file sync screen with real-time progress
-- [x] Add configuration viewer/editor screen
-- [x] Create help/keyboard shortcuts screen
-- [x] Add keyboard navigation and shortcuts
+- [ ] Implement keyboard-selectable target menu using Rich prompts
+- [ ] Add interactive confirmation prompts for destructive operations
+- [ ] Create interactive configuration prompts for first-time setup
+- [ ] Add option selection for various CLI choices (ACL, cache control, etc.)
+- [ ] Implement smart defaults with visual feedback
 
 ### 4.3 Mode Detection & Integration
 
 - [x] Auto-detect interactive vs non-interactive terminal
-- [x] Default to TUI when terminal is interactive
-- [x] Add `--no-tui` flag to force CLI mode
-- [x] CLI mode requires all parameters or errors
-- [x] Share business logic between both modes
+- [ ] Use interactive prompts when terminal is interactive
+- [ ] Fall back to CLI argument requirements in non-interactive mode
 - [x] Implement quiet mode for CI/CD (disables all UI)
 - [x] Ensure proper exit codes in both modes
 
-### 4.4 TUI Features
+### 4.4 Rich CLI Features
 
-- [ ] Real-time sync progress with live updates
-- [x] Interactive target selection
-- [ ] File browsing and exclusion management
-- [x] Configuration editing within TUI (basic viewer implemented)
-- [ ] Error handling with styled dialogs
-- [x] Help system and keyboard shortcuts screen
-- [ ] Config-less operation: When no config file exists, TUI should prompt for required information
+- [ ] Real-time sync progress with Rich live displays
+- [ ] Interactive target selection with keyboard navigation
+- [ ] Styled tables for file listings and status reports
+- [ ] Rich panels for configuration display
+- [ ] Syntax-highlighted config file display
+- [ ] Interactive help with searchable commands
+- [ ] Config-less operation: When no config file exists, prompt for required information
   - Ask for bucket name
   - Ask for local path (default to current directory)
   - Optionally ask for bucket path, ACL, excludes, etc.
@@ -153,7 +150,7 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 5.2 Update System Enhancement
 
 - [ ] Modify update checker for new architecture
-- [ ] Implement Textual-based update notifications
+- [ ] Implement Rich-styled update notifications
 - [ ] Add breaking change warning system
 - [ ] Test PyPI version checking
 
@@ -252,13 +249,13 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 ### 9.2 Future Planning
 
 - [ ] Plan custom AWS library to replace boto3
-- [ ] Evaluate additional Textual features to implement
+- [ ] Evaluate additional Rich features to implement
 - [ ] Consider new features for next release
 - [ ] Document lessons learned
 
 ---
 
-## Current Status: Phase 3 Complete ✅
+## Current Status: Phase 4 In Progress ⏳
 
 **Completed:**
 
@@ -270,18 +267,32 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
   - Code follows new style guidelines
   - All modules tested and working
 - ✅ Phase 4.1: Rich CLI components implemented
-  - Progress bars, colored output, dialogs using Rich
+  - Progress bars, colored output using Rich
+  - Basic prompts and console output
   - Traditional CLI mode fully functional
+- ✅ Phase 4.3: Mode Detection & Integration (partial)
+  - Auto-detect interactive vs non-interactive terminal
+  - Quiet mode for CI/CD
+  - Proper exit codes in both modes
 
-**Next Phase Options:**
+**In Progress:**
 
-- **Phase 4.2-4.4**: Textual TUI Implementation (interactive mode)
-- **Phase 5**: Data Management & Standards
-- **Phase 6**: Testing & Quality Assurance
+- ⏳ Phase 4.2: Interactive Selection & Prompts
+  - Need keyboard-selectable target menu
+  - Need interactive configuration prompts
+  - Need smart option selection for CLI choices
+- ⏳ Phase 4.4: Rich CLI Features
+  - Need real-time sync progress with Rich live displays
+  - Need styled tables for status reports
+  - Need syntax-highlighted config display
+  - Need config-less operation prompts
+
+**Next Steps:**
+
+- Complete Phase 4.2: Add interactive prompts for target selection and configuration
+- Complete Phase 4.4: Enhance CLI with Rich features (live progress, tables, panels)
+- Then move to Phase 5 (Data Management) or Phase 6 (Testing)
 
 **Current Focus:**
 
-Implementing Textual TUI as the default interface. This will provide:
-
-- **Interactive TUI (default)**: Full-screen app when terminal is interactive
-- **CLI fallback**: Rich-based non-interactive mode for CI/CD, requires all parameters
+Removing Textual TUI complexity and focusing on Rich-based interactive CLI. This provides a better balance between functionality and maintainability while still offering keyboard-selectable menus and beautiful output.
