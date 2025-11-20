@@ -3,7 +3,6 @@ File synchronization operations and coordination.
 """
 
 import os
-import pathlib
 import sys
 import threading
 from concurrent import futures
@@ -261,7 +260,7 @@ def sync_target(
     target: str,
     *,
     bucket_name: Optional[str] = None,
-    local_path: Union[str, Path, None] = ".",
+    local_path: Path | None = None,
     bucket_path: Optional[str] = "/",
     excludes: Collection[str] = [],
     acl: Optional[str] = None,
@@ -313,15 +312,15 @@ def sync_target(
     if caches is None:
         caches = {}
 
-    if not isinstance(local_path, pathlib.Path):
-        if local_path is None:
-            alert(
-                f'A local path was not specified for "{target}" target',
-                error_code=os.EX_NOINPUT,
-                quiet=quiet,
-            )
-        assert local_path is not None  # Type checker: alert above exits if None
-        local_path = pathlib.Path(local_path)
+    if local_path is None:
+        alert(
+            f'A local path was not specified for "{target}" target',
+            error_code=os.EX_NOINPUT,
+            quiet=quiet,
+        )
+
+    # Type checker: local_path is guaranteed non-None after the check above
+    assert local_path is not None
 
     if not bucket_name:
         alert(

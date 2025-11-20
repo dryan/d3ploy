@@ -440,13 +440,17 @@ def sync(
             or target_config.get("bucket_name")
             or defaults.get("bucket_name")
         )
+        # Resolve local_path and convert to Path
+        resolved_local_path = (
+            local_path
+            or target_config.get("local_path")
+            or defaults.get("local_path")
+            or "."
+        )
         operations.sync_target(
             target,
             bucket_name=bucket,
-            local_path=local_path
-            or target_config.get("local_path")
-            or defaults.get("local_path")
-            or ".",
+            local_path=pathlib.Path(resolved_local_path),
             bucket_path=bucket_path
             or target_config.get("bucket_path")
             or defaults.get("bucket_path")

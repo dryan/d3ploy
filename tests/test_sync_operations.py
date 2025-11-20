@@ -538,12 +538,13 @@ def test_delete_orphans_respects_killswitch(reset_killswitch):
 # Tests for sync_target
 
 
-def test_sync_target_missing_bucket(reset_killswitch):
+def test_sync_target_missing_bucket(tmp_path, reset_killswitch):
     """Exit with error when bucket is not specified."""
     with pytest.raises(SystemExit) as exc_info:
         operations.sync_target(
             "test-target",
             bucket_name=None,
+            local_path=tmp_path,
         )
 
     assert exc_info.value.code == os.EX_NOINPUT
@@ -734,3 +735,31 @@ def test_sync_target_cloudfront_id_none(tmp_path, reset_killswitch):
     # Should have called alert with "Syncing to..." message (not using config)
     alert_calls = [str(call[0][0]) for call in mock_alert.call_args_list]
     assert any("Syncing to" in call for call in alert_calls)
+
+
+def test_sync_target_local_path_none(tmp_path, reset_killswitch):
+    """Test sync_target with local_path=None raises error."""
+    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
+        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
+            with patch("d3ploy.sync.operations.alert") as mock_alert:
+                # Let first alert pass, but second one (local_path=None) should exit
+                def alert_side_effect(*args, **kwargs):
+                    # Check if this is the local_path error (has error_code)
+                    if "error_code" in kwargs:
+                        raise SystemExit(kwargs["error_code"])
+
+                mock_alert.side_effect = alert_side_effect
+
+                with pytest.raises(SystemExit) as exc_info:
+                    operations.sync_target(
+                        "test-target",
+                        bucket_name="test-bucket",
+                        local_path=None,
+                    )
+
+                assert exc_info.value.code == os.EX_NOINPUT
+                # Should have alerted about missing local path
+                alert_calls = [str(call[0][0]) for call in mock_alert.call_args_list]
+                assert any(
+                    "local path was not specified" in call for call in alert_calls
+                )
