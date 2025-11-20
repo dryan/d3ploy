@@ -11,6 +11,8 @@ import urllib.request
 from typing import Optional
 from typing import Union
 
+from packaging.version import parse as parse_version
+
 from .. import utils
 
 
@@ -36,27 +38,19 @@ def check_for_updates(
         check_file_path = pathlib.Path(check_file_path).expanduser()
 
     if not check_file_path.exists():
-        check_file_path.parent.mkdir(parents=True, exist_ok=True)
-        check_file_path.touch()
+        try:
+            check_file_path.parent.mkdir(parents=True, exist_ok=True)
+            check_file_path.touch()
+        except (OSError, PermissionError):
+            # If we can't create the file, we can't track updates
+            # Return None to indicate check couldn't be performed
+            return None
 
     update_available = None
-
-    try:
-        from packaging.version import parse as parse_version
-    except ImportError:
-        return None
-
     PYPI_URL = "https://pypi.org/pypi/d3ploy/json"
-    CHECK_FILE = pathlib.Path(check_file_path).expanduser()
-
-    if not CHECK_FILE.exists():
-        try:
-            CHECK_FILE.write_text("")
-        except IOError:
-            pass
 
     try:
-        last_checked = int(CHECK_FILE.read_text().strip())
+        last_checked = int(check_file_path.read_text().strip())
     except ValueError:
         last_checked = 0
 
@@ -85,8 +79,10 @@ def check_for_updates(
         except Exception as e:
             if os.environ.get("D3PLOY_DEBUG"):
                 raise e
+            # In non-debug mode, silently fail and indicate check couldn't complete
+            update_available = None
 
-        CHECK_FILE.write_text(str(now))
+        check_file_path.write_text(str(now))
 
     return update_available
 
@@ -115,8 +111,6 @@ def display_update_notification(new_version: str, *, current_version: str = ""):
     is_major_update = False
     if current_version:
         try:
-            from packaging.version import parse as parse_version
-
             current_major = parse_version(current_version).major
             new_major = parse_version(new_version).major
             is_major_update = new_major > current_major
@@ -192,7 +186,16 @@ def save_check_time(
         check_file_path = pathlib.Path(check_file_path).expanduser()
 
     if not check_file_path.exists():
-        check_file_path.parent.mkdir(parents=True, exist_ok=True)
-        check_file_path.touch()
+        try:
+            check_file_path.parent.mkdir(parents=True, exist_ok=True)
+            check_file_path.touch()
+        except (OSError, PermissionError):
+            # If we can't create the file, silently fail
+            # This is a non-critical operation
+            return
 
-    check_file_path.write_text(str(timestamp))
+    try:
+        check_file_path.write_text(str(timestamp))
+    except (OSError, PermissionError):
+        # If we can't write to the file, silently fail
+        pass
