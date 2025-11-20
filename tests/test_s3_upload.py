@@ -269,6 +269,28 @@ def test_upload_file_caches(
             ), f"Cache control should be public for max-age={expiration}"
 
 
+def test_upload_file_caches_wildcard(
+    clean_s3_bucket, s3_resource, files_dir, prefix_path, test_bucket_name
+):
+    """upload_file sets proper cache-control headers with wildcard patterns."""
+    test_file = files_dir / "css" / "sample.css"
+
+    # Test wildcard pattern like "text/*" matching "text/css"
+    result = s3.upload_file(
+        test_file,
+        test_bucket_name,
+        s3_resource,
+        "test-cache-wildcard",
+        prefix_path,
+        caches={"text/*": 3600},
+    )
+
+    s3_obj = s3_resource.Object(test_bucket_name, result[0])
+    assert (
+        s3_obj.cache_control == "max-age=3600, public"
+    ), "Wildcard cache pattern should match"
+
+
 def test_upload_file_mimetypes(
     clean_s3_bucket, s3_resource, files_dir, prefix_path, test_bucket_name
 ):

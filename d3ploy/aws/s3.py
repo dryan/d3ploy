@@ -16,7 +16,7 @@ from typing import Union
 import boto3
 import botocore.exceptions
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3.service_resource import S3ServiceResource
 else:
     S3ServiceResource = object
@@ -187,10 +187,8 @@ def upload_file(
             elif mimetype[0] and f"{mimetype[0].split('/')[0]}/*" in caches.keys():
                 cache_timeout = caches.get(f"{mimetype[0].split('/')[0]}/*")
             if cache_timeout is not None:
-                if cache_timeout == 0:
-                    extra_args["CacheControl"] = f"max-age={cache_timeout}, private"
-                else:
-                    extra_args["CacheControl"] = f"max-age={cache_timeout}, public"
+                privacy = "private" if cache_timeout == 0 else "public"
+                extra_args["CacheControl"] = f"max-age={cache_timeout}, {privacy}"
 
             s3.meta.client.upload_fileobj(
                 local_file,
