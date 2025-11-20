@@ -679,3 +679,58 @@ def test_sync_target_dry_run(tmp_path, reset_killswitch):
     assert mock_upload.call_args[1]["dry_run"] is True
     # Check message mentions "would be"
     assert any("would be" in str(call[0][0]) for call in mock_display.call_args_list)
+
+
+def test_sync_target_cloudfront_dry_run(tmp_path, reset_killswitch):
+    """Dry run with CloudFront invalidation shows 'would be requested' message."""
+    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
+        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
+            with patch(
+                "d3ploy.sync.operations.discovery.discover_files"
+            ) as mock_discover:
+                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
+                    with patch(
+                        "d3ploy.sync.operations.ui.output.display_message"
+                    ) as mock_display:
+                        mock_discover.return_value = []
+                        mock_upload.return_value = ([("test.txt", 1)], 1)
+
+                        operations.sync_target(
+                            "test-target",
+                            bucket_name="test-bucket",
+                            local_path=tmp_path,
+                            cloudfront_id="ABC123",
+                            dry_run=True,
+                        )
+
+    # Check message mentions CloudFront invalidation "would be requested"
+    assert any(
+        "would be requested" in str(call[0][0]) for call in mock_display.call_args_list
+    )
+
+
+def test_sync_target_cloudfront_id_none(tmp_path, reset_killswitch):
+    """Test sync_target with cloudfront_id=None and using_config=False (line 308)."""
+    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
+        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
+            with patch(
+                "d3ploy.sync.operations.discovery.discover_files"
+            ) as mock_discover:
+                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
+                    with patch("d3ploy.sync.operations.alert") as mock_alert:
+                        mock_discover.return_value = []
+                        mock_upload.return_value = ([], 0)
+
+                        result = operations.sync_target(
+                            "test-target",
+                            bucket_name="test-bucket",
+                            local_path=tmp_path,
+                            cloudfront_id=None,
+                            using_config=False,
+                        )
+
+    # Should not have invalidated anything
+    assert result["invalidated"] == 0
+    # Should have called alert with "Syncing to..." message (not using config)
+    alert_calls = [str(call[0][0]) for call in mock_alert.call_args_list]
+    assert any("Syncing to" in call for call in alert_calls)

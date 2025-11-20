@@ -314,6 +314,13 @@ def sync_target(
         caches = {}
 
     if not isinstance(local_path, pathlib.Path):
+        if local_path is None:
+            alert(
+                f'A local path was not specified for "{target}" target',
+                error_code=os.EX_NOINPUT,
+                quiet=quiet,
+            )
+        assert local_path is not None  # Type checker: alert above exits if None
         local_path = pathlib.Path(local_path)
 
     if not bucket_name:
