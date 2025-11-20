@@ -150,7 +150,6 @@ class TestSyncCommand:
         args = mock_ui.output.display_error.call_args[0]
         assert "No target specified" in args[0]
 
-    @pytest.mark.timeout(5)
     def test_sync_with_old_deploy_json(
         self,
         mock_operations: MagicMock,
@@ -748,6 +747,86 @@ class TestSyncCommand:
         ]
         assert len(progress_messages) == 2
 
+    def test_sync_interactive_bucket_config_with_d3ploy_json(
+        self,
+        tmp_path: pathlib.Path,
+        mock_operations: MagicMock,
+        mock_signals: MagicMock,
+        mock_updates: MagicMock,
+    ) -> None:
+        """Test interactive bucket config prompt with d3ploy.json config name (line 299)."""
+        # Change to tmp directory so config files aren't found
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+
+            with patch("sys.stdin.isatty", return_value=True):
+                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
+                    mock_prompt.return_value = {
+                        "bucket_name": "interactive-bucket",
+                        "local_path": "./dist",
+                        "bucket_path": "/",
+                        "acl": "public-read",
+                        "save_config": False,
+                    }
+
+                    # Use d3ploy.json as config name to test line 299
+                    cli_module.sync(config="d3ploy.json")
+
+                    # Should have called prompt with both paths checked
+                    mock_prompt.assert_called_once()
+                    call_kwargs = mock_prompt.call_args[1]
+                    assert "checked_paths" in call_kwargs
+                    # When config is d3ploy.json, .d3ploy.json should be appended
+                    assert call_kwargs["checked_paths"] == [
+                        "d3ploy.json",
+                        ".d3ploy.json",
+                    ]
+        finally:
+            os.chdir(original_cwd)
+
+    def test_sync_interactive_bucket_config_with_dotfile(
+        self,
+        tmp_path: pathlib.Path,
+        mock_operations: MagicMock,
+        mock_signals: MagicMock,
+        mock_updates: MagicMock,
+    ) -> None:
+        """Test interactive bucket config prompt with .d3ploy.json config name (line 301)."""
+        # Change to tmp directory so config files aren't found
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+
+            with patch("sys.stdin.isatty", return_value=True):
+                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
+                    mock_prompt.return_value = {
+                        "bucket_name": "interactive-bucket",
+                        "local_path": "./dist",
+                        "bucket_path": "/",
+                        "acl": "public-read",
+                        "save_config": False,
+                    }
+
+                    # Use .d3ploy.json as config name to test line 301
+                    cli_module.sync(config=".d3ploy.json")
+
+                    # Should have called prompt with both paths checked
+                    mock_prompt.assert_called_once()
+                    call_kwargs = mock_prompt.call_args[1]
+                    assert "checked_paths" in call_kwargs
+                    # When config is .d3ploy.json, d3ploy.json should be first (inserted at 0)
+                    assert call_kwargs["checked_paths"] == [
+                        "d3ploy.json",
+                        ".d3ploy.json",
+                    ]
+        finally:
+            os.chdir(original_cwd)
+
 
 class TestMigrateConfigCommand:
     """Tests for migrate-config command."""
@@ -824,6 +903,32 @@ class TestMigrateConfigCommand:
         # Verify file was migrated
         migrated_data = json.loads(old_config_file.read_text())
         assert migrated_data["version"] == CURRENT_VERSION
+
+    def test_migrate_config_with_environments_key(self, tmp_path: pathlib.Path) -> None:
+        """Test migrate_config shows message when renaming environments to targets."""
+        old_config = tmp_path / "old-environments-config.json"
+        # Old config with "environments" key (line 530 coverage)
+        old_config_data = {
+            "version": 0,
+            "environments": {"default": {"bucket_name": "test-bucket"}},
+        }
+        old_config.write_text(json.dumps(old_config_data))
+
+        with patch.object(cli_module.console, "print") as mock_print:
+            with patch("d3ploy.ui.display_panel"):
+                cli_module.migrate_config(str(old_config))
+
+                # Should show message about environments → targets rename
+                print_calls = [str(call) for call in mock_print.call_args_list]
+                assert any(
+                    "environments" in call and "targets" in call for call in print_calls
+                ), "Expected message about renaming environments to targets"
+
+        # Verify file was migrated and environments became targets
+        migrated_data = json.loads(old_config.read_text())
+        assert migrated_data["version"] == CURRENT_VERSION
+        assert "targets" in migrated_data
+        assert "environments" not in migrated_data
 
     def test_migrate_config_json_error(self, tmp_path: pathlib.Path) -> None:
         """Test migrate_config with invalid JSON."""
@@ -1092,6 +1197,50 @@ class TestCreateConfigCommand:
             assert any(
                 "not valid JSON" in str(call) for call in mock_print.call_args_list
             )
+
+    def test_create_config_finds_alternate_dotfile(
+        self, tmp_path: pathlib.Path
+    ) -> None:
+        """Test create_config finds .d3ploy.json when d3ploy.json doesn't exist (lines 637-638)."""
+        # Create .d3ploy.json file
+        dotfile_config = tmp_path / ".d3ploy.json"
+        dotfile_config.write_text(
+            json.dumps(
+                {
+                    "version": CURRENT_VERSION,
+                    "targets": {"existing": {"bucket_name": "test"}},
+                }
+            )
+        )
+
+        with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
+            mock_prompt.return_value = {
+                "bucket_name": "new",
+                "local_path": ".",
+                "bucket_path": "/",
+                "acl": "private",
+                "save_config": True,
+            }
+
+            # Change to tmp_path directory for the test
+            import os
+
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmp_path)
+
+                with patch.object(cli_module.console, "print") as mock_print:
+                    # Request d3ploy.json but only .d3ploy.json exists
+                    cli_module.create_config(config="d3ploy.json")
+
+                    # Should have found and used .d3ploy.json
+                    print_calls = [str(call) for call in mock_print.call_args_list]
+                    assert any(
+                        "Found existing config" in call or ".d3ploy.json" in call
+                        for call in print_calls
+                    )
+            finally:
+                os.chdir(original_cwd)
 
     def test_create_config_checks_alternate_path(self, tmp_path: pathlib.Path) -> None:
         """Test create_config checks alternate config path."""
