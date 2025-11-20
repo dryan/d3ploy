@@ -5,9 +5,6 @@ This module contains shared utilities for file operations,
 MIME type detection, and other common tasks.
 """
 
-from .files import calculate_md5
-from .files import format_size
-from .files import normalize_path
 from .mimetypes import get_content_type
 from .mimetypes import register_custom_types
 from .paths import get_app_data_dir
@@ -17,9 +14,6 @@ from .paths import get_temp_dir
 from .paths import get_update_check_file
 
 __all__ = [
-    "calculate_md5",
-    "format_size",
-    "normalize_path",
     "register_custom_types",
     "get_content_type",
     "get_app_data_dir",
