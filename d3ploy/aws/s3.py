@@ -42,7 +42,9 @@ def list_buckets() -> list[str]:
     s3 = boto3.client("s3")
     try:
         response = s3.list_buckets()
-        return [bucket["Name"] for bucket in response.get("Buckets", [])]
+        return [
+            bucket["Name"] for bucket in response.get("Buckets", []) if "Name" in bucket
+        ]
     except botocore.exceptions.ClientError:
         return []
 
@@ -72,7 +74,8 @@ def test_bucket_connection(
         s3.meta.client.head_bucket(Bucket=bucket_name)
         return True
     except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "403":
+        error_code = e.response.get("Error", {}).get("Code")
+        if error_code == "403":
             credentials = boto3.Session().get_credentials()
             access_key = credentials.access_key if credentials else "unknown"
             print(
@@ -171,7 +174,7 @@ def upload_file(
             if dry_run:
                 return (key_name.lstrip("/"), updated)
 
-            extra_args = {
+            extra_args: dict[str, str | dict[str, str]] = {
                 "Metadata": {"d3ploy-hash": local_md5},
             }
             if acl is not None:
@@ -182,10 +185,11 @@ def upload_file(
                 extra_args["ContentType"] = mimetype[0]
 
             cache_timeout = None
-            if mimetype[0] in caches.keys():
-                cache_timeout = caches.get(mimetype[0])
-            elif mimetype[0] and f"{mimetype[0].split('/')[0]}/*" in caches.keys():
-                cache_timeout = caches.get(f"{mimetype[0].split('/')[0]}/*")
+            mime_str = mimetype[0]
+            if mime_str and mime_str in caches.keys():
+                cache_timeout = caches.get(mime_str)
+            elif mime_str and f"{mime_str.split('/')[0]}/*" in caches.keys():
+                cache_timeout = caches.get(f"{mime_str.split('/')[0]}/*")
             if cache_timeout is not None:
                 privacy = "private" if cache_timeout == 0 else "public"
                 extra_args["CacheControl"] = f"max-age={cache_timeout}, {privacy}"
