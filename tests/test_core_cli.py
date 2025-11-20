@@ -203,7 +203,7 @@ class TestSyncCommand:
         mock_operations.sync_target.assert_called_once()
         call_kwargs = mock_operations.sync_target.call_args[1]
         assert call_kwargs["bucket_name"] == "my-bucket"
-        assert call_kwargs["local_path"] == "./dist"
+        assert call_kwargs["local_path"] == pathlib.Path("./dist")
         assert call_kwargs["acl"] == "public-read"
         assert call_kwargs["charset"] == "utf-8"
 
@@ -225,7 +225,7 @@ class TestSyncCommand:
 
         call_kwargs = mock_operations.sync_target.call_args[1]
         assert call_kwargs["bucket_name"] == "override-bucket"
-        assert call_kwargs["local_path"] == "./override"
+        assert call_kwargs["local_path"] == pathlib.Path("./override")
         assert call_kwargs["acl"] == "private"
 
     def test_sync_with_exclude_list(
