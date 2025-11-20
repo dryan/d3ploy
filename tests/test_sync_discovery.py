@@ -2,6 +2,7 @@
 Tests for file discovery and sync determination.
 """
 
+import hashlib
 from pathlib import Path
 
 from d3ploy.sync import discovery
@@ -177,3 +178,24 @@ def test_config_file_exclusion():
 
     # But other config files should still be included
     assert FILES_DIR / ".empty-config.json" in files_with_exclusion
+
+
+def test_get_file_hash():
+    """Test MD5 hash calculation for a file."""
+    # Create a temporary file with known content
+    test_file = FILES_DIR / "sample.json"
+    
+    # Calculate hash using the function
+    result_hash = discovery.get_file_hash(test_file)
+    
+    # Verify it's a valid MD5 hex string
+    assert len(result_hash) == 32
+    assert all(c in "0123456789abcdef" for c in result_hash)
+    
+    # Verify it matches manual calculation
+    expected_md5 = hashlib.md5()
+    with open(test_file, "rb") as f:
+        expected_md5.update(f.read())
+    expected_hash = expected_md5.hexdigest()
+    
+    assert result_hash == expected_hash
