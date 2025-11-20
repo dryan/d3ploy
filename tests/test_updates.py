@@ -394,9 +394,9 @@ def test_check_for_updates_general_exception_no_debug(test_check_file, monkeypat
         # Should not raise and should return None
         result = updates.check_for_updates("1.0.0", check_file_path=test_check_file)
         # Result is None since exception was caught
-        assert result is None, (
-            "Should return None when exception occurs in non-debug mode"
-        )
+        assert (
+            result is None
+        ), "Should return None when exception occurs in non-debug mode"
 
 
 def test_display_update_notification_version_parse_exception(capsys):
