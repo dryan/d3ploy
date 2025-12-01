@@ -142,9 +142,9 @@ class TestBriefcaseBuild:
             project_has_dep = any(dep in d for d in project_deps)
             app_has_dep = any(dep in d for d in app_deps)
 
-            assert project_has_dep or app_has_dep, (
-                f"Required dependency '{dep}' missing"
-            )
+            assert (
+                project_has_dep or app_has_dep
+            ), f"Required dependency '{dep}' missing"
 
     @pytest.mark.skipif(
         platform.system() not in ["Darwin", "Linux"], reason="Platform-specific test"
@@ -212,7 +212,7 @@ class TestBriefcaseBuild:
 
         for test_source in test_sources:
             test_path = project_root / test_source
-            assert test_path.exists(), (
-                f"Test source directory '{test_source}' does not exist"
-            )
+            assert (
+                test_path.exists()
+            ), f"Test source directory '{test_source}' does not exist"
             assert test_path.is_dir(), f"Test source '{test_source}' is not a directory"
