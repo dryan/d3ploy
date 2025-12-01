@@ -11,7 +11,7 @@ pre-commit:
       run: uv run ty check d3ploy/ tests/
       glob: "*.py"
     check-versions-match:
-      run: ./check-versions-match.py
+      run: just check-versions
       stage_fixed: true
 
 pre-push:
@@ -23,4 +23,4 @@ pre-push:
       run: uv run ty check d3ploy/ tests/
       glob: "*.py"
     check-versions-match:
-      run: ./check-versions-match.py
+      run: just check-versions

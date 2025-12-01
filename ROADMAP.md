@@ -194,13 +194,6 @@ This roadmap outlines the complete conversion of d3ploy from a traditional Pytho
 - [x] Test environment variable handling
 - [x] Test real AWS operations (with mocking)
 
-### 6.5 Performance Testing
-
-- [ ] Benchmark new vs old performance
-- [ ] Test memory usage of bundled app
-- [ ] Test startup time
-- [ ] Test large file synchronization
-
 ## Phase 7: Briefcase Build & Distribution
 
 ### 7.1 Build Configuration

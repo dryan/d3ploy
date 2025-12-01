@@ -85,6 +85,7 @@ description = "Easily deploy to S3 with multiple environment support"
 [tool.pyright]
 # Pyright configuration (used by ty)
 include = ["d3ploy", "tests"]
+exclude = ["**/justfile"]
 
 [tool.briefcase.app.d3ploy]
 formal_name = "D3ploy"
