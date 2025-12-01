@@ -32,16 +32,20 @@ def get_s3_resource() -> "S3ServiceResource":
     return boto3.resource("s3")
 
 
-def list_buckets() -> list[str]:
+def list_buckets(*, s3_client=None) -> list[str]:
     """
     List all S3 buckets accessible to the current credentials.
+
+    Args:
+        s3_client: Optional S3 client. If None, creates a new one.
 
     Returns:
         List of bucket names.
     """
-    s3 = boto3.client("s3")
+    if s3_client is None:
+        s3_client = boto3.client("s3")
     try:
-        response = s3.list_buckets()
+        response = s3_client.list_buckets()
         return [
             bucket["Name"] for bucket in response.get("Buckets", []) if "Name" in bucket
         ]

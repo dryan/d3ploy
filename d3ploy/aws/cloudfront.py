@@ -13,6 +13,7 @@ def invalidate_distributions(
     distribution_ids: Union[List[str], str],
     *,
     dry_run: bool = False,
+    cloudfront_client=None,
 ) -> List[str]:
     """
     Create CloudFront cache invalidations.
@@ -20,6 +21,7 @@ def invalidate_distributions(
     Args:
         distribution_ids: CloudFront distribution ID or list of IDs.
         dry_run: Simulate invalidation without actually creating.
+        cloudfront_client: Optional CloudFront client. If None, creates a new one.
 
     Returns:
         List of invalidation IDs created.
@@ -31,10 +33,11 @@ def invalidate_distributions(
 
     for cf_id in distribution_ids:
         if not dry_run:
-            cloudfront = boto3.client("cloudfront")
+            if cloudfront_client is None:
+                cloudfront_client = boto3.client("cloudfront")
             # we don't specify the individual paths because that's more
             # costly monetarily speaking
-            response = cloudfront.create_invalidation(
+            response = cloudfront_client.create_invalidation(
                 DistributionId=cf_id,
                 InvalidationBatch={
                     "Paths": {"Quantity": 1, "Items": ["/*"]},

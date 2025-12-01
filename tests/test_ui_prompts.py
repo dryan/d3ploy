@@ -194,9 +194,7 @@ class TestPromptForBucketConfig:
             mock_prompt.side_effect = ["bucket", ".", ""]
             mock_confirm.side_effect = [False, True]
 
-            result = prompts.prompt_for_bucket_config(
-                skip_no_config_message=True
-            )
+            result = prompts.prompt_for_bucket_config(skip_no_config_message=True)
 
             assert result is not None
 
@@ -345,9 +343,7 @@ class TestConfirmDestructiveOperation:
     def test_confirm_destructive_operation_no_file_count(self):
         """Test when file_count is not provided."""
         with patch("rich.prompt.Confirm.ask", return_value=True):
-            result = prompts.confirm_destructive_operation(
-                operation="clear bucket"
-            )
+            result = prompts.confirm_destructive_operation(operation="clear bucket")
 
             assert result is True
 
