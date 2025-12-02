@@ -69,7 +69,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.briefcase]
-project_name = "D3ploy"
+project_name = "d3ploy"
 bundle = "com.dryan"
 version = "4.4.4"
 url = "https://github.com/dryan/d3ploy"
@@ -88,7 +88,7 @@ include = ["d3ploy", "tests"]
 exclude = ["**/justfile"]
 
 [tool.briefcase.app.d3ploy]
-formal_name = "D3ploy"
+formal_name = "d3ploy"
 description = "Easily deploy to S3 with multiple environment support."
 long_description = """
 D3ploy is a command-line tool that makes it easy to deploy static sites and files 
@@ -114,6 +114,10 @@ requires = [
 ]
 
 console_app = true
+
+# Icon configuration (Briefcase will generate platform-specific icons)
+# To customize: place icon.png (1024x1024) in project root
+# icon = "icon"
 
 [tool.briefcase.app.d3ploy.macOS]
 requires = [
