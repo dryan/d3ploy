@@ -3,12 +3,11 @@ Configuration validation.
 """
 
 from typing import Any
-from typing import Dict
 
 from .constants import RECOMMENDED_CACHES
 
 
-def validate_config(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_config(data: dict[str, Any]) -> dict[str, Any]:
     """
     Validate and parse configuration structure.
     Also expands 'recommended' presets.
@@ -27,7 +26,8 @@ def validate_config(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Check for targets
     if "targets" not in data:
-        # It's possible to have a config with just defaults, but usually we want targets.
+        # It's possible to have a config with just defaults, but usually we
+        # want targets.
         raise ValueError("Configuration missing 'targets' key")
 
     if not isinstance(data["targets"], dict):
@@ -48,7 +48,7 @@ def validate_config(data: Dict[str, Any]) -> Dict[str, Any]:
     return data
 
 
-def _expand_caches(config: Dict[str, Any]):
+def _expand_caches(config: dict[str, Any]):
     """Expand 'caches': 'recommended' into actual values."""
     if config.get("caches") == "recommended":
         config["caches"] = RECOMMENDED_CACHES.copy()

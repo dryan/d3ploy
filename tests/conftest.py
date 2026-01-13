@@ -8,8 +8,8 @@ test utilities used across multiple test modules.
 import os
 import pathlib
 import uuid
+from collections.abc import Generator
 from typing import Any
-from typing import Generator
 
 import boto3
 import pytest

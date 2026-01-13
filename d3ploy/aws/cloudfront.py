@@ -3,18 +3,16 @@ CloudFront operations.
 """
 
 import uuid
-from typing import List
-from typing import Union
 
 import boto3
 
 
 def invalidate_distributions(
-    distribution_ids: Union[List[str], str],
+    distribution_ids: list[str] | str,
     *,
     dry_run: bool = False,
     cloudfront_client=None,
-) -> List[str]:
+) -> list[str]:
     """
     Create CloudFront cache invalidations.
 

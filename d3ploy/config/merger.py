@@ -3,15 +3,14 @@ Configuration merging logic.
 """
 
 from typing import Any
-from typing import Dict
 
 
 def merge_config(
-    defaults: Dict[str, Any],
-    file_config: Dict[str, Any],
-    env_config: Dict[str, Any],
-    cli_args: Dict[str, Any],
-) -> Dict[str, Any]:
+    defaults: dict[str, Any],
+    file_config: dict[str, Any],
+    env_config: dict[str, Any],
+    cli_args: dict[str, Any],
+) -> dict[str, Any]:
     """
     Merge configuration from multiple sources with priority:
     CLI args > Env vars > File config > Defaults

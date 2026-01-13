@@ -5,13 +5,11 @@ Configuration file loading.
 import json
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 CONFIG_FILES = ["d3ploy.json", ".d3ploy.json"]
 
 
-def load_config(path: Optional[str] = None) -> Dict[str, Any]:
+def load_config(path: str | None = None) -> dict[str, Any]:
     """
     Load configuration from d3ploy.json or .d3ploy.json.
 
@@ -45,9 +43,9 @@ def load_config(path: Optional[str] = None) -> Dict[str, Any]:
         )
 
     try:
-        with open(config_path, "r") as f:
+        with Path(config_path).open() as f:
             return json.load(f)
     except json.JSONDecodeError as e:
         raise json.JSONDecodeError(
             f"Error parsing {config_path}: {str(e)}", e.doc, e.pos
-        )
+        ) from e

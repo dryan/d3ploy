@@ -1,5 +1,6 @@
 """Integration tests for AWS operations with comprehensive mocking."""
 
+import contextlib
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -148,11 +149,8 @@ class TestAWSOperationsIntegration:
         )
 
         # Should raise the client error for non-403 errors or handle 403 specifically
-        try:
+        with contextlib.suppress(ClientError, SystemExit):
             s3.test_bucket_connection("test-bucket", s3=mock_s3_resource)
-        except (ClientError, SystemExit):
-            # Either ClientError propagates or SystemExit for 403 errors
-            pass
 
     def test_cloudfront_error_handling(self) -> None:
         """Test CloudFront error handling."""

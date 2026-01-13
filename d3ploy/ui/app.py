@@ -2,8 +2,8 @@
 Main application wrapper for UI operations.
 """
 
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 
 from rich.console import Console
 

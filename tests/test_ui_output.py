@@ -8,7 +8,6 @@ import pytest
 
 from d3ploy.ui import output
 
-
 # Tests for display_message
 
 

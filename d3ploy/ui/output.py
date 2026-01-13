@@ -6,10 +6,6 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
 
 from rich.console import Console
 from rich.panel import Panel
@@ -68,10 +64,10 @@ def display_error(
 
 
 def display_table(
-    rows: List[Dict[str, Any]],
+    rows: list[dict[str, Any]],
     *,
-    title: Optional[str] = None,
-    columns: Optional[List[str]] = None,
+    title: str | None = None,
+    columns: list[str] | None = None,
     quiet: bool = False,
 ):
     """
@@ -104,9 +100,9 @@ def display_table(
 
 
 def display_panel(
-    content: Union[str, Dict[str, Any]],
+    content: str | dict[str, Any],
     *,
-    title: Optional[str] = None,
+    title: str | None = None,
     border_style: str = "blue",
     quiet: bool = False,
 ):
@@ -135,9 +131,9 @@ def display_panel(
 
 
 def display_json(
-    data: Union[Dict[str, Any], str, Path],
+    data: dict[str, Any] | str | Path,
     *,
-    title: Optional[str] = None,
+    title: str | None = None,
     line_numbers: bool = True,
     quiet: bool = False,
 ):
@@ -176,7 +172,7 @@ def display_json(
 
 
 def display_config(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     *,
     quiet: bool = False,
 ):
@@ -205,7 +201,7 @@ def _format_value(value: Any) -> str:
     """
     if isinstance(value, bool):
         return "[green]true[/green]" if value else "[red]false[/red]"
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         if not value:
             return "[dim][[]][/dim]"
         items = ", ".join(f"[yellow]{item}[/yellow]" for item in value)
@@ -216,9 +212,9 @@ def _format_value(value: Any) -> str:
 
 
 def display_config_tree(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     *,
-    title: Optional[str] = None,
+    title: str | None = None,
     quiet: bool = False,
 ):
     """

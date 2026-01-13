@@ -7,10 +7,14 @@ import signal
 from ..sync import operations
 
 
-class UserCancelled(Exception):
+class UserCancelledError(Exception):
     """Exception raised when user cancels operation (Ctrl+C)."""
 
     pass
+
+
+# Backward compatibility alias
+UserCancelled = UserCancelledError
 
 
 def bail(*args, **kwargs):

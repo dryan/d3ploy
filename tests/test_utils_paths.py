@@ -8,7 +8,6 @@ from unittest.mock import patch
 
 from d3ploy.utils import paths
 
-
 # Tests for get_app_data_dir
 
 

@@ -4,7 +4,6 @@ MIME type detection utilities.
 
 import mimetypes
 from pathlib import Path
-from typing import Optional
 
 # Custom MIME types from https://mzl.la/39XkRvH
 CUSTOM_MIMETYPES = {
@@ -46,7 +45,7 @@ def register_custom_types() -> None:
             mimetypes.add_type(mimetype, extension)
 
 
-def get_content_type(file: Path, *, charset: Optional[str] = None) -> str:
+def get_content_type(file: Path, *, charset: str | None = None) -> str:
     """
     Get Content-Type header value for file.
 

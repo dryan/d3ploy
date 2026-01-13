@@ -128,8 +128,9 @@ class TestCrossPlatformCompatibility:
                         content = test_file.read_text(encoding="utf-8")
                         assert content == "test content"
                 except (OSError, UnicodeError):
-                    # Some platforms/filesystems may not support certain Unicode characters
-                    # This is acceptable - we just want to ensure it doesn't crash
+                    # Some platforms/filesystems may not support certain
+                    # Unicode characters. This is acceptable - we just want
+                    # to ensure it doesn't crash
                     pass
 
     def test_line_ending_handling(self) -> None:

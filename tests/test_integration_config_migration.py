@@ -1,5 +1,6 @@
 """Integration tests for config migration scenarios."""
 
+import contextlib
 import json
 import tempfile
 from pathlib import Path
@@ -152,7 +153,8 @@ class TestConfigMigrationIntegration:
                         loaded_config
                     ):  # If it loads, migration should handle it gracefully
                         migrated_config = migration.migrate_config(loaded_config)
-                        # Should either migrate successfully or maintain original structure
+                        # Should either migrate successfully or maintain original
+                        # structure
                         assert isinstance(migrated_config, dict)
                 except (ValueError, KeyError, TypeError):
                     # Expected for truly invalid configs
@@ -282,17 +284,12 @@ class TestConfigMigrationIntegration:
                 migrated_config = migration.migrate_config(loaded_config)
 
                 # save_migrated_config should handle permission errors gracefully
-                try:
+                with contextlib.suppress(PermissionError):
                     migration.save_migrated_config(
                         migrated_config, path=str(config_path)
                     )
-                except PermissionError:
-                    # This is expected behavior - should not crash the application
-                    pass
 
             finally:
                 # Restore permissions for cleanup
-                try:
+                with contextlib.suppress(PermissionError, FileNotFoundError):
                     config_path.chmod(0o644)
-                except (PermissionError, FileNotFoundError):
-                    pass

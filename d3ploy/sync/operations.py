@@ -5,14 +5,9 @@ File synchronization operations and coordination.
 import os
 import sys
 import threading
+from collections.abc import Collection
 from concurrent import futures
 from pathlib import Path
-from typing import Collection
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 from .. import aws
 from .. import ui
@@ -57,8 +52,8 @@ def get_progress_bar(
 def alert(
     text: str,
     *,
-    error_code: Optional[int] = None,
-    color: Optional[str] = None,
+    error_code: int | None = None,
+    color: str | None = None,
     quiet: bool = False,
 ):
     """
@@ -99,21 +94,21 @@ def get_confirmation(message: str) -> bool:
 
 
 def upload_batch(
-    files: List[Path],
+    files: list[Path],
     bucket_name: str,
     s3_resource,
     bucket_path: str,
     prefix: Path,
     *,
-    acl: Optional[str] = None,
+    acl: str | None = None,
     force: bool = False,
     dry_run: bool = False,
-    charset: Optional[str] = None,
-    caches: Optional[Dict[str, int]] = None,
+    charset: str | None = None,
+    caches: dict[str, int] | None = None,
     processes: int = 1,
     env: str = "",
     quiet: bool = False,
-) -> Tuple[List[Tuple[str, int]], int]:
+) -> tuple[list[tuple[str, int]], int]:
     """
     Upload batch of files using thread pool.
 
@@ -139,37 +134,39 @@ def upload_batch(
         caches = {}
 
     key_names = []
-    with get_progress_bar(
-        desc=f"[green]Updating {env}[/green]",
-        total=len(files),
-        quiet=quiet,
-    ) as bar:
-        with futures.ThreadPoolExecutor(max_workers=processes) as executor:
-            jobs = []
-            for fn in files:
-                job = executor.submit(
-                    aws.s3.upload_file,
-                    fn,
-                    bucket_name,
-                    s3_resource,
-                    bucket_path,
-                    prefix,
-                    acl=acl,
-                    force=force,
-                    dry_run=dry_run,
-                    charset=charset,
-                    caches=caches,
-                )
-                jobs.append(job)
+    with (
+        get_progress_bar(
+            desc=f"[green]Updating {env}[/green]",
+            total=len(files),
+            quiet=quiet,
+        ) as bar,
+        futures.ThreadPoolExecutor(max_workers=processes) as executor,
+    ):
+        jobs = []
+        for fn in files:
+            job = executor.submit(
+                aws.s3.upload_file,
+                fn,
+                bucket_name,
+                s3_resource,
+                bucket_path,
+                prefix,
+                acl=acl,
+                force=force,
+                dry_run=dry_run,
+                charset=charset,
+                caches=caches,
+            )
+            jobs.append(job)
 
-            for job in futures.as_completed(jobs):
-                if killswitch.is_set():
-                    break
-                result = job.result()
-                key_names.append(result)
-                bar.update()
+        for job in futures.as_completed(jobs):
+            if killswitch.is_set():
+                break
+            result = job.result()
+            key_names.append(result)
+            bar.update()
 
-            executor.shutdown(wait=True)
+        executor.shutdown(wait=True)
 
     updated = sum([i[1] for i in key_names])
     return key_names, updated
@@ -179,7 +176,7 @@ def delete_orphans(
     bucket_name: str,
     s3_resource,
     bucket_path: str,
-    local_files: List[str],
+    local_files: list[str],
     *,
     needs_confirmation: bool = False,
     dry_run: bool = False,
@@ -215,43 +212,43 @@ def delete_orphans(
         return 0
 
     deleted = 0
-    with get_progress_bar(
-        desc=f"[red]Cleaning {env}[/red]",
-        total=len(to_remove),
-        colour="red",
-        quiet=quiet,
-    ) as bar:
-        with futures.ThreadPoolExecutor(max_workers=processes) as executor:
-            jobs = []
-            for kn in to_remove:
-                if needs_confirmation:
-                    confirmed = get_confirmation(
-                        f"\nRemove {bucket_name}/{kn.lstrip('/')}"
+    with (
+        get_progress_bar(
+            desc=f"[red]Cleaning {env}[/red]",
+            total=len(to_remove),
+            colour="red",
+            quiet=quiet,
+        ) as bar,
+        futures.ThreadPoolExecutor(max_workers=processes) as executor,
+    ):
+        jobs = []
+        for kn in to_remove:
+            if needs_confirmation:
+                confirmed = get_confirmation(f"\nRemove {bucket_name}/{kn.lstrip('/')}")
+                if not confirmed:
+                    alert(
+                        f"\nSkipping removal of {bucket_name}/{kn.lstrip('/')}",
+                        quiet=quiet,
                     )
-                    if not confirmed:
-                        alert(
-                            f"\nSkipping removal of {bucket_name}/{kn.lstrip('/')}",
-                            quiet=quiet,
-                        )
-                        bar.update()
-                        continue
+                    bar.update()
+                    continue
 
-                job = executor.submit(
-                    aws.s3.delete_file,
-                    kn,
-                    bucket_name,
-                    s3_resource,
-                    dry_run=dry_run,
-                )
-                jobs.append(job)
+            job = executor.submit(
+                aws.s3.delete_file,
+                kn,
+                bucket_name,
+                s3_resource,
+                dry_run=dry_run,
+            )
+            jobs.append(job)
 
-            for job in futures.as_completed(jobs):
-                if killswitch.is_set():
-                    break
-                deleted += job.result()
-                bar.update()
+        for job in futures.as_completed(jobs):
+            if killswitch.is_set():
+                break
+            deleted += job.result()
+            bar.update()
 
-            executor.shutdown(wait=True)
+        executor.shutdown(wait=True)
 
     return deleted
 
@@ -259,23 +256,23 @@ def delete_orphans(
 def sync_target(
     target: str,
     *,
-    bucket_name: Optional[str] = None,
+    bucket_name: str | None = None,
     local_path: Path | None = None,
-    bucket_path: Optional[str] = "/",
+    bucket_path: str | None = "/",
     excludes: Collection[str] = [],
-    acl: Optional[str] = None,
+    acl: str | None = None,
     force: bool = False,
     dry_run: bool = False,
-    charset: Optional[str] = None,
+    charset: str | None = None,
     gitignore: bool = False,
     processes: int = 1,
     delete: bool = False,
     confirm: bool = False,
-    cloudfront_id: Union[List[str], str, None] = None,
-    caches: Optional[Dict[str, int]] = None,
+    cloudfront_id: list[str] | str | None = None,
+    caches: dict[str, int] | None = None,
     quiet: bool = False,
     using_config: bool = True,
-) -> Dict[str, int]:
+) -> dict[str, int]:
     """
     Coordinate sync operation for a target.
 
@@ -330,7 +327,8 @@ def sync_target(
         )
 
     # Type checker: bucket_name is guaranteed non-None after the check above
-    # (alert with error_code calls sys.exit, so we won't reach here if bucket_name is None)
+    # (alert with error_code calls sys.exit, so we won't reach here if
+    # bucket_name is None)
     assert bucket_name is not None
     assert bucket_path is not None
 

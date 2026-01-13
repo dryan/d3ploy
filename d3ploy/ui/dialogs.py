@@ -44,6 +44,7 @@ def show_dialog(
         choices=choices,
         default=default,
     )
-    # When choices are provided, Prompt.ask will always return a string (reprompts if invalid)
+    # When choices are provided, Prompt.ask will always return a string
+    # (reprompts if invalid)
     assert result is not None
     return result

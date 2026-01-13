@@ -35,8 +35,66 @@ documentation = "https://github.com/dryan/d3ploy#readme"
 [project.scripts]
 d3ploy = "d3ploy:cli"
 
+[tool.ruff]
+# Target Python 3.10+ (minimum supported version for this project)
+target-version = "py310"
+
+# Same as Black
+line-length = 88
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "node_modules",
+    "dist",
+    "build",
+    ".pytest_cache",
+    "*.egg-info",
+    ".pedantry",  # Exclude pedantry submodule
+]
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`), pyflakes (`F`), isort (`I`), and more
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "PTH",    # flake8-use-pathlib
+]
+
+# Ignore specific rules if needed
+ignore = []
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
+
+# Like Black, respect magic trailing commas
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect line ending
+line-ending = "auto"
 
 [dependency-groups]
 dev = [
@@ -49,6 +107,7 @@ dev = [
     "ruff>=0.7.3",
     "tomli>=2.3.0",
     "ty>=0.0.1a27",
+    "vulture>=2.14",
 ]
 
 [build-system]
@@ -78,20 +137,45 @@ author = "dryan"
 author_email = "dryan@users.noreply.github.com"
 description = "Easily deploy to S3 with multiple environment support"
 
-[tool.ty]
-# Type checking configuration for ty (pyright CLI wrapper)
-# See: https://github.com/astral-sh/ty
+[tool.ty.environment]
+# Python version
+python-version = "3.10"
 
-[tool.pyright]
-# Pyright configuration (used by ty)
-include = ["d3ploy", "tests"]
-exclude = ["**/justfile"]
+# Paths - ty will auto-detect src layout if ./src exists
+# root = ["src"]  # Uncomment to override auto-detection
+
+[tool.ty.src]
+# Files to check
+include = ["d3ploy"]
+
+# Files to exclude from type checking
+exclude = [
+    "**/__pycache__",
+    "**/node_modules",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+]
+
+[tool.ty.rules]
+# ty uses rules instead of individual report settings
+# All rules default to "error" unless specified otherwise
+# Example: possibly-unresolved-reference = "warn"
+# Example: division-by-zero = "ignore"
+
+[tool.ty.terminal]
+# Output format: "full" (default) or "concise"
+output-format = "full"
+
+# Treat warnings as errors
+error-on-warning = false
 
 [tool.briefcase.app.d3ploy]
 formal_name = "d3ploy"
 description = "Easily deploy to S3 with multiple environment support."
 long_description = """
-D3ploy is a command-line tool that makes it easy to deploy static sites and files 
+D3ploy is a command-line tool that makes it easy to deploy static sites and files
 to Amazon S3 with support for multiple environments. It supports features like:
 
 - Multiple environment configurations
@@ -144,4 +228,25 @@ requires = [
     "pathspec>=0.12.1",
     "rich>=14.2.0",
     "typer>=0.20.0",
+]
+
+[tool.vulture]
+# Minimum confidence for reporting unused code (0-100)
+min_confidence = 80
+
+# Ignore certain patterns
+ignore_names = [
+    "*_test.py",
+    "test_*.py",
+    "reset_killswitch",    # pytest fixture
+    "clean_s3_bucket",     # pytest fixture
+    "color",               # backward compatibility parameter
+    "S3ServiceResource",   # TYPE_CHECKING import for type hints
+]
+
+# Paths to exclude
+exclude = [
+    ".venv/",
+    "venv/",
+    "node_modules/",
 ]

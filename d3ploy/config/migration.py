@@ -5,13 +5,11 @@ Configuration migration for version upgrades.
 import json
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 CURRENT_VERSION = 2
 
 
-def migrate_config(config: Dict[str, Any]) -> Dict[str, Any]:
+def migrate_config(config: dict[str, Any]) -> dict[str, Any]:
     """
     Migrate configuration from old version to new version.
 
@@ -29,7 +27,8 @@ def migrate_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
     if version > CURRENT_VERSION:
         raise ValueError(
-            f"Config version {version} is newer than supported version {CURRENT_VERSION}"
+            f"Config version {version} is newer than supported "
+            f"version {CURRENT_VERSION}"
         )
 
     if version == CURRENT_VERSION:
@@ -53,7 +52,7 @@ def migrate_config(config: Dict[str, Any]) -> Dict[str, Any]:
     return migrated_config
 
 
-def needs_migration(config: Dict[str, Any]) -> bool:
+def needs_migration(config: dict[str, Any]) -> bool:
     """
     Check if config needs migration.
 
@@ -67,7 +66,7 @@ def needs_migration(config: Dict[str, Any]) -> bool:
     return version < CURRENT_VERSION
 
 
-def save_migrated_config(config: Dict[str, Any], *, path: str) -> None:
+def save_migrated_config(config: dict[str, Any], *, path: str) -> None:
     """
     Save migrated config to disk.
 
@@ -77,12 +76,12 @@ def save_migrated_config(config: Dict[str, Any], *, path: str) -> None:
     """
     config_path = Path(path)
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(config_path, "w") as f:
+    with config_path.open("w") as f:
         json.dump(config, f, indent=2)
         f.write("\n")  # Add trailing newline
 
 
-def get_migration_command(config_path: Optional[str] = None) -> str:
+def get_migration_command(config_path: str | None = None) -> str:
     """
     Get the command to run to migrate a config file.
 

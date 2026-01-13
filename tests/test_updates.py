@@ -28,7 +28,7 @@ def mock_pypi_response():
     def _make_response(version: str):
         mock_response = Mock()
         mock_response.read.return_value = (
-            f'{{"info": {{"version": "{version}"}}}}'.encode("utf-8")
+            f'{{"info": {{"version": "{version}"}}}}'.encode()
         )
         mock_response.__enter__ = lambda self: self
         mock_response.__exit__ = lambda self, *args: None
@@ -126,7 +126,7 @@ def test_check_without_check_file_path(tmp_path):
             mock_get_path.assert_called_once()
 
 
-def test_check_with_XDG_CONFIG_HOME_set(tmp_path, monkeypatch):
+def test_check_with_xdg_config_home_set(tmp_path, monkeypatch):
     """check_for_updates respects XDG_CONFIG_HOME environment variable."""
     xdg_config = tmp_path / "config"
     xdg_config.mkdir()
@@ -152,7 +152,7 @@ def test_check_with_XDG_CONFIG_HOME_set(tmp_path, monkeypatch):
             assert result in [True, False, None]
 
 
-def test_check_with_XDG_CONFIG_HOME_not_set(tmp_path, monkeypatch):
+def test_check_with_xdg_config_home_not_set(tmp_path, monkeypatch):
     """check_for_updates uses fallback when XDG_CONFIG_HOME is not set."""
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
 
@@ -413,7 +413,8 @@ def test_display_update_notification_version_parse_exception(capsys):
 
 
 def test_save_check_time_ioerror_creating_file(tmp_path):
-    """Test IOError when creating check file in save_check_time is handled gracefully."""
+    """Test IOError when creating check file in save_check_time is handled
+    gracefully."""
     check_file = tmp_path / "readonly_dir" / "check.txt"
     check_file.parent.mkdir()
 
@@ -433,7 +434,8 @@ def test_save_check_time_ioerror_creating_file(tmp_path):
 
 
 def test_save_check_time_ioerror_writing_file(tmp_path):
-    """Test IOError when writing to check file in save_check_time is handled gracefully."""
+    """Test IOError when writing to check file in save_check_time is handled
+    gracefully."""
     check_file = tmp_path / "check.txt"
     check_file.touch()
 

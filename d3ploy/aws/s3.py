@@ -8,10 +8,7 @@ import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Dict
 from typing import Optional
-from typing import Tuple
-from typing import Union
 
 import boto3
 import botocore.exceptions
@@ -111,25 +108,22 @@ def key_exists(
         True if key exists.
     """
     bucket = s3.Bucket(bucket_name)
-    for obj in bucket.objects.filter(Prefix=key_name):
-        if obj.key == key_name:
-            return True
-    return False
+    return any(obj.key == key_name for obj in bucket.objects.filter(Prefix=key_name))
 
 
 def upload_file(
-    file_name: Union[str, Path],
+    file_name: str | Path,
     bucket_name: str,
     s3: "S3ServiceResource",
     bucket_path: str,
     prefix: Path,
     *,
-    acl: Optional[str] = None,
+    acl: str | None = None,
     force: bool = False,
     dry_run: bool = False,
-    charset: Optional[str] = None,
-    caches: Optional[Dict[str, int]] = None,
-) -> Tuple[str, int]:
+    charset: str | None = None,
+    caches: dict[str, int] | None = None,
+) -> tuple[str, int]:
     """
     Upload file to S3.
 
@@ -146,7 +140,8 @@ def upload_file(
         caches: Dictionary of MIME type patterns to cache timeouts.
 
     Returns:
-        Tuple of (key_name, updated_count) where updated_count is 1 if uploaded, 0 if skipped.
+        Tuple of (key_name, updated_count) where updated_count is 1 if
+        uploaded, 0 if skipped.
     """
     if caches is None:
         caches = {}
@@ -165,15 +160,15 @@ def upload_file(
         s3_obj = None
 
     local_md5 = hashlib.md5()
-    with open(file_name, "rb") as local_file:
+    with Path(file_name).open("rb") as local_file:
         for chunk in iter(lambda: local_file.read(4096), b""):
             local_md5.update(chunk)
     local_md5 = local_md5.hexdigest()
 
     mimetype = mimetypes.guess_type(file_name)
 
-    if s3_obj is None or force or not s3_obj.metadata.get("d3ploy-hash") == local_md5:
-        with open(file_name, "rb") as local_file:
+    if s3_obj is None or force or s3_obj.metadata.get("d3ploy-hash") != local_md5:
+        with Path(file_name).open("rb") as local_file:
             updated += 1
             if dry_run:
                 return (key_name.lstrip("/"), updated)
@@ -190,9 +185,9 @@ def upload_file(
 
             cache_timeout = None
             mime_str = mimetype[0]
-            if mime_str and mime_str in caches.keys():
+            if mime_str and mime_str in caches:
                 cache_timeout = caches.get(mime_str)
-            elif mime_str and f"{mime_str.split('/')[0]}/*" in caches.keys():
+            elif mime_str and f"{mime_str.split('/')[0]}/*" in caches:
                 cache_timeout = caches.get(f"{mime_str.split('/')[0]}/*")
             if cache_timeout is not None:
                 privacy = "private" if cache_timeout == 0 else "public"

@@ -9,7 +9,6 @@ import os
 import pathlib
 import sys
 from typing import Annotated
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -44,7 +43,7 @@ def version_callback(*, value: bool) -> None:
 def main(
     *,
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version",
             "-v",
@@ -63,7 +62,7 @@ def main(
 @app.command()
 def sync(
     targets: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Argument(
             help="Which target(s) to deploy to. Defaults to 'default'.",
             show_default=False,
@@ -71,35 +70,35 @@ def sync(
     ] = None,
     *,
     bucket_name: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--bucket-name",
             help="The bucket to upload files to.",
         ),
     ] = None,
     local_path: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--local-path",
             help="The local folder to upload files from.",
         ),
     ] = None,
     bucket_path: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--bucket-path",
             help="The remote folder to upload files to.",
         ),
     ] = None,
     exclude: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option(
             "--exclude",
             help="A filename or pattern to ignore. Can be set multiple times.",
         ),
     ] = None,
     acl: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--acl",
             help="The ACL to apply to uploaded files.",
@@ -123,7 +122,7 @@ def sync(
         ),
     ] = False,
     charset: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--charset",
             help="The charset header to add to text files.",
@@ -161,10 +160,13 @@ def sync(
         ),
     ] = False,
     cloudfront_id: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option(
             "--cloudfront-id",
-            help="Specify one or more CloudFront distribution IDs to invalidate after updating.",
+            help=(
+                "Specify one or more CloudFront distribution IDs to "
+                "invalidate after updating."
+            ),
         ),
     ] = None,
     all_targets: Annotated[
@@ -266,7 +268,8 @@ def sync(
         if config_module.needs_migration(config_data):
             old_version = config_data.get("version", 0)
             ui.output.display_message(
-                f"Your config file is version {old_version} but d3ploy now requires version {config_module.CURRENT_VERSION}.",
+                f"Your config file is version {old_version} but d3ploy now "
+                f"requires version {config_module.CURRENT_VERSION}.",
                 level="error",
                 quiet=False,
             )
@@ -282,7 +285,7 @@ def sync(
             )
             raise typer.Exit(code=os.EX_CONFIG)
 
-    target_list = [f"{item}" for item in config_data.get("targets", {}).keys()]
+    target_list = [f"{item}" for item in config_data.get("targets", {})]
     defaults = config_data.get("defaults", {})
 
     # Check if user provided enough information to proceed without config
@@ -401,7 +404,8 @@ def sync(
         if os.environ.get("D3PLOY_DEBUG") == "True":
             raise e
 
-    # Interactive prompts for missing options (only if not in quiet mode and interactive)
+    # Interactive prompts for missing options
+    # (only if not in quiet mode and interactive)
     if is_interactive and not quiet:
         from ..ui import prompts
 
@@ -504,14 +508,16 @@ def migrate_config(
         config = json.loads(path.read_text())
         if not config_module.needs_migration(config):
             console.print(
-                f"[green]✓[/green] Config file {config_path} is already at version {config_module.CURRENT_VERSION}",
+                f"[green]✓[/green] Config file {config_path} is already at "
+                f"version {config_module.CURRENT_VERSION}",
             )
             raise typer.Exit()
 
         # Show what will change
         old_version = config.get("version", 0)
         console.print(
-            f"[yellow]Migrating config from version {old_version} to {config_module.CURRENT_VERSION}...[/yellow]",
+            f"[yellow]Migrating config from version {old_version} to "
+            f"{config_module.CURRENT_VERSION}...[/yellow]",
         )
 
         # Perform migration
@@ -540,7 +546,7 @@ def migrate_config(
         )
     except Exception as e:
         console.print(f"[red]Error migrating config:[/red] {e}")
-        raise typer.Exit(code=os.EX_DATAERR)
+        raise typer.Exit(code=os.EX_DATAERR) from e
 
 
 @app.command()
@@ -595,10 +601,10 @@ def show_config(
             )
     except json.JSONDecodeError as e:
         console.print(f"[red]Invalid JSON in config file:[/red] {e}")
-        raise typer.Exit(code=os.EX_DATAERR)
+        raise typer.Exit(code=os.EX_DATAERR) from e
     except Exception as e:
         console.print(f"[red]Error reading config:[/red] {e}")
-        raise typer.Exit(code=os.EX_IOERR)
+        raise typer.Exit(code=os.EX_IOERR) from e
 
 
 @app.command(name="create-config")
@@ -613,7 +619,7 @@ def create_config(
     ] = "d3ploy.json",
     *,
     target: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--target",
             "-t",
@@ -650,7 +656,7 @@ def create_config(
             console.print()
         except json.JSONDecodeError:
             console.print("[red]Error:[/red] Existing config file is not valid JSON")
-            raise typer.Exit(code=os.EX_DATAERR)
+            raise typer.Exit(code=os.EX_DATAERR) from None
     else:
         console.print()
         console.print("[yellow]No configuration file found.[/yellow]")

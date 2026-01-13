@@ -5,8 +5,6 @@ Provides keyboard-selectable menus and interactive configuration
 for terminal environments that support it.
 """
 
-from typing import Optional
-
 import questionary
 from rich.console import Console
 from rich.prompt import Confirm
@@ -19,7 +17,7 @@ from d3ploy import config as config_module
 VALID_ACLS = ["private", "public-read", "public-read-write", "authenticated-read"]
 
 
-def select_target(*, config_path: str) -> Optional[str]:
+def select_target(*, config_path: str) -> str | None:
     """
     Display an interactive target selection menu.
 
@@ -63,7 +61,8 @@ def select_target(*, config_path: str) -> Optional[str]:
     # Use questionary for arrow-key navigation
     target_choices = [
         questionary.Choice(
-            f"{name} → {config.get('bucket_name', '')} ({config.get('local_path', '.')})",
+            f"{name} → {config.get('bucket_name', '')} "
+            f"({config.get('local_path', '.')})",
             name,
         )
         for name, config in target_list
@@ -119,10 +118,10 @@ def confirm_config_migration(
 
 def prompt_for_bucket_config(
     *,
-    checked_paths: Optional[list[str]] = None,
+    checked_paths: list[str] | None = None,
     ask_confirmation: bool = False,
     skip_no_config_message: bool = False,
-) -> Optional[dict]:
+) -> dict | None:
     """
     Interactively prompt for basic bucket configuration.
 
@@ -130,8 +129,10 @@ def prompt_for_bucket_config(
 
     Args:
         checked_paths: Optional list of config file paths that were checked.
-        ask_confirmation: If True, ask user to confirm before starting config builder.
-        skip_no_config_message: If True, skip displaying the "No configuration file found" message.
+        ask_confirmation: If True, ask user to confirm before starting config
+            builder.
+        skip_no_config_message: If True, skip displaying the "No configuration
+            file found" message.
 
     Returns:
         Dictionary with bucket configuration, or None if user cancels.
@@ -257,7 +258,8 @@ def prompt_for_bucket_config(
     console.print("They set 1-year cache for most files and no-cache for HTML files.")
     console.print()
     console.print(
-        "[yellow]⚠ Warning:[/yellow] Only use this if your assets have versioned filenames"
+        "[yellow]⚠ Warning:[/yellow] Only use this if your assets have "
+        "versioned filenames"
     )
     console.print(
         "  (e.g., style.abc123.css, bundle.xyz789.js) to ensure updates are seen."

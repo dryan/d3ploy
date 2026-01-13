@@ -141,9 +141,11 @@ class TestSyncCommand:
         mock_ui: MagicMock,
     ) -> None:
         """Test sync fails without config or args in non-interactive mode."""
-        with patch("pathlib.Path.exists", return_value=False):
-            with patch("sys.stdin.isatty", return_value=False):
-                cli_module.sync(config="nonexistent.json")
+        with (
+            patch("pathlib.Path.exists", return_value=False),
+            patch("sys.stdin.isatty", return_value=False),
+        ):
+            cli_module.sync(config="nonexistent.json")
 
         # Should display error
         mock_ui.output.display_error.assert_called_once()
@@ -165,13 +167,14 @@ class TestSyncCommand:
         # Change to tmp directory for the test
         import os
 
-        original_cwd = os.getcwd()
+        original_cwd = pathlib.Path.cwd()
         try:
             os.chdir(tmp_path)
 
             # Mock stdin.isatty to prevent interactive prompts
             with patch("sys.stdin.isatty", return_value=False):
-                # Run sync with bucket_name, non-default target, and ACL (to avoid prompts)
+                # Run sync with bucket_name, non-default target, and ACL
+                # (to avoid prompts)
                 cli_module.sync(
                     targets=["test"],
                     bucket_name="test-bucket",
@@ -548,12 +551,14 @@ class TestSyncCommand:
         """Test that update check exceptions are raised in debug mode."""
         mock_updates.check_for_updates.side_effect = Exception("Network error")
 
-        with patch.dict(os.environ, {"D3PLOY_DEBUG": "True"}):
-            with pytest.raises(Exception, match="Network error"):
-                cli_module.sync(
-                    targets=["production"],
-                    config=str(mock_config_path),
-                )
+        with (
+            patch.dict(os.environ, {"D3PLOY_DEBUG": "True"}),
+            pytest.raises(Exception, match="Network error"),
+        ):
+            cli_module.sync(
+                targets=["production"],
+                config=str(mock_config_path),
+            )
 
     def test_sync_with_confirm_flag(
         self,
@@ -581,17 +586,19 @@ class TestSyncCommand:
         mock_config_path: pathlib.Path,
     ) -> None:
         """Test interactive target selection in terminal."""
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("d3ploy.ui.prompts.select_target") as mock_select:
-                mock_select.return_value = "production"
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("d3ploy.ui.prompts.select_target") as mock_select,
+        ):
+            mock_select.return_value = "production"
 
-                cli_module.sync(config=str(mock_config_path))
+            cli_module.sync(config=str(mock_config_path))
 
-                # Should prompt for target
-                mock_select.assert_called_once()
-                # Should sync the selected target
-                call_args = mock_operations.sync_target.call_args[0]
-                assert call_args[0] == "production"
+            # Should prompt for target
+            mock_select.assert_called_once()
+            # Should sync the selected target
+            call_args = mock_operations.sync_target.call_args[0]
+            assert call_args[0] == "production"
 
     def test_sync_interactive_target_selection_cancelled(
         self,
@@ -601,12 +608,14 @@ class TestSyncCommand:
         mock_config_path: pathlib.Path,
     ) -> None:
         """Test that cancelling target selection exits cleanly."""
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("d3ploy.ui.prompts.select_target") as mock_select:
-                mock_select.return_value = None
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("d3ploy.ui.prompts.select_target") as mock_select,
+        ):
+            mock_select.return_value = None
 
-                with pytest.raises(typer.Exit):
-                    cli_module.sync(config=str(mock_config_path))
+            with pytest.raises(typer.Exit):
+                cli_module.sync(config=str(mock_config_path))
 
     def test_sync_interactive_bucket_config_prompt(
         self,
@@ -615,24 +624,26 @@ class TestSyncCommand:
         mock_updates: MagicMock,
     ) -> None:
         """Test interactive bucket config prompt when no config exists."""
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
-                    mock_prompt.return_value = {
-                        "bucket_name": "interactive-bucket",
-                        "local_path": "./dist",
-                        "bucket_path": "/",
-                        "acl": "public-read",
-                        "save_config": False,
-                    }
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("pathlib.Path.exists", return_value=False),
+            patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt,
+        ):
+            mock_prompt.return_value = {
+                "bucket_name": "interactive-bucket",
+                "local_path": "./dist",
+                "bucket_path": "/",
+                "acl": "public-read",
+                "save_config": False,
+            }
 
-                    cli_module.sync()
+            cli_module.sync()
 
-                    # Should prompt for bucket config
-                    mock_prompt.assert_called_once()
-                    # Should sync with prompted values
-                    call_kwargs = mock_operations.sync_target.call_args[1]
-                    assert call_kwargs["bucket_name"] == "interactive-bucket"
+            # Should prompt for bucket config
+            mock_prompt.assert_called_once()
+            # Should sync with prompted values
+            call_kwargs = mock_operations.sync_target.call_args[1]
+            assert call_kwargs["bucket_name"] == "interactive-bucket"
 
     def test_sync_interactive_bucket_config_cancelled(
         self,
@@ -641,13 +652,15 @@ class TestSyncCommand:
         mock_updates: MagicMock,
     ) -> None:
         """Test that cancelling bucket config prompt exits cleanly."""
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
-                    mock_prompt.return_value = None
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("pathlib.Path.exists", return_value=False),
+            patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt,
+        ):
+            mock_prompt.return_value = None
 
-                    with pytest.raises(typer.Exit):
-                        cli_module.sync()
+            with pytest.raises(typer.Exit):
+                cli_module.sync()
 
     def test_sync_saves_config_when_requested(
         self,
@@ -660,27 +673,29 @@ class TestSyncCommand:
         """Test that config is saved when user requests it."""
         config_file = tmp_path / "new-config.json"
 
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
-                    mock_prompt.return_value = {
-                        "bucket_name": "new-bucket",
-                        "local_path": "./dist",
-                        "bucket_path": "/",
-                        "acl": "public-read",
-                        "save_config": True,
-                        "caches": {"text/html": {"max-age": 3600}},
-                    }
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("pathlib.Path.exists", return_value=False),
+            patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt,
+        ):
+            mock_prompt.return_value = {
+                "bucket_name": "new-bucket",
+                "local_path": "./dist",
+                "bucket_path": "/",
+                "acl": "public-read",
+                "save_config": True,
+                "caches": {"text/html": {"max-age": 3600}},
+            }
 
-                    # Mock write_text to avoid actual file I/O
-                    with patch.object(pathlib.Path, "write_text") as mock_write:
-                        cli_module.sync(config=str(config_file))
+            # Mock write_text to avoid actual file I/O
+            with patch.object(pathlib.Path, "write_text") as mock_write:
+                cli_module.sync(config=str(config_file))
 
-                        # Should write config
-                        assert mock_write.called
-                        written_data = json.loads(mock_write.call_args[0][0])
-                        assert written_data["version"] == CURRENT_VERSION
-                        assert "new-bucket" in str(written_data)
+                # Should write config
+                assert mock_write.called
+                written_data = json.loads(mock_write.call_args[0][0])
+                assert written_data["version"] == CURRENT_VERSION
+                assert "new-bucket" in str(written_data)
 
     def test_sync_interactive_acl_prompt(
         self,
@@ -702,20 +717,22 @@ class TestSyncCommand:
         }
         config_file.write_text(json.dumps(config_data))
 
-        with patch("sys.stdin.isatty", return_value=True):
-            with patch("d3ploy.ui.prompts.prompt_for_acl") as mock_acl:
-                mock_acl.return_value = "private"
+        with (
+            patch("sys.stdin.isatty", return_value=True),
+            patch("d3ploy.ui.prompts.prompt_for_acl") as mock_acl,
+        ):
+            mock_acl.return_value = "private"
 
-                cli_module.sync(
-                    targets=["production"],
-                    config=str(config_file),
-                )
+            cli_module.sync(
+                targets=["production"],
+                config=str(config_file),
+            )
 
-                # Should prompt for ACL
-                mock_acl.assert_called_once()
-                # Should use prompted ACL
-                call_kwargs = mock_operations.sync_target.call_args[1]
-                assert call_kwargs["acl"] == "private"
+            # Should prompt for ACL
+            mock_acl.assert_called_once()
+            # Should use prompted ACL
+            call_kwargs = mock_operations.sync_target.call_args[1]
+            assert call_kwargs["acl"] == "private"
 
     def test_sync_multiple_targets_progress(
         self,
@@ -754,36 +771,39 @@ class TestSyncCommand:
         mock_signals: MagicMock,
         mock_updates: MagicMock,
     ) -> None:
-        """Test interactive bucket config prompt with d3ploy.json config name (line 299)."""
+        """Test interactive bucket config prompt with d3ploy.json config name."""
         # Change to tmp directory so config files aren't found
         import os
+        from pathlib import Path
 
-        original_cwd = os.getcwd()
+        original_cwd = Path.cwd()
         try:
             os.chdir(tmp_path)
 
-            with patch("sys.stdin.isatty", return_value=True):
-                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
-                    mock_prompt.return_value = {
-                        "bucket_name": "interactive-bucket",
-                        "local_path": "./dist",
-                        "bucket_path": "/",
-                        "acl": "public-read",
-                        "save_config": False,
-                    }
+            with (
+                patch("sys.stdin.isatty", return_value=True),
+                patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt,
+            ):
+                mock_prompt.return_value = {
+                    "bucket_name": "interactive-bucket",
+                    "local_path": "./dist",
+                    "bucket_path": "/",
+                    "acl": "public-read",
+                    "save_config": False,
+                }
 
-                    # Use d3ploy.json as config name to test line 299
-                    cli_module.sync(config="d3ploy.json")
+                # Use d3ploy.json as config name to test line 299
+                cli_module.sync(config="d3ploy.json")
 
-                    # Should have called prompt with both paths checked
-                    mock_prompt.assert_called_once()
-                    call_kwargs = mock_prompt.call_args[1]
-                    assert "checked_paths" in call_kwargs
-                    # When config is d3ploy.json, .d3ploy.json should be appended
-                    assert call_kwargs["checked_paths"] == [
-                        "d3ploy.json",
-                        ".d3ploy.json",
-                    ]
+                # Should have called prompt with both paths checked
+                mock_prompt.assert_called_once()
+                call_kwargs = mock_prompt.call_args[1]
+                assert "checked_paths" in call_kwargs
+                # When config is d3ploy.json, .d3ploy.json should be appended
+                assert call_kwargs["checked_paths"] == [
+                    "d3ploy.json",
+                    ".d3ploy.json",
+                ]
         finally:
             os.chdir(original_cwd)
 
@@ -794,36 +814,39 @@ class TestSyncCommand:
         mock_signals: MagicMock,
         mock_updates: MagicMock,
     ) -> None:
-        """Test interactive bucket config prompt with .d3ploy.json config name (line 301)."""
+        """Test interactive bucket config with .d3ploy.json config name."""
         # Change to tmp directory so config files aren't found
         import os
 
-        original_cwd = os.getcwd()
+        original_cwd = pathlib.Path.cwd()
         try:
             os.chdir(tmp_path)
 
-            with patch("sys.stdin.isatty", return_value=True):
-                with patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt:
-                    mock_prompt.return_value = {
-                        "bucket_name": "interactive-bucket",
-                        "local_path": "./dist",
-                        "bucket_path": "/",
-                        "acl": "public-read",
-                        "save_config": False,
-                    }
+            with (
+                patch("sys.stdin.isatty", return_value=True),
+                patch("d3ploy.ui.prompts.prompt_for_bucket_config") as mock_prompt,
+            ):
+                mock_prompt.return_value = {
+                    "bucket_name": "interactive-bucket",
+                    "local_path": "./dist",
+                    "bucket_path": "/",
+                    "acl": "public-read",
+                    "save_config": False,
+                }
 
-                    # Use .d3ploy.json as config name to test line 301
-                    cli_module.sync(config=".d3ploy.json")
+                # Use .d3ploy.json as config name to test line 301
+                cli_module.sync(config=".d3ploy.json")
 
-                    # Should have called prompt with both paths checked
-                    mock_prompt.assert_called_once()
-                    call_kwargs = mock_prompt.call_args[1]
-                    assert "checked_paths" in call_kwargs
-                    # When config is .d3ploy.json, d3ploy.json should be first (inserted at 0)
-                    assert call_kwargs["checked_paths"] == [
-                        "d3ploy.json",
-                        ".d3ploy.json",
-                    ]
+                # Should have called prompt with both paths checked
+                mock_prompt.assert_called_once()
+                call_kwargs = mock_prompt.call_args[1]
+                assert "checked_paths" in call_kwargs
+                # When config is .d3ploy.json, d3ploy.json should be first
+                # (inserted at 0)
+                assert call_kwargs["checked_paths"] == [
+                    "d3ploy.json",
+                    ".d3ploy.json",
+                ]
         finally:
             os.chdir(original_cwd)
 
@@ -883,22 +906,23 @@ class TestMigrateConfigCommand:
 
     def test_migrate_config_success(self, old_config_file: pathlib.Path) -> None:
         """Test successful config migration."""
-        with patch.object(cli_module.console, "print") as mock_print:
-            with patch("d3ploy.ui.display_panel") as mock_panel:
-                cli_module.migrate_config(str(old_config_file))
+        with (
+            patch.object(cli_module.console, "print") as mock_print,
+            patch("d3ploy.ui.display_panel") as mock_panel,
+        ):
+            cli_module.migrate_config(str(old_config_file))
 
-                # Should show migration message
-                assert any(
-                    "Migrating config" in str(call)
-                    for call in mock_print.call_args_list
-                )
-                # Should display panels (original and migrated)
-                assert mock_panel.call_count == 2
-                # Should show success message
-                assert any(
-                    "migrated successfully" in str(call)
-                    for call in mock_print.call_args_list
-                )
+            # Should show migration message
+            assert any(
+                "Migrating config" in str(call) for call in mock_print.call_args_list
+            )
+            # Should display panels (original and migrated)
+            assert mock_panel.call_count == 2
+            # Should show success message
+            assert any(
+                "migrated successfully" in str(call)
+                for call in mock_print.call_args_list
+            )
 
         # Verify file was migrated
         migrated_data = json.loads(old_config_file.read_text())
@@ -914,15 +938,17 @@ class TestMigrateConfigCommand:
         }
         old_config.write_text(json.dumps(old_config_data))
 
-        with patch.object(cli_module.console, "print") as mock_print:
-            with patch("d3ploy.ui.display_panel"):
-                cli_module.migrate_config(str(old_config))
+        with (
+            patch.object(cli_module.console, "print") as mock_print,
+            patch("d3ploy.ui.display_panel"),
+        ):
+            cli_module.migrate_config(str(old_config))
 
-                # Should show message about environments → targets rename
-                print_calls = [str(call) for call in mock_print.call_args_list]
-                assert any(
-                    "environments" in call and "targets" in call for call in print_calls
-                ), "Expected message about renaming environments to targets"
+            # Should show message about environments → targets rename
+            print_calls = [str(call) for call in mock_print.call_args_list]
+            assert any(
+                "environments" in call and "targets" in call for call in print_calls
+            ), "Expected message about renaming environments to targets"
 
         # Verify file was migrated and environments became targets
         migrated_data = json.loads(old_config.read_text())
@@ -968,16 +994,17 @@ class TestShowConfigCommand:
 
     def test_show_config_file_not_found(self) -> None:
         """Test show_config with non-existent file."""
-        with patch("pathlib.Path.exists", return_value=False):
-            with patch.object(cli_module.console, "print") as mock_print:
-                with pytest.raises(typer.Exit) as exc_info:
-                    cli_module.show_config(config="nonexistent.json")
+        with (
+            patch("pathlib.Path.exists", return_value=False),
+            patch.object(cli_module.console, "print") as mock_print,
+            pytest.raises(typer.Exit) as exc_info,
+        ):
+            cli_module.show_config(config="nonexistent.json")
 
-                assert exc_info.value.exit_code == os.EX_NOINPUT
-                assert any(
-                    "Config file not found" in str(call)
-                    for call in mock_print.call_args_list
-                )
+        assert exc_info.value.exit_code == os.EX_NOINPUT
+        assert any(
+            "Config file not found" in str(call) for call in mock_print.call_args_list
+        )
 
     def test_show_config_tree_format(self, mock_config_file: pathlib.Path) -> None:
         """Test show_config displays tree format by default."""
@@ -1012,16 +1039,17 @@ class TestShowConfigCommand:
 
             # Now we need to handle the second exists() call
             def exists_impl(*args, **kwargs):
-                # First call (d3ploy.json) returns False, second call (.d3ploy.json) returns True
-                if mock_exists.call_count <= 1:
-                    return False
-                return True
+                # First call (d3ploy.json) returns False,
+                # second call (.d3ploy.json) returns True
+                return not mock_exists.call_count <= 1
 
             mock_exists.side_effect = exists_impl
 
-            with patch("pathlib.Path.read_text", return_value=alt_config.read_text()):
-                with patch("d3ploy.ui.display_config_tree"):
-                    cli_module.show_config()
+            with (
+                patch("pathlib.Path.read_text", return_value=alt_config.read_text()),
+                patch("d3ploy.ui.display_config_tree"),
+            ):
+                cli_module.show_config()
 
     def test_show_config_invalid_json(self, tmp_path: pathlib.Path) -> None:
         """Test show_config with invalid JSON."""
@@ -1039,16 +1067,17 @@ class TestShowConfigCommand:
 
     def test_show_config_io_error(self, mock_config_file: pathlib.Path) -> None:
         """Test show_config handles I/O errors."""
-        with patch("pathlib.Path.read_text", side_effect=OSError("Permission denied")):
-            with patch.object(cli_module.console, "print") as mock_print:
-                with pytest.raises(typer.Exit) as exc_info:
-                    cli_module.show_config(config=str(mock_config_file))
+        with (
+            patch("pathlib.Path.read_text", side_effect=OSError("Permission denied")),
+            patch.object(cli_module.console, "print") as mock_print,
+            pytest.raises(typer.Exit) as exc_info,
+        ):
+            cli_module.show_config(config=str(mock_config_file))
 
-                assert exc_info.value.exit_code == os.EX_IOERR
-                assert any(
-                    "Error reading config" in str(call)
-                    for call in mock_print.call_args_list
-                )
+        assert exc_info.value.exit_code == os.EX_IOERR
+        assert any(
+            "Error reading config" in str(call) for call in mock_print.call_args_list
+        )
 
 
 class TestCreateConfigCommand:
@@ -1067,19 +1096,18 @@ class TestCreateConfigCommand:
                 "save_config": True,
             }
 
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch("pathlib.Path.write_text") as mock_write:
-                    with patch.object(cli_module.console, "print"):
-                        cli_module.create_config(config=str(config_file))
+            with (
+                patch("pathlib.Path.exists", return_value=False),
+                patch("pathlib.Path.write_text") as mock_write,
+                patch.object(cli_module.console, "print"),
+            ):
+                cli_module.create_config(config=str(config_file))
 
-                    # Should write new config
-                    assert mock_write.called
-                    written_data = json.loads(mock_write.call_args[0][0])
-                    assert written_data["version"] == CURRENT_VERSION
-                    assert (
-                        written_data["targets"]["default"]["bucket_name"]
-                        == "new-bucket"
-                    )
+            # Should write new config
+            assert mock_write.called
+            written_data = json.loads(mock_write.call_args[0][0])
+            assert written_data["version"] == CURRENT_VERSION
+            assert written_data["targets"]["default"]["bucket_name"] == "new-bucket"
 
     def test_create_config_merge_existing(self, tmp_path: pathlib.Path) -> None:
         """Test create_config merges into existing file."""
@@ -1144,19 +1172,19 @@ class TestCreateConfigCommand:
                 "save_config": True,
             }
 
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch("pathlib.Path.write_text") as mock_write:
-                    with patch.object(cli_module.console, "print"):
-                        cli_module.create_config(config=str(config_file))
+            with (
+                patch("pathlib.Path.exists", return_value=False),
+                patch("pathlib.Path.write_text") as mock_write,
+                patch.object(cli_module.console, "print"),
+            ):
+                cli_module.create_config(config=str(config_file))
 
-                    written_data = json.loads(mock_write.call_args[0][0])
-                    assert "caches" in written_data["targets"]["default"]
-                    assert (
-                        written_data["targets"]["default"]["caches"]["text/html"][
-                            "max-age"
-                        ]
-                        == 3600
-                    )
+            written_data = json.loads(mock_write.call_args[0][0])
+            assert "caches" in written_data["targets"]["default"]
+            assert (
+                written_data["targets"]["default"]["caches"]["text/html"]["max-age"]
+                == 3600
+            )
 
     def test_create_config_without_saving(self, tmp_path: pathlib.Path) -> None:
         """Test create_config shows preview without saving."""
@@ -1171,18 +1199,18 @@ class TestCreateConfigCommand:
                 "save_config": False,
             }
 
-            with patch("pathlib.Path.exists", return_value=False):
-                with patch.object(cli_module.console, "print") as mock_print:
-                    cli_module.create_config(config=str(config_file))
+            with (
+                patch("pathlib.Path.exists", return_value=False),
+                patch.object(cli_module.console, "print") as mock_print,
+            ):
+                cli_module.create_config(config=str(config_file))
 
-                    # Should show preview message
-                    assert any(
-                        "Preview" in str(call) for call in mock_print.call_args_list
-                    )
-                    assert any(
-                        "not saved" in str(call).lower()
-                        for call in mock_print.call_args_list
-                    )
+                # Should show preview message
+                assert any("Preview" in str(call) for call in mock_print.call_args_list)
+                assert any(
+                    "not saved" in str(call).lower()
+                    for call in mock_print.call_args_list
+                )
 
     def test_create_config_invalid_existing_json(self, tmp_path: pathlib.Path) -> None:
         """Test create_config exits on invalid existing JSON."""
@@ -1201,7 +1229,7 @@ class TestCreateConfigCommand:
     def test_create_config_finds_alternate_dotfile(
         self, tmp_path: pathlib.Path
     ) -> None:
-        """Test create_config finds .d3ploy.json when d3ploy.json doesn't exist (lines 637-638)."""
+        """Test create_config finds .d3ploy.json when d3ploy.json doesn't exist."""
         # Create .d3ploy.json file
         dotfile_config = tmp_path / ".d3ploy.json"
         dotfile_config.write_text(
@@ -1224,8 +1252,9 @@ class TestCreateConfigCommand:
 
             # Change to tmp_path directory for the test
             import os
+            from pathlib import Path
 
-            original_cwd = os.getcwd()
+            original_cwd = Path.cwd()
             try:
                 os.chdir(tmp_path)
 
@@ -1263,13 +1292,15 @@ class TestCreateConfigCommand:
                 "save_config": True,
             }
 
-            with patch("pathlib.Path.read_text", return_value=alt_config.read_text()):
-                with patch("pathlib.Path.write_text") as mock_write:
-                    # Call with the alternate path directly
-                    cli_module.create_config(config=str(alt_config))
+            with (
+                patch("pathlib.Path.read_text", return_value=alt_config.read_text()),
+                patch("pathlib.Path.write_text") as mock_write,
+            ):
+                # Call with the alternate path directly
+                cli_module.create_config(config=str(alt_config))
 
-                    # Should have written the merged config
-                    assert mock_write.called
+                # Should have written the merged config
+                assert mock_write.called
 
 
 class TestCliEntryPoint:
@@ -1277,55 +1308,64 @@ class TestCliEntryPoint:
 
     def test_cli_defaults_to_sync_command(self) -> None:
         """Test that cli() defaults to sync command when no subcommand given."""
-        with patch("sys.argv", ["d3ploy", "production"]):
-            with patch.object(cli_module, "app") as mock_app:
-                cli_module.cli()
+        with (
+            patch("sys.argv", ["d3ploy", "production"]),
+            patch.object(cli_module, "app") as mock_app,
+        ):
+            cli_module.cli()
 
-                # Should have inserted 'sync' command
-                assert sys.argv[1] == "sync"
-                assert sys.argv[2] == "production"
-                mock_app.assert_called_once()
+            # Should have inserted 'sync' command
+            assert sys.argv[1] == "sync"
+            assert sys.argv[2] == "production"
+            mock_app.assert_called_once()
 
     def test_cli_preserves_explicit_subcommands(self) -> None:
         """Test that cli() doesn't modify explicit subcommands."""
-        with patch("sys.argv", ["d3ploy", "show-config"]):
-            with patch.object(cli_module, "app") as mock_app:
-                cli_module.cli()
+        with (
+            patch("sys.argv", ["d3ploy", "show-config"]),
+            patch.object(cli_module, "app") as mock_app,
+        ):
+            cli_module.cli()
 
-                # Should not insert 'sync'
-                assert sys.argv[1] == "show-config"
-                mock_app.assert_called_once()
+            # Should not insert 'sync'
+            assert sys.argv[1] == "show-config"
+            mock_app.assert_called_once()
 
     def test_cli_handles_flags(self) -> None:
         """Test that cli() doesn't insert sync before flags."""
-        with patch("sys.argv", ["d3ploy", "--version"]):
-            with patch.object(cli_module, "app") as mock_app:
-                cli_module.cli()
+        with (
+            patch("sys.argv", ["d3ploy", "--version"]),
+            patch.object(cli_module, "app") as mock_app,
+        ):
+            cli_module.cli()
 
-                # Should not insert 'sync' before flags
-                assert sys.argv[1] == "--version"
-                mock_app.assert_called_once()
+            # Should not insert 'sync' before flags
+            assert sys.argv[1] == "--version"
+            mock_app.assert_called_once()
 
     def test_cli_catches_user_cancelled(self) -> None:
         """Test that cli() catches UserCancelled and exits cleanly."""
-        with patch("sys.argv", ["d3ploy", "sync"]):
-            with patch.object(cli_module, "app", side_effect=UserCancelled()):
-                with patch.object(cli_module.console, "print") as mock_print:
-                    with pytest.raises(SystemExit) as exc_info:
-                        cli_module.cli()
+        with (
+            patch("sys.argv", ["d3ploy", "sync"]),
+            patch.object(cli_module, "app", side_effect=UserCancelled()),
+            patch.object(cli_module.console, "print") as mock_print,
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            cli_module.cli()
 
-                    assert exc_info.value.code == os.EX_OK
-                    assert any(
-                        "cancelled" in str(call).lower()
-                        for call in mock_print.call_args_list
-                    )
+        assert exc_info.value.code == os.EX_OK
+        assert any(
+            "cancelled" in str(call).lower() for call in mock_print.call_args_list
+        )
 
     def test_cli_no_args_defaults_to_sync(self) -> None:
         """Test that cli() with no args adds sync command."""
-        with patch("sys.argv", ["d3ploy"]):
-            with patch.object(cli_module, "app") as mock_app:
-                cli_module.cli()
+        with (
+            patch("sys.argv", ["d3ploy"]),
+            patch.object(cli_module, "app") as mock_app,
+        ):
+            cli_module.cli()
 
-                # Should insert 'sync' as default command
-                assert sys.argv[1] == "sync"
-                mock_app.assert_called_once()
+            # Should insert 'sync' as default command
+            assert sys.argv[1] == "sync"
+            mock_app.assert_called_once()

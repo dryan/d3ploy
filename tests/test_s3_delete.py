@@ -128,10 +128,12 @@ def test_delete_file_with_killswitch_flipped(
     mock_obj = MagicMock()
     mock_obj.delete.side_effect = raise_cancelled
 
-    with patch.object(s3_resource, "Object", return_value=mock_obj):
-        with pytest.raises(UserCancelled):
-            s3.delete_file(
-                uploaded_test_file,
-                test_bucket_name,
-                s3_resource,
-            )
+    with (
+        patch.object(s3_resource, "Object", return_value=mock_obj),
+        pytest.raises(UserCancelled),
+    ):
+        s3.delete_file(
+            uploaded_test_file,
+            test_bucket_name,
+            s3_resource,
+        )

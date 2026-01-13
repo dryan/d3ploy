@@ -1,0 +1,3 @@
+[submodule ".pedantry"]
+	path = .pedantry
+	url = https://github.com/dryan/pedantry.git

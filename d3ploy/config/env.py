@@ -2,9 +2,9 @@
 Environment variable handling.
 """
 
+import contextlib
 import os
 from typing import Any
-from typing import Dict
 
 PREFIX = "D3PLOY_"
 
@@ -18,7 +18,7 @@ ENV_MAPPING = {
 }
 
 
-def load_env_vars() -> Dict[str, Any]:
+def load_env_vars() -> dict[str, Any]:
     """
     Load configuration from environment variables.
 
@@ -34,9 +34,7 @@ def load_env_vars() -> Dict[str, Any]:
 
     # Handle special cases or types if needed
     if f"{PREFIX}PROCESSES" in os.environ:
-        try:
+        with contextlib.suppress(ValueError):
             config["processes"] = int(os.environ[f"{PREFIX}PROCESSES"])
-        except ValueError:
-            pass  # Ignore invalid integer
 
     return config

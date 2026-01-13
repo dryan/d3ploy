@@ -327,12 +327,14 @@ def test_upload_file_with_killswitch_flipped(
         operations.killswitch.set()
         raise UserCancelled("Operation cancelled")
 
-    with patch("builtins.open", side_effect=raise_cancelled):
-        with pytest.raises(UserCancelled):
-            s3.upload_file(
-                test_file,
-                test_bucket_name,
-                s3_resource,
-                "test-upload-killswitch",
-                prefix_path,
-            )
+    with (
+        patch("builtins.open", side_effect=raise_cancelled),
+        pytest.raises(UserCancelled),
+    ):
+        s3.upload_file(
+            test_file,
+            test_bucket_name,
+            s3_resource,
+            "test-upload-killswitch",
+            prefix_path,
+        )

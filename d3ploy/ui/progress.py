@@ -2,10 +2,6 @@
 Progress display components.
 """
 
-from typing import Dict
-from typing import List
-from typing import Optional
-
 from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
@@ -30,7 +26,7 @@ class ProgressDisplay:
 
     def __init__(
         self,
-        total: Optional[int] = None,
+        total: int | None = None,
         *,
         description: str = "",
         disable: bool = False,
@@ -139,10 +135,10 @@ class LiveProgressDisplay:
             )
 
             # Track tasks
-            self.tasks: Dict[str, TaskID] = {}
+            self.tasks: dict[str, TaskID] = {}
 
             # Track recent file operations
-            self.recent_files: List[Dict[str, str]] = []
+            self.recent_files: list[dict[str, str]] = []
             self.max_recent = 10
 
             # Create layout
@@ -178,7 +174,7 @@ class LiveProgressDisplay:
         name: str,
         *,
         description: str,
-        total: Optional[int] = None,
+        total: int | None = None,
     ) -> str:
         """
         Add a new progress task.
@@ -202,7 +198,7 @@ class LiveProgressDisplay:
         name: str,
         *,
         advance: int = 1,
-        description: Optional[str] = None,
+        description: str | None = None,
     ):
         """
         Update a task's progress.

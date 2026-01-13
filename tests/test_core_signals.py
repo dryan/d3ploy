@@ -2,6 +2,7 @@
 Tests for d3ploy.core.signals module.
 """
 
+import contextlib
 import signal
 from unittest.mock import patch
 
@@ -100,10 +101,8 @@ def test_shutdown_requested_false_initially(reset_killswitch):
 
 def test_shutdown_requested_true_after_bail(reset_killswitch):
     """shutdown_requested() returns True after bail() called."""
-    try:
+    with contextlib.suppress(signals.UserCancelledError):
         signals.bail()
-    except signals.UserCancelled:
-        pass
 
     assert signals.shutdown_requested() is True
 

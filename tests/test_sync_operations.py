@@ -482,15 +482,17 @@ def test_delete_orphans_with_confirmation(reset_killswitch, monkeypatch):
     # Decline confirmation
     monkeypatch.setattr("builtins.input", lambda _: "n")
 
-    with patch("d3ploy.sync.operations.aws.s3.delete_file") as mock_delete:
-        with patch("d3ploy.sync.operations.alert") as mock_alert:
-            operations.delete_orphans(
-                "test-bucket",
-                mock_s3,
-                "/prefix",
-                [],
-                needs_confirmation=True,
-            )
+    with (
+        patch("d3ploy.sync.operations.aws.s3.delete_file") as mock_delete,
+        patch("d3ploy.sync.operations.alert") as mock_alert,
+    ):
+        operations.delete_orphans(
+            "test-bucket",
+            mock_s3,
+            "/prefix",
+            [],
+            needs_confirmation=True,
+        )
 
     # Should not delete when declined
     mock_delete.assert_not_called()
@@ -555,22 +557,22 @@ def test_sync_target_basic_sync(tmp_path, reset_killswitch):
     test_file = tmp_path / "test.txt"
     test_file.write_text("content")
 
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch("d3ploy.sync.operations.ui.output.display_message"):
-                        mock_discover.return_value = [test_file]
-                        mock_upload.return_value = ([("prefix/test.txt", 1)], 1)
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch("d3ploy.sync.operations.ui.output.display_message"),
+    ):
+        mock_discover.return_value = [test_file]
+        mock_upload.return_value = ([("prefix/test.txt", 1)], 1)
 
-                        result = operations.sync_target(
-                            "test-target",
-                            bucket_name="test-bucket",
-                            local_path=tmp_path,
-                            bucket_path="/prefix",
-                        )
+        result = operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            bucket_path="/prefix",
+        )
 
     assert result["uploaded"] == 1
     assert result["deleted"] == 0
@@ -579,24 +581,24 @@ def test_sync_target_basic_sync(tmp_path, reset_killswitch):
 
 def test_sync_target_with_delete(tmp_path, reset_killswitch):
     """Sync and delete orphaned files."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch("d3ploy.sync.operations.delete_orphans") as mock_delete:
-                        with patch("d3ploy.sync.operations.ui.output.display_message"):
-                            mock_discover.return_value = []
-                            mock_upload.return_value = ([], 0)
-                            mock_delete.return_value = 3
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch("d3ploy.sync.operations.delete_orphans") as mock_delete,
+        patch("d3ploy.sync.operations.ui.output.display_message"),
+    ):
+        mock_discover.return_value = []
+        mock_upload.return_value = ([], 0)
+        mock_delete.return_value = 3
 
-                            result = operations.sync_target(
-                                "test-target",
-                                bucket_name="test-bucket",
-                                local_path=tmp_path,
-                                delete=True,
-                            )
+        result = operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            delete=True,
+        )
 
     assert result["deleted"] == 3
     mock_delete.assert_called_once()
@@ -604,26 +606,26 @@ def test_sync_target_with_delete(tmp_path, reset_killswitch):
 
 def test_sync_target_with_cloudfront(tmp_path, reset_killswitch):
     """Sync and invalidate CloudFront."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch(
-                        "d3ploy.sync.operations.aws.cloudfront.invalidate_distributions"
-                    ) as mock_invalidate:
-                        with patch("d3ploy.sync.operations.ui.output.display_message"):
-                            mock_discover.return_value = []
-                            mock_upload.return_value = ([("test.txt", 1)], 1)
-                            mock_invalidate.return_value = ["ABC123"]
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch(
+            "d3ploy.sync.operations.aws.cloudfront.invalidate_distributions"
+        ) as mock_invalidate,
+        patch("d3ploy.sync.operations.ui.output.display_message"),
+    ):
+        mock_discover.return_value = []
+        mock_upload.return_value = ([("test.txt", 1)], 1)
+        mock_invalidate.return_value = ["ABC123"]
 
-                            result = operations.sync_target(
-                                "test-target",
-                                bucket_name="test-bucket",
-                                local_path=tmp_path,
-                                cloudfront_id="ABC123",
-                            )
+        result = operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            cloudfront_id="ABC123",
+        )
 
     assert result["invalidated"] == 1
     mock_invalidate.assert_called_once_with("ABC123", dry_run=False)
@@ -631,25 +633,25 @@ def test_sync_target_with_cloudfront(tmp_path, reset_killswitch):
 
 def test_sync_target_cloudfront_skip_no_changes(tmp_path, reset_killswitch):
     """Skip CloudFront invalidation when no files changed."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch(
-                        "d3ploy.sync.operations.aws.cloudfront.invalidate_distributions"
-                    ) as mock_invalidate:
-                        with patch("d3ploy.sync.operations.alert"):
-                            mock_discover.return_value = []
-                            mock_upload.return_value = ([], 0)
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch(
+            "d3ploy.sync.operations.aws.cloudfront.invalidate_distributions"
+        ) as mock_invalidate,
+        patch("d3ploy.sync.operations.alert"),
+    ):
+        mock_discover.return_value = []
+        mock_upload.return_value = ([], 0)
 
-                            result = operations.sync_target(
-                                "test-target",
-                                bucket_name="test-bucket",
-                                local_path=tmp_path,
-                                cloudfront_id="ABC123",
-                            )
+        result = operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            cloudfront_id="ABC123",
+        )
 
     assert result["invalidated"] == 0
     mock_invalidate.assert_not_called()
@@ -657,24 +659,22 @@ def test_sync_target_cloudfront_skip_no_changes(tmp_path, reset_killswitch):
 
 def test_sync_target_dry_run(tmp_path, reset_killswitch):
     """Dry run sync operation."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch(
-                        "d3ploy.sync.operations.ui.output.display_message"
-                    ) as mock_display:
-                        mock_discover.return_value = []
-                        mock_upload.return_value = ([], 2)
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch("d3ploy.sync.operations.ui.output.display_message") as mock_display,
+    ):
+        mock_discover.return_value = []
+        mock_upload.return_value = ([], 2)
 
-                        operations.sync_target(
-                            "test-target",
-                            bucket_name="test-bucket",
-                            local_path=tmp_path,
-                            dry_run=True,
-                        )
+        operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            dry_run=True,
+        )
 
     # Check dry run was passed to upload_batch
     assert mock_upload.call_args[1]["dry_run"] is True
@@ -684,25 +684,23 @@ def test_sync_target_dry_run(tmp_path, reset_killswitch):
 
 def test_sync_target_cloudfront_dry_run(tmp_path, reset_killswitch):
     """Dry run with CloudFront invalidation shows 'would be requested' message."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch(
-                        "d3ploy.sync.operations.ui.output.display_message"
-                    ) as mock_display:
-                        mock_discover.return_value = []
-                        mock_upload.return_value = ([("test.txt", 1)], 1)
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch("d3ploy.sync.operations.ui.output.display_message") as mock_display,
+    ):
+        mock_discover.return_value = []
+        mock_upload.return_value = ([("test.txt", 1)], 1)
 
-                        operations.sync_target(
-                            "test-target",
-                            bucket_name="test-bucket",
-                            local_path=tmp_path,
-                            cloudfront_id="ABC123",
-                            dry_run=True,
-                        )
+        operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            cloudfront_id="ABC123",
+            dry_run=True,
+        )
 
     # Check message mentions CloudFront invalidation "would be requested"
     assert any(
@@ -712,23 +710,23 @@ def test_sync_target_cloudfront_dry_run(tmp_path, reset_killswitch):
 
 def test_sync_target_cloudfront_id_none(tmp_path, reset_killswitch):
     """Test sync_target with cloudfront_id=None and using_config=False (line 308)."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch(
-                "d3ploy.sync.operations.discovery.discover_files"
-            ) as mock_discover:
-                with patch("d3ploy.sync.operations.upload_batch") as mock_upload:
-                    with patch("d3ploy.sync.operations.alert") as mock_alert:
-                        mock_discover.return_value = []
-                        mock_upload.return_value = ([], 0)
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.discovery.discover_files") as mock_discover,
+        patch("d3ploy.sync.operations.upload_batch") as mock_upload,
+        patch("d3ploy.sync.operations.alert") as mock_alert,
+    ):
+        mock_discover.return_value = []
+        mock_upload.return_value = ([], 0)
 
-                        result = operations.sync_target(
-                            "test-target",
-                            bucket_name="test-bucket",
-                            local_path=tmp_path,
-                            cloudfront_id=None,
-                            using_config=False,
-                        )
+        result = operations.sync_target(
+            "test-target",
+            bucket_name="test-bucket",
+            local_path=tmp_path,
+            cloudfront_id=None,
+            using_config=False,
+        )
 
     # Should not have invalidated anything
     assert result["invalidated"] == 0
@@ -739,27 +737,27 @@ def test_sync_target_cloudfront_id_none(tmp_path, reset_killswitch):
 
 def test_sync_target_local_path_none(tmp_path, reset_killswitch):
     """Test sync_target with local_path=None raises error."""
-    with patch("d3ploy.sync.operations.aws.s3.get_s3_resource"):
-        with patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"):
-            with patch("d3ploy.sync.operations.alert") as mock_alert:
-                # Let first alert pass, but second one (local_path=None) should exit
-                def alert_side_effect(*args, **kwargs):
-                    # Check if this is the local_path error (has error_code)
-                    if "error_code" in kwargs:
-                        raise SystemExit(kwargs["error_code"])
+    with (
+        patch("d3ploy.sync.operations.aws.s3.get_s3_resource"),
+        patch("d3ploy.sync.operations.aws.s3.test_bucket_connection"),
+        patch("d3ploy.sync.operations.alert") as mock_alert,
+    ):
+        # Let first alert pass, but second one (local_path=None) should exit
+        def alert_side_effect(*args, **kwargs):
+            # Check if this is the local_path error (has error_code)
+            if "error_code" in kwargs:
+                raise SystemExit(kwargs["error_code"])
 
-                mock_alert.side_effect = alert_side_effect
+        mock_alert.side_effect = alert_side_effect
 
-                with pytest.raises(SystemExit) as exc_info:
-                    operations.sync_target(
-                        "test-target",
-                        bucket_name="test-bucket",
-                        local_path=None,
-                    )
+        with pytest.raises(SystemExit) as exc_info:
+            operations.sync_target(
+                "test-target",
+                bucket_name="test-bucket",
+                local_path=None,
+            )
 
-                assert exc_info.value.code == os.EX_NOINPUT
-                # Should have alerted about missing local path
-                alert_calls = [str(call[0][0]) for call in mock_alert.call_args_list]
-                assert any(
-                    "local path was not specified" in call for call in alert_calls
-                )
+        assert exc_info.value.code == os.EX_NOINPUT
+        # Should have alerted about missing local path
+        alert_calls = [str(call[0][0]) for call in mock_alert.call_args_list]
+        assert any("local path was not specified" in call for call in alert_calls)

@@ -8,8 +8,6 @@ import os
 import pathlib
 import time
 import urllib.request
-from typing import Optional
-from typing import Union
 
 from packaging.version import parse as parse_version
 
@@ -19,8 +17,8 @@ from .. import utils
 def check_for_updates(
     current_version: str,
     *,
-    check_file_path: Optional[Union[pathlib.Path, str]] = None,
-) -> Optional[bool]:
+    check_file_path: pathlib.Path | str | None = None,
+) -> bool | None:
     """
     Check PyPI for newer version.
 
@@ -47,7 +45,7 @@ def check_for_updates(
             return None
 
     update_available = None
-    PYPI_URL = "https://pypi.org/pypi/d3ploy/json"
+    pypi_url = "https://pypi.org/pypi/d3ploy/json"
 
     try:
         last_checked = int(check_file_path.read_text().strip())
@@ -62,7 +60,7 @@ def check_for_updates(
 
         # it has been a day since the last update check
         try:
-            with contextlib.closing(urllib.request.urlopen(PYPI_URL)) as pypi_response:
+            with contextlib.closing(urllib.request.urlopen(pypi_url)) as pypi_response:
                 pypi_data = json.load(pypi_response)
                 pypi_version = parse_version(pypi_data.get("info", {}).get("version"))
                 if pypi_version > parse_version(current_version):
@@ -101,7 +99,10 @@ def display_update_notification(new_version: str, *, current_version: str = ""):
     console = Console()
 
     message_lines = [
-        f"[cyan]A new version of d3ploy is available:[/cyan] [green bold]{new_version}[/green bold]",
+        (
+            f"[cyan]A new version of d3ploy is available:[/cyan] "
+            f"[green bold]{new_version}[/green bold]"
+        ),
         "",
         "Update with: [yellow]pip install --upgrade d3ploy[/yellow]",
         "Or see: [blue]https://github.com/dryan/d3ploy[/blue]",
@@ -122,8 +123,11 @@ def display_update_notification(new_version: str, *, current_version: str = ""):
             [
                 "",
                 "[yellow]⚠️  IMPORTANT:[/yellow] This is a major version update!",
-                "[dim]Major updates may include breaking changes. Please review the",
-                "changelog and migration guide at the GitHub repository before upgrading.[/dim]",
+                ("[dim]Major updates may include breaking changes. Please review the"),
+                (
+                    "changelog and migration guide at the GitHub repository "
+                    "before upgrading.[/dim]"
+                ),
             ]
         )
 
@@ -141,7 +145,7 @@ def display_update_notification(new_version: str, *, current_version: str = ""):
 
 def get_last_check_time(
     *,
-    check_file_path: Optional[Union[pathlib.Path, str]] = None,
+    check_file_path: pathlib.Path | str | None = None,
 ) -> int:
     """
     Get timestamp of last update check.
@@ -170,7 +174,7 @@ def get_last_check_time(
 def save_check_time(
     timestamp: int,
     *,
-    check_file_path: Optional[Union[pathlib.Path, str]] = None,
+    check_file_path: pathlib.Path | str | None = None,
 ):
     """
     Save timestamp of update check.
@@ -194,8 +198,5 @@ def save_check_time(
             # This is a non-critical operation
             return
 
-    try:
+    with contextlib.suppress(OSError, PermissionError):
         check_file_path.write_text(str(timestamp))
-    except (OSError, PermissionError):
-        # If we can't write to the file, silently fail
-        pass

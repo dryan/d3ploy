@@ -65,10 +65,7 @@ def get_cache_dir() -> pathlib.Path:
     else:
         # Linux/Unix: $XDG_CACHE_HOME/d3ploy/ or ~/.cache/d3ploy/
         xdg_cache = os.environ.get("XDG_CACHE_HOME")
-        if xdg_cache:
-            base = pathlib.Path(xdg_cache)
-        else:
-            base = pathlib.Path.home() / ".cache"
+        base = pathlib.Path(xdg_cache) if xdg_cache else pathlib.Path.home() / ".cache"
 
     cache_dir = base / "d3ploy"
     cache_dir.mkdir(parents=True, exist_ok=True)

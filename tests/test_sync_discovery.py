@@ -158,7 +158,8 @@ def test_gitignore_files_not_found(capsys, monkeypatch):
 
 
 def test_config_file_exclusion():
-    """Test that specific config file is excluded when config_file parameter is provided."""
+    """Test that specific config file is excluded when config_file parameter
+    is provided."""
     # Without config_file parameter, .d3ploy.json should be included
     files_without_exclusion = discovery.discover_files(
         FILES_DIR,
@@ -194,7 +195,7 @@ def test_get_file_hash():
 
     # Verify it matches manual calculation
     expected_md5 = hashlib.md5()
-    with open(test_file, "rb") as f:
+    with Path(test_file).open("rb") as f:
         expected_md5.update(f.read())
     expected_hash = expected_md5.hexdigest()
 
