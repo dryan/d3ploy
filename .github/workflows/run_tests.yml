@@ -9,11 +9,11 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -21,18 +21,20 @@ jobs:
       D3PLOY_TEST_BUCKET: d3ploy-tests-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
       - name: Install Python dependencies
         run: |
           uv sync
       - name: Run ruff tests
         run: uv run ruff check d3ploy
+      - name: Run ty type checking
+        run: uv run ty check d3ploy/ tests/
       - name: Run Python Unit Tests
         run: |
           uv run pytest

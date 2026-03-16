@@ -1,0 +1,28 @@
+{
+  "environments": {
+    "default": {
+      "bucket_name": "example-bucket",
+      "local_path": "./dist",
+      "bucket_path": "/",
+      "acl": "public-read"
+    },
+    "staging": {
+      "bucket_name": "example-staging-bucket",
+      "local_path": "./dist",
+      "bucket_path": "/staging/",
+      "delete": true
+    }
+  },
+  "defaults": {
+    "caches": {
+      "text/javascript": 2592000,
+      "text/css": 2592000,
+      "image/*": 31536000,
+      "text/html": 0
+    },
+    "exclude": [
+      ".DS_Store",
+      "*.map"
+    ]
+  }
+}

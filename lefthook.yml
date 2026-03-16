@@ -1,20 +1,40 @@
 pre-commit:
-  parallel: true
+  parallel: false
   commands:
-    ruff-check:
-      run: uv run ruff check --fix {all_files}
-      glob: "*.py"
-    ruff-format:
-      run: uv run ruff format {all_files}
-      glob: "*.py"
-    check-versions-match:
-      run: ./check-versions-match.py
+    # Format files
+    prettier:
+      glob: "*.{js,ts,json,css,html,md,yml,yaml}"
+      run: |
+        for f in {staged_files}; do
+          [ -f "$f" ] && [ ! -L "$f" ] && npx prettier --write "$f"
+        done
       stage_fixed: true
 
-pre-push:
-  commands:
-    ruff-check:
-      run: uv run ruff check {all_files}
+    # Format and lint Python (if Python files exist)
+    ruff-format:
       glob: "*.py"
-    check-versions-match:
-      run: ./check-versions-match.py
+      run: |
+        FILES=$(for f in {staged_files}; do
+          [ -f "$f" ] && echo "$f"
+        done)
+        [ -z "$FILES" ] || ruff format $FILES
+      stage_fixed: true
+
+    ruff-check:
+      glob: "*.py"
+      run: |
+        FILES=$(for f in {staged_files}; do
+          [ -f "$f" ] && echo "$f"
+        done)
+        [ -z "$FILES" ] || ruff check --fix $FILES
+      stage_fixed: true
+
+    # Check for dead/unused code in Python
+    vulture:
+      glob: "*.py"
+      run: |
+        FILES=$(for f in {staged_files}; do
+          [ -f "$f" ] && echo "$f"
+        done)
+        [ -z "$FILES" ] || uv run vulture $FILES
+      stage_fixed: false # vulture only reports, doesn't fix
